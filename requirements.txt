@@ -16,3 +16,24 @@ aiosqlite==0.20.0
 # Development Tools
 pytest==8.3.0
 black==24.10.0
+
+# === NEU: AI & ML DEPENDENCIES ===
+# OpenAI for fact-checking
+openai==1.51.0
+
+# Web scraping for source verification
+httpx==0.25.0
+beautifulsoup4==4.12.2
+aiohttp==3.9.0
+
+# Text processing
+nltk==3.8.1
+
+# Date/time handling
+python-dateutil==2.8.2
+
+# JSON Web Tokens
+PyJWT==2.8.0
+
+# Async Redis (optional for caching)
+redis==5.0.0

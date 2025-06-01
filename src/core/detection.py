@@ -2,61 +2,79 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 import logging
 from datetime import datetime
-import cv2
-import numpy as np
+import uuid
+
+from .ai_engine import ai_engine, FactCheckResult as AIFactCheckResult, AIInfluencerResponse
 
 logger = logging.getLogger(__name__)
 
 class DetectionResult(BaseModel):
-    """Detection result model"""
-    content_type: str  # "text", "image", "video"
+    """Enhanced detection result with fact-checking"""
+    # Original fields
+    content_type: str
     is_synthetic: bool
-    confidence: float  # 0.0 - 1.0
+    confidence: float
     detection_method: str
     details: Dict
     timestamp: str
+    
+    # NEW: Fact-checking fields
+    request_id: str
+    fact_check: Optional[AIFactCheckResult] = None
+    ai_response: Optional[AIInfluencerResponse] = None
+    processing_time_ms: int
+
+class CompanyFactCheckRequest(BaseModel):
+    """Enhanced request model for company fact-checking"""
+    text: str
+    company: str = "BMW"
+    language: str = "de"
+    generate_ai_response: bool = True
 
 class TruthShieldDetector:
-    """Main detection engine for TruthShield"""
+    """Enhanced detector with real AI fact-checking"""
     
     def __init__(self):
-        self.text_detector = None
-        self.image_detector = None
-        # Skip German NLP for now
-        logger.info("🛡️ TruthShield Detector initialized (without German NLP)")
+        self.ai_engine = ai_engine
+        logger.info("🛡️ TruthShield Detector initialized with AI engine")
     
     async def detect_text(self, text: str) -> DetectionResult:
-        """Detect if text is AI-generated using Transformers"""
+        """Basic text detection (legacy endpoint)"""
+        start_time = datetime.now()
+        
         try:
-            # Basic text analysis without SpaCy
+            # Basic analysis
             word_count = len(text.split())
             char_count = len(text)
-            
-            # Placeholder logic - später echte SynthID
             confidence = min(0.8, max(0.2, word_count / 100))
-            is_synthetic = confidence > 0.6
+            
+            processing_time = (datetime.now() - start_time).total_seconds() * 1000
             
             return DetectionResult(
                 content_type="text",
-                is_synthetic=is_synthetic,
+                is_synthetic=confidence > 0.6,
                 confidence=confidence,
                 detection_method="basic_analysis",
                 details={
                     "word_count": word_count,
                     "char_count": char_count,
-                    "language": "de"
+                    "language": "auto-detected"
                 },
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
+                request_id=str(uuid.uuid4()),
+                processing_time_ms=int(processing_time)
             )
+            
         except Exception as e:
             logger.error(f"Text detection error: {e}")
             raise
     
     async def detect_image(self, image_path: str) -> DetectionResult:
-        """Detect if image is manipulated using OpenCV"""
+        """Basic image detection (legacy endpoint)"""
+        start_time = datetime.now()
+        
         try:
-            # Basic image analysis with OpenCV
-            # TODO: Real deepfake detection
+            processing_time = (datetime.now() - start_time).total_seconds() * 1000
             
             return DetectionResult(
                 content_type="image",
@@ -67,8 +85,101 @@ class TruthShieldDetector:
                     "file_path": image_path,
                     "analysis": "basic_opencv"
                 },
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
+                request_id=str(uuid.uuid4()),
+                processing_time_ms=int(processing_time)
             )
+            
         except Exception as e:
             logger.error(f"Image detection error: {e}")
             raise
+    
+    async def fact_check_company_claim(self, request: CompanyFactCheckRequest) -> DetectionResult:
+        """NEW: Complete fact-checking with AI response generation"""
+        start_time = datetime.now()
+        request_id = str(uuid.uuid4())
+        
+        logger.info(f"🔍 Starting fact-check for {request.company}: {request.text[:50]}...")
+        
+        try:
+            # Step 1: AI Fact-checking
+            fact_check_result = await self.ai_engine.fact_check_claim(
+                text=request.text,
+                company=request.company
+            )
+            
+            # Step 2: Generate AI brand response (if requested)
+            ai_response = None
+            if request.generate_ai_response:
+                ai_response = await self.ai_engine.generate_brand_response(
+                    claim=request.text,
+                    fact_check=fact_check_result,
+                    company=request.company,
+                    language=request.language
+                )
+            
+            processing_time = (datetime.now() - start_time).total_seconds() * 1000
+            
+            # Create enhanced detection result
+            result = DetectionResult(
+                content_type="text",
+                is_synthetic=fact_check_result.is_fake,
+                confidence=fact_check_result.confidence,
+                detection_method="ai_fact_checking",
+                details={
+                    "company": request.company,
+                    "language": request.language,
+                    "category": fact_check_result.category,
+                    "sources_found": len(fact_check_result.sources),
+                    "ai_response_generated": ai_response is not None
+                },
+                timestamp=datetime.now().isoformat(),
+                request_id=request_id,
+                fact_check=fact_check_result,
+                ai_response=ai_response,
+                processing_time_ms=int(processing_time)
+            )
+            
+            logger.info(f"✅ Fact-check complete [{request_id}]: "
+                       f"Fake={fact_check_result.is_fake} "
+                       f"Confidence={fact_check_result.confidence:.2f}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Fact-checking failed [{request_id}]: {e}")
+            
+            # Return safe fallback
+            processing_time = (datetime.now() - start_time).total_seconds() * 1000
+            
+            return DetectionResult(
+                content_type="text",
+                is_synthetic=False,
+                confidence=0.3,
+                detection_method="ai_fact_checking_error",
+                details={
+                    "error": str(e),
+                    "company": request.company,
+                    "fallback_mode": True
+                },
+                timestamp=datetime.now().isoformat(),
+                request_id=request_id,
+                processing_time_ms=int(processing_time)
+            )
+    
+    async def get_detection_stats(self) -> Dict:
+        """Get detector statistics"""
+        return {
+            "status": "active",
+            "capabilities": {
+                "basic_text_detection": True,
+                "basic_image_detection": True,
+                "ai_fact_checking": self.ai_engine.openai_client is not None,
+                "company_responses": True,
+                "source_verification": True
+            },
+            "supported_companies": list(self.ai_engine.company_personas.keys()),
+            "supported_languages": ["de", "en"],
+            "version": "1.0.0-ai",
+            "uptime": "active"
+        }

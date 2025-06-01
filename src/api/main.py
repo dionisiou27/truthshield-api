@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # ADD THIS
 from pydantic import BaseModel
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
@@ -7,6 +8,15 @@ app = FastAPI(
     title="🛡️ TruthShield API",
     description="European AI Solution for Digital Information Integrity",
     version="0.1.0"
+)
+
+# ADD CORS MIDDLEWARE
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production: specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include all routes

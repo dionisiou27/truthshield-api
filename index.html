@@ -11,7 +11,11 @@
         .metric { background: #e8f4fd; padding: 15px; border-radius: 5px; flex: 1; text-align: center; }
         button { background: #ff4b4b; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background: #ff6b6b; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .response { background: #d4edda; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .loading { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .error { background: #f8d7da; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .json-details { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -20,10 +24,11 @@
             <h1>🛡️ TruthShield</h1>
             <h2>AI-powered fact-checking service for enterprises</h2>
             <p><strong>Protecting European Democracy Through German Innovation</strong></p>
+            <p style="color: green;">✅ <strong>LIVE API DEMO</strong> - Connected to real AI!</p>
         </div>
 
         <div class="demo-section">
-            <h3>🔍 Live Demo</h3>
+            <h3>🔍 Live AI Fact-Checking Demo</h3>
             <textarea id="fakeNews" placeholder="Enter potential misinformation (e.g., BMW EVs explode in winter)" style="width: 100%; height: 80px; margin: 10px 0; padding: 10px;"></textarea>
             
             <select id="company" style="margin: 10px 0; padding: 8px;">
@@ -33,28 +38,48 @@
                 <option value="Siemens">Siemens</option>
             </select>
             
-            <br><button onclick="analyze()">🚀 Analyze with TruthShield</button>
+            <br><button id="analyzeBtn" onclick="analyzeWithRealAI()">🚀 Analyze with Real AI</button>
             
             <div id="results" style="display: none; margin-top: 20px;">
                 <h4>✅ Analysis Complete!</h4>
-                <div class="response">
-                    <h4>🤖 <span id="companyName"></span> TruthBot Response:</h4>
+                <div id="responseSection" class="response">
+                    <h4>🤖 <span id="companyName"></span> AI Response:</h4>
                     <p id="botResponse"></p>
+                    <p><strong>Confidence:</strong> <span id="confidence"></span>%</p>
+                    <p><strong>Category:</strong> <span id="category"></span></p>
+                    <p><strong>Sources Found:</strong> <span id="sourcesCount"></span></p>
                 </div>
                 <div class="metrics">
                     <div class="metric">
-                        <h4>Response Time</h4>
-                        <p><strong>30 min</strong><br><small>vs 48+ hours traditional</small></p>
+                        <h4>Processing Time</h4>
+                        <p><strong id="processingTime">-</strong><br><small>Real AI processing</small></p>
                     </div>
                     <div class="metric">
-                        <h4>Crisis Cost Prevented</h4>
-                        <p><strong>€2.3M</strong><br><small>vs no response</small></p>
+                        <h4>AI Technology</h4>
+                        <p><strong>GPT-4</strong><br><small>OpenAI + Web Search</small></p>
                     </div>
                     <div class="metric">
-                        <h4>Engagement Boost</h4>
-                        <p><strong>+89%</strong><br><small>positive sentiment</small></p>
+                        <h4>Request ID</h4>
+                        <p><strong id="requestId">-</strong><br><small>for tracking</small></p>
                     </div>
                 </div>
+                
+                <details style="margin-top: 15px;">
+                    <summary><strong>🔍 Technical Details (JSON Response)</strong></summary>
+                    <div id="jsonResponse" class="json-details"></div>
+                </details>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <p>🤖 <strong>AI Processing...</strong> Please wait 10-30 seconds</p>
+                <p>🔍 Analyzing claim with GPT-4...</p>
+                <p>🌐 Searching web sources...</p>
+                <p>✨ Generating brand response...</p>
+            </div>
+            
+            <div id="error" class="error" style="display: none;">
+                <h4>❌ Error</h4>
+                <p id="errorMessage"></p>
             </div>
         </div>
 
@@ -80,74 +105,152 @@
                     </ul>
                 </div>
                 <div style="flex: 1;">
-                    <h4>🚀 Advantages</h4>
+                    <h4>🚀 Technology Stack</h4>
                     <ul>
-                        <li>Only AI fact-checking influencer</li>
-                        <li>German cultural optimization</li>
-                        <li>Enterprise B2B focus</li>
-                        <li>EU compliance by design</li>
+                        <li>OpenAI GPT-4 Integration</li>
+                        <li>Real-time Web Scraping</li>
+                        <li>FastAPI + Python Backend</li>
+                        <li>EU Cloud Infrastructure</li>
                     </ul>
                 </div>
             </div>
-        </div>
-
-        <div class="demo-section">
-            <h3>🔌 API Example</h3>
-            <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">
-{
-  "endpoint": "/api/v1/detect/text",
-  "method": "POST",
-  "request": {
-    "text": "BMW EVs explode in winter",
-    "company": "BMW",
-    "language": "de"
-  },
-  "response": {
-    "is_fake": true,
-    "confidence": 0.95,
-    "ai_response": "BMW EVs explodieren bei Kälte? Ich fahre durch Sibirien! 🥶",
-    "sources": ["BMW Winter Testing", "German Federal Motor Authority"],
-    "deployment_time": "30 minutes"
-  }
-}
-            </pre>
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
             <p><strong>TruthShield: German Engineering. European Values. Global Impact.</strong></p>
             <p>🔗 GitHub: <a href="https://github.com/dionisiou27/truthshield-api">github.com/dionisiou27/truthshield-api</a></p>
             <p>📧 Contact: contact@truthshield.eu</p>
+            <p style="color: #666; font-size: 12px;">Demo requires local API server running on localhost:8000</p>
         </div>
     </div>
 
     <script>
-        function analyze() {
+        const API_BASE = 'http://localhost:8000';
+        
+        async function analyzeWithRealAI() {
             const text = document.getElementById('fakeNews').value;
             const company = document.getElementById('company').value;
+            const analyzeBtn = document.getElementById('analyzeBtn');
             
-            if (!text) {
-                alert('Please enter some text to analyze!');
+            if (!text || text.length < 10) {
+                alert('Please enter at least 10 characters to analyze!');
                 return;
             }
             
-            // Simulate analysis
-            setTimeout(() => {
-                document.getElementById('results').style.display = 'block';
-                document.getElementById('companyName').textContent = company;
+            // Show loading state
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🤖 AI Processing...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/detect/fact-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        company: company,
+                        language: "de",
+                        generate_ai_response: true
+                    })
+                });
                 
-                const responses = {
-                    'BMW': 'BMW EVs explodieren bei Kälte? 😊 Ach komm, mein i4 übersteht -40°C Arktis-Tests! Hier die süßen Eisbär-Videos als Beweis 🐻‍❄️',
-                    'Vodafone': '5G Towers schädlich? Mein lieber Freund, das ist wissenschaftlich widerlegt. Hier die WHO-Studien! 📡🧬',
-                    'Bayer': 'Impfstoff-Mythen? Als Wissenschafts-AI zeige ich Ihnen die peer-reviewed Studien! 💉🔬',
-                    'Siemens': 'Deutsche Technik unzuverlässig? Siemens Qualität läuft seit 175 Jahren! Hier die Zahlen 📊⚙️'
-                };
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
                 
-                document.getElementById('botResponse').textContent = responses[company];
+                const result = await response.json();
                 
-                // Scroll to results
-                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-            }, 1500);
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Show results
+                displayResults(result, company);
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Show error
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('errorMessage').innerHTML = `
+                    <strong>Failed to connect to TruthShield API</strong><br>
+                    Make sure the API server is running on localhost:8000<br>
+                    <small>Error: ${error.message}</small><br><br>
+                    <strong>To start the API:</strong><br>
+                    <code>uvicorn src.api.main:app --reload</code>
+                `;
+            } finally {
+                // Reset button
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🚀 Analyze with Real AI';
+            }
         }
+        
+        function displayResults(result, company) {
+            // Display main results
+            document.getElementById('companyName').textContent = company;
+            document.getElementById('botResponse').textContent = 
+                result.ai_response?.response_text || 'No AI response generated';
+            document.getElementById('confidence').textContent = 
+                Math.round(result.fact_check?.confidence * 100) || 'Unknown';
+            document.getElementById('category').textContent = 
+                result.fact_check?.category || 'Unknown';
+            document.getElementById('sourcesCount').textContent = 
+                result.fact_check?.sources?.length || 0;
+            document.getElementById('processingTime').textContent = 
+                `${result.processing_time_ms}ms`;
+            document.getElementById('requestId').textContent = 
+                result.request_id?.substring(0, 8) || 'Unknown';
+            
+            // Display JSON details
+            document.getElementById('jsonResponse').textContent = 
+                JSON.stringify(result, null, 2);
+            
+            // Show results section
+            document.getElementById('results').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Add some sample texts for easy testing
+        const sampleTexts = [
+            "BMW Elektroautos explodieren bei Minusgraden",
+            "Vodafone 5G towers cause cancer and mind control",
+            "Bayer COVID vaccine contains tracking microchips",
+            "Siemens wind turbines kill all birds in Germany"
+        ];
+        
+        // Add quick test buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('fakeNews');
+            const container = textarea.parentNode;
+            
+            const quickTestDiv = document.createElement('div');
+            quickTestDiv.style.marginTop = '10px';
+            quickTestDiv.innerHTML = '<small><strong>Quick Tests:</strong></small><br>';
+            
+            sampleTexts.forEach((text, index) => {
+                const btn = document.createElement('button');
+                btn.textContent = `Test ${index + 1}`;
+                btn.style.margin = '2px';
+                btn.style.padding = '5px 10px';
+                btn.style.fontSize = '12px';
+                btn.onclick = () => {
+                    textarea.value = text;
+                    document.getElementById('company').value = ['BMW', 'Vodafone', 'Bayer', 'Siemens'][index];
+                };
+                quickTestDiv.appendChild(btn);
+            });
+            
+            container.insertBefore(quickTestDiv, document.getElementById('company'));
+        });
     </script>
 </body>
 </html>
