@@ -29,3 +29,8 @@ pydantic-settings==2.6.0
 pytest==8.3.0
 black==24.10.0
 flake8==7.1.0
+# In VS Code, create requirements.txt:
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
