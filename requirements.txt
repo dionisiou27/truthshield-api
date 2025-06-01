@@ -1,0 +1,31 @@
+# Core Framework - Neuere Versionen für Python 3.13
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pydantic==2.11.5
+
+# Database - Sqlite für Development (einfacher für Windows)
+sqlalchemy==2.0.23
+aiosqlite==0.20.0
+
+# Redis & Caching
+redis==5.0.1
+celery==5.3.4
+
+# AI/ML Libraries - Neueste Versionen
+transformers==4.46.0
+torch==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+opencv-python==4.10.0.84
+spacy==3.8.2
+
+# Social Media APIs
+tweepy==4.14.0
+requests==2.31.0
+
+# Environment & Config  
+python-dotenv==1.0.0
+pydantic-settings==2.6.0
+
+# Development
+pytest==8.3.0
+black==24.10.0
+flake8==7.1.0
