@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TruthShield Demo</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f0f2f6; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .demo-section { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .metrics { display: flex; gap: 20px; }
+        .metric { background: #e8f4fd; padding: 15px; border-radius: 5px; flex: 1; text-align: center; }
+        button { background: #ff4b4b; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #ff6b6b; }
+        .response { background: #d4edda; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ TruthShield</h1>
+            <h2>AI-powered fact-checking service for enterprises</h2>
+            <p><strong>Protecting European Democracy Through German Innovation</strong></p>
+        </div>
+
+        <div class="demo-section">
+            <h3>🔍 Live Demo</h3>
+            <textarea id="fakeNews" placeholder="Enter potential misinformation (e.g., BMW EVs explode in winter)" style="width: 100%; height: 80px; margin: 10px 0; padding: 10px;"></textarea>
+            
+            <select id="company" style="margin: 10px 0; padding: 8px;">
+                <option value="BMW">BMW</option>
+                <option value="Vodafone">Vodafone</option>
+                <option value="Bayer">Bayer</option>
+                <option value="Siemens">Siemens</option>
+            </select>
+            
+            <br><button onclick="analyze()">🚀 Analyze with TruthShield</button>
+            
+            <div id="results" style="display: none; margin-top: 20px;">
+                <h4>✅ Analysis Complete!</h4>
+                <div class="response">
+                    <h4>🤖 <span id="companyName"></span> TruthBot Response:</h4>
+                    <p id="botResponse"></p>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <h4>Response Time</h4>
+                        <p><strong>30 min</strong><br><small>vs 48+ hours traditional</small></p>
+                    </div>
+                    <div class="metric">
+                        <h4>Crisis Cost Prevented</h4>
+                        <p><strong>€2.3M</strong><br><small>vs no response</small></p>
+                    </div>
+                    <div class="metric">
+                        <h4>Engagement Boost</h4>
+                        <p><strong>+89%</strong><br><small>positive sentiment</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>💼 Enterprise Solution</h3>
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <h4>🎯 Target Market</h4>
+                    <ul>
+                        <li>DAX 40 companies</li>
+                        <li>Large Mittelstand</li>
+                        <li>EU expansion ready</li>
+                        <li>€150M TAM</li>
+                    </ul>
+                </div>
+                <div style="flex: 1;">
+                    <h4>💰 Pricing</h4>
+                    <ul>
+                        <li><strong>Setup:</strong> €50K per customer</li>
+                        <li><strong>Monthly:</strong> €25K per company</li>
+                        <li><strong>Annual Value:</strong> €350K</li>
+                        <li><strong>ROI:</strong> 30:1 LTV:CAC</li>
+                    </ul>
+                </div>
+                <div style="flex: 1;">
+                    <h4>🚀 Advantages</h4>
+                    <ul>
+                        <li>Only AI fact-checking influencer</li>
+                        <li>German cultural optimization</li>
+                        <li>Enterprise B2B focus</li>
+                        <li>EU compliance by design</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🔌 API Example</h3>
+            <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">
+{
+  "endpoint": "/api/v1/detect/text",
+  "method": "POST",
+  "request": {
+    "text": "BMW EVs explode in winter",
+    "company": "BMW",
+    "language": "de"
+  },
+  "response": {
+    "is_fake": true,
+    "confidence": 0.95,
+    "ai_response": "BMW EVs explodieren bei Kälte? Ich fahre durch Sibirien! 🥶",
+    "sources": ["BMW Winter Testing", "German Federal Motor Authority"],
+    "deployment_time": "30 minutes"
+  }
+}
+            </pre>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <p><strong>TruthShield: German Engineering. European Values. Global Impact.</strong></p>
+            <p>🔗 GitHub: <a href="https://github.com/dionisiou27/truthshield-api">github.com/dionisiou27/truthshield-api</a></p>
+            <p>📧 Contact: contact@truthshield.eu</p>
+        </div>
+    </div>
+
+    <script>
+        function analyze() {
+            const text = document.getElementById('fakeNews').value;
+            const company = document.getElementById('company').value;
+            
+            if (!text) {
+                alert('Please enter some text to analyze!');
+                return;
+            }
+            
+            // Simulate analysis
+            setTimeout(() => {
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('companyName').textContent = company;
+                
+                const responses = {
+                    'BMW': 'BMW EVs explodieren bei Kälte? 😊 Ach komm, mein i4 übersteht -40°C Arktis-Tests! Hier die süßen Eisbär-Videos als Beweis 🐻‍❄️',
+                    'Vodafone': '5G Towers schädlich? Mein lieber Freund, das ist wissenschaftlich widerlegt. Hier die WHO-Studien! 📡🧬',
+                    'Bayer': 'Impfstoff-Mythen? Als Wissenschafts-AI zeige ich Ihnen die peer-reviewed Studien! 💉🔬',
+                    'Siemens': 'Deutsche Technik unzuverlässig? Siemens Qualität läuft seit 175 Jahren! Hier die Zahlen 📊⚙️'
+                };
+                
+                document.getElementById('botResponse').textContent = responses[company];
+                
+                // Scroll to results
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
