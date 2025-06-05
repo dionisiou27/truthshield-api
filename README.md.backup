@@ -1,0 +1,72 @@
+# 🛡️ TruthShield - AI-Powered Influencer Protection
+
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-green.svg)](https://fastapi.tiangolo.com)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+## 🎯 Mission
+Protecting influencers and brands from misinformation through AI-powered humor bots that make truth more viral than lies.
+
+## 🚀 What We're Building
+TruthShield creates personalized AI characters that:
+- Detect misinformation about protected influencers in real-time
+- Respond with fact-based, humorous content
+- Build engaged communities around truth
+- Make fact-checking entertaining, not preachy
+
+## 🏗️ Architecture
+- **Backend**: FastAPI + Python 3.11
+- **AI Engine**: OpenAI GPT-3.5 (migrating to EU solutions)
+- **Deployment**: TikTok-first, expanding to other platforms
+- **Compliance**: Full TikTok policy adherence with manual oversight
+
+## 📊 Current Status
+- ✅ Working prototype with BMW demo
+- ✅ TikTok compliance framework completed
+- ✅ Weizenbaum Institute partnership in progress
+- 🔄 First influencer protection bot in development
+
+## 🤝 Partnerships
+- **Academic**: Weizenbaum Institute (planned)
+- **Funding**: Horizon Europe application (with Kyniska)
+- **Target Clients**: BMW, Vodafone, Bayer
+
+## 📚 Documentation
+- [Technical Roadmap](STRATEGY/Technical_Docs/03_Tech_Roadmap.md)
+- [TikTok Compliance](STRATEGY/Compliance/TikTok_Policy_Analysis.md)
+- [Content Guidelines](STRATEGY/Compliance/Content_Guidelines.md)
+
+## 🛠️ Quick Start
+```bash
+# Clone repository
+git clone https://github.com/dionisiou27/truthshield-api.git
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env
+# Add your API keys
+
+# Run development server
+uvicorn src.api.main:app --reload
+📈 Metrics & Goals
+
+Response Time: <30 minutes to counter misinformation
+Accuracy: >95% fact-checking accuracy
+Engagement: >5% engagement rate
+Growth: 200-300 followers/day (sustainable)
+
+🔒 Security & Compliance
+
+No automated posting (TikTok compliant)
+Clear AI disclosure on all content
+Manual human oversight for all operations
+GDPR-compliant data handling
+
+📞 Contact
+Dionysios Andres - Founder & CEO
+📧 contact@truthshield.eu
+🌐 truthshield.eu
+
+"Making truth more entertaining than lies" 🎭
