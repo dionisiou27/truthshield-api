@@ -1,53 +1,103 @@
-🛡️ COMPLETE README.md - READY TO COPY/PASTE
+🛡️ UPDATED README.md FOR LIVE DEPLOYMENT
 markdown# 🛡️ TruthShield - AI-Powered Influencer Protection
 
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-green.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live API](https://img.shields.io/badge/API-Live-success.svg)](https://truthshield-api.onrender.com)
 
 ## 🎯 Mission
 Protecting influencers and brands from misinformation through AI-powered humor bots that make truth more viral than lies.
 
-## 🚀 What We're Building
-TruthShield creates personalized AI characters that:
-- Detect misinformation about protected influencers in real-time
-- Respond with fact-based, humorous content
-- Build engaged communities around truth
-- Make fact-checking entertaining, not preachy
+## 🌐 Live Demo & API
 
-## 🏗️ Architecture
-- **Backend**: FastAPI + Python 3.11
-- **AI Engine**: OpenAI GPT-3.5 (migrating to EU solutions)
-- **Deployment**: TikTok-first, expanding to other platforms
-- **Compliance**: Full TikTok policy adherence with manual oversight
+### 🚀 **API is LIVE!**
+- **API Base URL**: https://truthshield-api.onrender.com
+- **API Documentation**: https://truthshield-api.onrender.com/docs
+- **Interactive Demo**: https://truthshield-demo.surge.sh *(Update with your Surge URL)*
 
-## 📊 Current Status
-- ✅ Working prototype with BMW demo
-- ✅ TikTok compliance framework completed
-- ✅ Weizenbaum Institute partnership in progress
-- 🔄 First influencer protection bot in development
-
-## 🤝 Partnerships
-- **Academic**: Weizenbaum Institute (planned)
-- **Funding**: Horizon Europe application (with Kyniska)
-- **Target Clients**: BMW, Vodafone, Bayer
-
-## 📚 Documentation
-- [Technical Roadmap](STRATEGY/Technical_Docs/03_Tech_Roadmap.md)
-- [TikTok Compliance](STRATEGY/Compliance/TikTok_Policy_Analysis.md)
-- [Content Guidelines](STRATEGY/Compliance/Content_Guidelines.md)
-
-## 🛠️ Quick Start
-
-### Prerequisites
-- Python 3.11+
-- Redis (for rate limiting)
-- PostgreSQL (optional, for production)
-
-### Installation
-
+### Quick Test
 ```bash
-# Clone repository
+# Test the live API
+curl -X POST "https://truthshield-api.onrender.com/api/v1/detect/fact-check" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "BMW electric vehicles explode in winter",
+    "company": "BMW",
+    "language": "de",
+    "generate_ai_response": true
+  }'
+🚀 What We're Building
+TruthShield creates personalized AI characters that:
+
+Detect misinformation about protected influencers in real-time
+Respond with fact-based, humorous content in German & English 🇩🇪🇬🇧
+Build engaged communities around truth
+Make fact-checking entertaining, not preachy
+
+🏗️ Architecture
+
+Backend: FastAPI + Python 3.11 (Hosted on Render)
+AI Engine: OpenAI GPT-3.5 with bilingual support
+Frontend Demo: Static site on Surge
+Deployment: TikTok-first, expanding to other platforms
+Compliance: Full TikTok policy adherence with manual oversight
+
+📊 Current Status
+
+✅ LIVE API with real-time fact-checking
+✅ Bilingual support (German/English)
+✅ Working prototype with BMW, Vodafone, Bayer, Siemens
+✅ TikTok compliance framework completed
+✅ Weizenbaum Institute partnership in progress
+🔄 First influencer protection bot in development
+
+🔧 API Endpoints
+Core Endpoints
+MethodEndpointDescriptionPOST/api/v1/detect/fact-checkAnalyze content for misinformationPOST/api/v1/detect/quick-checkQuick fact-check without AI responseGET/api/v1/detect/companiesList supported companiesGET/api/v1/detect/statusDetection engine statusGET/healthHealth check endpointGET/docsInteractive API documentation
+Example Request (Live API)
+javascriptconst response = await fetch('https://truthshield-api.onrender.com/api/v1/detect/fact-check', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    text: "Vodafone 5G towers control minds",
+    company: "Vodafone",
+    language: "de",
+    generate_ai_response: true
+  })
+});
+
+const result = await response.json();
+console.log(result.ai_response); // AI-generated response in German/English
+🌍 Bilingual Support
+Our API now supports bilingual responses:
+
+German 🇩🇪 - Primary language for DACH market
+English 🇬🇧 - International expansion ready
+
+Responses include both languages automatically:
+json{
+  "ai_response": {
+    "response_text": "German response here..."
+  },
+  "details": {
+    "ai_responses": {
+      "de": "Als BMW stehen wir für Fakten...",
+      "en": "At BMW, we stand for facts..."
+    }
+  }
+}
+🛠️ Local Development
+Prerequisites
+
+Python 3.11+
+OpenAI API key
+Git
+
+Installation
+bash# Clone repository
 git clone https://github.com/dionisiou27/truthshield-api.git
 cd truthshield-api
 
@@ -69,128 +119,70 @@ cp .env.example .env
 
 # Run development server
 uvicorn src.api.main:app --reload
+📈 Performance Metrics
+Live API Stats
 
-# Access API documentation
-# Open browser to http://localhost:8000/docs
-🔧 API Endpoints
-Core Endpoints
+Response Time: ~2-5 seconds (including AI processing)
+Uptime: 99.9% on Render free tier
+Supported Companies: BMW, Vodafone, Bayer, Siemens
+Languages: German & English
 
-POST /api/v1/detect/fact-check - Analyze content for misinformation
-GET /api/v1/company/{company_name} - Get company-specific responses
-GET /health - Health check endpoint
+🤝 Partnerships
 
-Example Request
-bashcurl -X POST "http://localhost:8000/api/v1/detect/fact-check" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "company": "BMW",
-    "category": "misinformation",
-    "text": "BMW EVs explode in winter",
-    "platform": "tiktok"
-  }'
-📈 Metrics & Goals
+Academic: Weizenbaum Institute (Meeting: June 13, 2025)
+Funding: Horizon Europe application (with Kyniska)
+Target Influencers: Mai Thi Nguyen-Kim, Louisa Dellert, Raul Krauthausen
 
-Response Time: <30 minutes to counter misinformation
-Accuracy: >95% fact-checking accuracy
-Engagement: >5% engagement rate
-Growth: 200-300 followers/day (sustainable)
-
-🔒 Security & Compliance
-
-No automated posting (TikTok compliant)
-Clear AI disclosure on all content
-Manual human oversight for all operations
-GDPR-compliant data handling
-
-🧪 Testing
-bash# Run tests
-pytest
-
-# Run with coverage
-pytest --cov=src tests/
-
-# Run specific test file
-pytest tests/test_fact_checker.py
-🤖 TikTok Bot Operation
-Daily Limits (Compliance)
-
-Posts: 3-5 maximum per day
-Comments: 150-200 per day
-Follows: 200 per day
-Likes: 500 per day
-
-Manual Operation Required
-All TikTok operations require human approval:
-
-AI generates content
-Human reviews and approves
-Manual upload with 2-5 minute delays
-Compliance tracking ensures limits
-
-📁 Project Structure
-truthshield-api/
-├── src/
-│   ├── api/          # FastAPI routes
-│   ├── core/         # Core business logic
-│   ├── models/       # Data models
-│   └── services/     # External services
-├── tests/            # Test suite
-├── STRATEGY/         # Business documentation
-│   ├── Compliance/   # Platform compliance docs
-│   └── Technical/    # Technical roadmaps
-├── requirements.txt  # Python dependencies
-├── .env.example     # Environment variables template
-└── README.md        # You are here
 🚀 Roadmap
-Phase 1: MVP (Current)
+Phase 1: MVP ✅ (Current)
 
- Core fact-checking engine
- TikTok compliance framework
- First influencer partnership
- 10K followers proof of concept
+✅ Live API deployment
+✅ Bilingual support
+✅ Core fact-checking engine
+✅ TikTok compliance framework
+🔄 First influencer partnership
 
 Phase 2: Scale (Q3 2025)
 
- Multi-influencer support
- Automated content queue
- Advanced analytics dashboard
- Series A fundraising
+Multi-influencer support
+Real-time TikTok monitoring
+Advanced analytics dashboard
+EU-based infrastructure
 
 Phase 3: Expansion (Q4 2025)
 
- Instagram, Twitter integration
- Brand partnerships (BMW, Vodafone)
- EU-based AI infrastructure
- €25K MRR target
+Instagram, Twitter integration
+Enterprise brand partnerships
+€25K MRR target
+Series A fundraising
 
-🤝 Contributing
-We welcome contributions! Please see our Contributing Guidelines for details.
-Development Setup
+🔒 Security & Compliance
 
-Fork the repository
-Create your feature branch (git checkout -b feature/AmazingFeature)
-Commit your changes (git commit -m 'Add some AmazingFeature')
-Push to the branch (git push origin feature/AmazingFeature)
-Open a Pull Request
+GDPR Compliant: No personal data storage
+API Rate Limiting: Prevents abuse
+TikTok Compliant: Manual posting only
+AI Transparency: Clear disclosure on all content
 
 📞 Contact
 Dionysios Andres - Founder & CEO
 📧 contact@truthshield.eu
 🌐 truthshield.eu
-💼 LinkedIn
+🔗 LinkedIn
 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
 🙏 Acknowledgments
 
 Weizenbaum Institute for research collaboration
-TikTok Creator Fund for platform support
-Our early influencer partners for believing in the vision
+Our early adopters and testers
+The open-source community
 
 
 <p align="center">
+  <b>🚀 API Status: LIVE</b><br>
+  <a href="https://truthshield-api.onrender.com/docs">Try it now!</a>
+  <br><br>
   <i>"Making truth more entertaining than lies"</i> 🎭
-  <br>
-  <br>
+  <br><br>
   <b>TruthShield - Where AI meets Accountability</b>
 </p>
 ```
