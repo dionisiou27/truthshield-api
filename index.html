@@ -16,6 +16,27 @@
         .loading { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0; }
         .error { background: #f8d7da; padding: 15px; border-radius: 5px; margin: 10px 0; }
         .json-details { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        
+        /* Language toggle button styles */
+        .lang-toggle {
+            background: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .lang-toggle:hover {
+            background: #1976D2;
+        }
+        .lang-toggle.german {
+            background: #2196F3;
+        }
+        .lang-toggle.english {
+            background: #4CAF50;
+        }
     </style>
 </head>
 <body>
@@ -43,11 +64,17 @@
             <div id="results" style="display: none; margin-top: 20px;">
                 <h4>✅ Analysis Complete!</h4>
                 <div id="responseSection" class="response">
-                    <h4>🤖 <span id="companyName"></span> AI Response:</h4>
-                    <p id="botResponse"></p>
-                    <p><strong>Confidence:</strong> <span id="confidence"></span>%</p>
-                    <p><strong>Category:</strong> <span id="category"></span></p>
-                    <p><strong>Sources Found:</strong> <span id="sourcesCount"></span></p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">🤖 <span id="companyName"></span> AI Response:</h4>
+                        <button id="langToggle" class="lang-toggle german" onclick="toggleLanguage()">
+                            🇩🇪 Deutsch
+                        </button>
+                    </div>
+                    <p id="botResponseEN" style="display: none;"></p>
+                    <p id="botResponseDE"></p>
+                    <p><strong>Confidence / Vertrauen:</strong> <span id="confidence"></span>%</p>
+                    <p><strong>Category / Kategorie:</strong> <span id="categoryEN" style="display: none;"></span><span id="categoryDE"></span></p>
+                    <p><strong>Sources Found / Gefundene Quellen:</strong> <span id="sourcesCount"></span></p>
                 </div>
                 <div class="metrics">
                     <div class="metric">
@@ -126,6 +153,8 @@
 
     <script>
         const API_BASE = 'http://localhost:8000';
+        let currentLanguage = 'de';  // Start with German
+        let currentData = null;      // Store response data globally
         
         async function analyzeWithRealAI() {
             const text = document.getElementById('fakeNews').value;
@@ -163,6 +192,7 @@
                 }
                 
                 const result = await response.json();
+                currentData = result; // Store for language toggle
                 
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
@@ -193,16 +223,37 @@
         }
         
         function displayResults(result, company) {
-            // Display main results
+            // Reset language to German
+            currentLanguage = 'de';
+            document.getElementById('langToggle').className = 'lang-toggle german';
+            document.getElementById('langToggle').innerHTML = '🇩🇪 Deutsch';
+            
+            // Display company name
             document.getElementById('companyName').textContent = company;
-            document.getElementById('botResponse').textContent = 
-                result.ai_response?.response_text || 'No AI response generated';
+            
+            // Extract bilingual responses from the API
+            const enResponse = result.details?.ai_responses?.en || result.ai_response?.response_text || 'No English response generated';
+            const deResponse = result.details?.ai_responses?.de || result.ai_response?.response_text || 'Keine deutsche Antwort generiert';
+            
+            // Set response texts
+            document.getElementById('botResponseEN').textContent = enResponse;
+            document.getElementById('botResponseDE').textContent = deResponse;
+            
+            // Display confidence
             document.getElementById('confidence').textContent = 
-                Math.round(result.fact_check?.confidence * 100) || 'Unknown';
-            document.getElementById('category').textContent = 
-                result.fact_check?.category || 'Unknown';
+                Math.round((result.confidence || 0) * 100);
+            
+            // Display categories
+            const categoryEN = result.fact_check?.category || 'Unknown';
+            const categoryDE = result.details?.category_de || categoryEN;
+            document.getElementById('categoryEN').textContent = categoryEN;
+            document.getElementById('categoryDE').textContent = categoryDE;
+            
+            // Display sources count
             document.getElementById('sourcesCount').textContent = 
-                result.fact_check?.sources?.length || 0;
+                result.details?.sources_found || 0;
+            
+            // Display metrics
             document.getElementById('processingTime').textContent = 
                 `${result.processing_time_ms}ms`;
             document.getElementById('requestId').textContent = 
@@ -212,11 +263,46 @@
             document.getElementById('jsonResponse').textContent = 
                 JSON.stringify(result, null, 2);
             
+            // Show German version by default
+            document.getElementById('botResponseEN').style.display = 'none';
+            document.getElementById('botResponseDE').style.display = 'block';
+            document.getElementById('categoryEN').style.display = 'none';
+            document.getElementById('categoryDE').style.display = 'inline';
+            
             // Show results section
             document.getElementById('results').style.display = 'block';
             
             // Scroll to results
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Language toggle function
+        function toggleLanguage() {
+            const toggleBtn = document.getElementById('langToggle');
+            const responseEN = document.getElementById('botResponseEN');
+            const responseDE = document.getElementById('botResponseDE');
+            const categoryEN = document.getElementById('categoryEN');
+            const categoryDE = document.getElementById('categoryDE');
+            
+            if (currentLanguage === 'de') {
+                // Switch to English
+                currentLanguage = 'en';
+                toggleBtn.innerHTML = '🇬🇧 English';
+                toggleBtn.className = 'lang-toggle english';
+                responseEN.style.display = 'block';
+                responseDE.style.display = 'none';
+                categoryEN.style.display = 'inline';
+                categoryDE.style.display = 'none';
+            } else {
+                // Switch to German
+                currentLanguage = 'de';
+                toggleBtn.innerHTML = '🇩🇪 Deutsch';
+                toggleBtn.className = 'lang-toggle german';
+                responseEN.style.display = 'none';
+                responseDE.style.display = 'block';
+                categoryEN.style.display = 'none';
+                categoryDE.style.display = 'inline';
+            }
         }
         
         // Add some sample texts for easy testing

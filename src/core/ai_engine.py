@@ -50,10 +50,10 @@ class TruthShieldAI:
         
         # Company-specific response templates
         self.company_personas = {
-           "BMW": {
-                 "voice": "premium, technical, German engineering pride",
-                 "tone": "confident, fact-based, slightly humorous", 
-                 "style": "engineering precision meets approachable communication"
+            "BMW": {
+                "voice": "premium, technical, German engineering pride",
+                "tone": "confident, fact-based, slightly humorous", 
+                "style": "engineering precision meets approachable communication"
             },
             "Vodafone": {
                 "voice": "innovative, connected, tech-savvy",
@@ -313,13 +313,35 @@ class TruthShieldAI:
                                     claim: str, 
                                     fact_check: FactCheckResult,
                                     company: str = "BMW",
-                                    language: str = "de") -> AIInfluencerResponse:
-        """Generate company-branded response to misinformation"""
+                                    language: str = "en") -> Dict[str, AIInfluencerResponse]:
+        """Generate company-branded response in both languages"""
+        
+        responses = {}
+        
+        # Generate English response
+        responses['en'] = await self._generate_single_response(claim, fact_check, company, "en")
+        
+        # Generate German response
+        responses['de'] = await self._generate_single_response(claim, fact_check, company, "de")
+        
+        return responses
+
+    async def _generate_single_response(self,
+                                      claim: str,
+                                      fact_check: FactCheckResult,
+                                      company: str,
+                                      language: str) -> AIInfluencerResponse:
+        """Generate response in specific language"""
         
         if not self.openai_client:
-            # Fallback response
+            # Fallback responses
+            fallback_texts = {
+                "en": f"As {company}, we take this claim seriously and verify all facts.",
+                "de": f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten."
+            }
+            
             return AIInfluencerResponse(
-                response_text=f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten.",
+                response_text=fallback_texts.get(language, fallback_texts["en"]),
                 tone="professional",
                 engagement_score=0.6,
                 hashtags=[f"#{company}Facts"],
@@ -328,6 +350,12 @@ class TruthShieldAI:
         
         try:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
+            
+            # Language-specific instructions
+            lang_instructions = {
+                "en": "Create an English response that",
+                "de": "Erstelle eine deutsche Antwort, die"
+            }
             
             prompt = f"""
             You are the official AI brand influencer for {company}.
@@ -345,13 +373,14 @@ class TruthShieldAI:
             - Category: {fact_check.category}
             - Explanation: {fact_check.explanation}
             
-            Create a {"German" if language == "de" else "English"} response that:
+            {lang_instructions.get(language, lang_instructions["en"])}:
             1. Addresses the claim directly
             2. Uses {company}'s brand voice
             3. Is engaging and shareable
             4. Includes relevant emojis
             5. Is 1-2 sentences max
             
+            {"Respond in German." if language == "de" else "Respond in English."}
             Make it feel authentic to {company}'s communication style.
             """
             
@@ -374,13 +403,53 @@ class TruthShieldAI:
             
         except Exception as e:
             logger.error(f"Brand response generation failed: {e}")
+            fallback = {
+                "en": f"We at {company} stand for facts and transparency.",
+                "de": f"Wir bei {company} stehen für Fakten und Transparenz."
+            }
             return AIInfluencerResponse(
-                response_text=f"Wir bei {company} stehen für Fakten und Transparenz.",
+                response_text=fallback.get(language, fallback["en"]),
                 tone="professional", 
                 engagement_score=0.5,
                 hashtags=[f"#{company}"],
                 company_voice=company
             )
+
+    def translate_fact_check_result(self, result: FactCheckResult) -> Dict[str, str]:
+        """Quick translation of fact check results for demo"""
+        
+        translations = {
+            "misinformation": "Fehlinformation",
+            "likely_false": "wahrscheinlich falsch",
+            "likely_true": "wahrscheinlich wahr",
+            "needs_verification": "benötigt Überprüfung",
+            "uncertain": "unklar",
+            "true": "wahr",
+            "false": "falsch"
+        }
+        
+        # Translate explanation
+        explanation_de = result.explanation
+        for en, de in translations.items():
+            explanation_de = explanation_de.replace(en, de)
+        
+        # Common phrase translations
+        phrase_translations = {
+            "Very low plausibility": "Sehr geringe Plausibilität",
+            "Low plausibility": "Geringe Plausibilität",
+            "Multiple misinformation indicators": "Mehrere Fehlinformationsindikatoren",
+            "High plausibility": "Hohe Plausibilität",
+            "supported by": "unterstützt von",
+            "sources": "Quellen"
+        }
+        
+        for en, de in phrase_translations.items():
+            explanation_de = explanation_de.replace(en, de)
+        
+        return {
+            "category_de": translations.get(result.category, result.category),
+            "explanation_de": explanation_de
+        }
 
 # Global AI engine instance
 ai_engine = TruthShieldAI()

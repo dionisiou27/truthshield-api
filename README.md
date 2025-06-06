@@ -194,21 +194,3 @@ Our early influencer partners for believing in the vision
   <b>TruthShield - Where AI meets Accountability</b>
 </p>
 ```
-📋 COPY INSTRUCTIONS:
-
-Select ALL the text above (from the first # to the last line)
-Open your README.md file
-Delete everything in it
-Paste this new content
-Save the file
-Commit and push!
-
-This README:
-
-✅ Looks professional
-✅ Explains your vision clearly
-✅ Shows technical competence
-✅ Includes all important links
-✅ Has proper badges
-✅ Includes API examples
-✅ Shows you understand compliance
