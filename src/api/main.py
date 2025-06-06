@@ -1,5 +1,8 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # ADD THIS
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse  # ADD THIS
+from fastapi.staticfiles import StaticFiles  # ADD THIS
+from pathlib import Path  # ADD THIS
 from pydantic import BaseModel
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
@@ -41,9 +44,28 @@ async def root():
         "endpoints": {
             "detection": "/api/v1/detect/",
             "monitoring": "/api/v1/monitor/",
-            "docs": "/docs"
+            "docs": "/docs",
+            "demo": "/demo"  # ADD THIS
         }
     }
+
+# ADD THIS NEW ROUTE FOR THE HTML DEMO
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_page():
+    """Serve the HTML demo page"""
+    html_path = Path(__file__).parent.parent / "templates" / "index.html"
+    
+    # Read the HTML file
+    with open(html_path, "r", encoding="utf-8") as file:
+        html_content = file.read()
+    
+    # Update the API base URL for production
+    html_content = html_content.replace(
+        "const API_BASE = 'http://localhost:8000';",
+        "const API_BASE = 'https://truthshield-api.onrender.com';"
+    )
+    
+    return HTMLResponse(content=html_content)
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -51,4 +73,4 @@ async def health_check():
         status="healthy",
         message="TruthShield API is running - All systems operational",
         version="0.1.0"
-    )   
+    )
