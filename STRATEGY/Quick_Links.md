@@ -28,7 +28,11 @@
 - Refine demo daily
 - Document everything
 - Stay focused on influencer protection angle
-
+```markdown
+## 🤖 CHARACTER SYSTEM
+- [Character Intelligence Framework](Technical_Docs/04_Character_Intelligence_Framework.md)
+- [Character Personas Database](Influencer_Research/Character_Personas_Database.md)
+```
 ## 🚨 EMERGENCY CONTACTS
 - [Add your emergency contacts here]
 
