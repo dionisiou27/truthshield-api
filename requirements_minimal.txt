@@ -1,8 +1,0 @@
-﻿fastapi==0.115.0
-uvicorn[standard]==0.30.0
-pydantic==2.11.5
-python-dotenv==1.0.0
-httpx==0.25.0
-openai==1.51.0
-beautifulsoup4==4.12.2
-aiohttp==1.0.5

@@ -1,5 +1,4 @@
-🛡️ UPDATED README.md FOR LIVE DEPLOYMENT
-markdown# 🛡️ TruthShield - AI-Powered Influencer Protection
+# 🛡️ TruthShield - AI-Powered Democracy Protection
 
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-green.svg)](https://fastapi.tiangolo.com)
@@ -7,14 +6,14 @@ markdown# 🛡️ TruthShield - AI-Powered Influencer Protection
 [![Live API](https://img.shields.io/badge/API-Live-success.svg)](https://truthshield-api.onrender.com)
 
 ## 🎯 Mission
-Protecting influencers and brands from misinformation through AI-powered humor bots that make truth more viral than lies.
+Protecting democracy through AI-powered character bots that use humor to fight misinformation and make truth more viral than lies.
 
 ## 🌐 Live Demo & API
 
 ### 🚀 **API is LIVE!**
 - **API Base URL**: https://truthshield-api.onrender.com
 - **API Documentation**: https://truthshield-api.onrender.com/docs
-- **Interactive Demo**: https://truthshield-demo.surge.sh *(Update with your Surge URL)*
+- **Interactive Demo**: https://truthshield-demo.surge.sh
 
 ### Quick Test
 ```bash
@@ -27,81 +26,114 @@ curl -X POST "https://truthshield-api.onrender.com/api/v1/detect/fact-check" \
     "language": "de",
     "generate_ai_response": true
   }'
-🚀 What We're Building
-TruthShield creates personalized AI characters that:
+```
 
-Detect misinformation about protected influencers in real-time
-Respond with fact-based, humorous content in German & English 🇩🇪🇬🇧
-Build engaged communities around truth
-Make fact-checking entertaining, not preachy
+## 🚀 What We're Building
 
-🏗️ Architecture
+TruthShield creates AI characters that:
 
-Backend: FastAPI + Python 3.11 (Hosted on Render)
-AI Engine: OpenAI GPT-3.5 with bilingual support
-Frontend Demo: Static site on Surge
-Deployment: TikTok-first, expanding to other platforms
-Compliance: Full TikTok policy adherence with manual oversight
+- 🎭 **Detect misinformation** about brands and influencers in real-time
+- 😄 **Respond with humor-based fact-checking** in German & English 🇩🇪🇬🇧
+- 🛡️ **Protect democratic voices** from coordinated hate campaigns
+- 🎪 **Make fact-checking entertaining**, not preachy
 
-📊 Current Status
+### The Digital Charlie Chaplin Approach
+Just as Charlie Chaplin defeated fascism through humor in "The Great Dictator," TruthShield uses AI characters to make misinformation look ridiculous rather than fighting it directly.
 
-✅ LIVE API with real-time fact-checking
-✅ Bilingual support (German/English)
-✅ Working prototype with BMW, Vodafone, Bayer, Siemens
-✅ TikTok compliance framework completed
-✅ Weizenbaum Institute partnership in progress
-🔄 First influencer protection bot in development
+## 🏗️ Architecture
 
-🔧 API Endpoints
-Core Endpoints
-MethodEndpointDescriptionPOST/api/v1/detect/fact-checkAnalyze content for misinformationPOST/api/v1/detect/quick-checkQuick fact-check without AI responseGET/api/v1/detect/companiesList supported companiesGET/api/v1/detect/statusDetection engine statusGET/healthHealth check endpointGET/docsInteractive API documentation
-Example Request (Live API)
-javascriptconst response = await fetch('https://truthshield-api.onrender.com/api/v1/detect/fact-check', {
+- **Backend**: FastAPI + Python 3.11 (Hosted on Render)
+- **AI Engine**: OpenAI GPT-3.5 with Character Intelligence Framework
+- **Frontend Demo**: Static site on Surge
+- **Deployment**: Multi-platform (TikTok, Twitter, Instagram)
+- **Compliance**: Full social media policy adherence with manual oversight
+
+## 📊 Current Status
+
+- ✅ **LIVE API** with real-time fact-checking
+- ✅ **Bilingual support** (German/English)
+- ✅ **Character Intelligence Framework** with 8+ personas
+- ✅ **Working prototypes** for BMW, Vodafone, Bayer, Siemens  
+- ✅ **Academic discussions** with Tomorrow University of Applied Sciences
+- 🔄 **First influencer protection** bot in development
+
+## 🎭 Character Intelligence System
+
+### Pre-configured Personas:
+- **VodaBot** - Tech-savvy 5G conspiracy fighter
+- **BMWBot** - Premium EV innovation defender  
+- **BayerBot** - Gentle science communicator
+- **GuardianBot** - Universal influencer protector
+- **DemocracyDefender** - Political discourse guardian
+- **MemeMaster** - Viral truth creator
+
+## 🔧 API Endpoints
+
+### Core Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/detect/fact-check` | Analyze content for misinformation |
+| POST | `/api/v1/detect/quick-check` | Quick fact-check without AI response |
+| GET | `/api/v1/detect/companies` | List supported companies |
+| GET | `/api/v1/detect/status` | Detection engine status |
+| GET | `/health` | Health check endpoint |
+| GET | `/docs` | Interactive API documentation |
+
+### Example Request (Live API)
+```javascript
+const response = await fetch('https://truthshield-api.onrender.com/api/v1/detect/fact-check', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     text: "Vodafone 5G towers control minds",
-    company: "Vodafone",
+    company: "Vodafone", 
     language: "de",
     generate_ai_response: true
   })
 });
 
 const result = await response.json();
-console.log(result.ai_response); // AI-generated response in German/English
-🌍 Bilingual Support
-Our API now supports bilingual responses:
+console.log(result.ai_response); // AI-generated humorous response
+```
 
-German 🇩🇪 - Primary language for DACH market
-English 🇬🇧 - International expansion ready
+## 🌍 Bilingual Support
 
-Responses include both languages automatically:
-json{
+Our API supports bilingual character responses:
+
+- **German 🇩🇪** - Primary language for DACH market
+- **English 🇬🇧** - International expansion ready
+
+Response format:
+```json
+{
   "ai_response": {
-    "response_text": "German response here..."
+    "response_text": "VodaBot's humorous fact-check..."
   },
   "details": {
     "ai_responses": {
-      "de": "Als BMW stehen wir für Fakten...",
-      "en": "At BMW, we stand for facts..."
+      "de": "Als Vodafone stehen wir für Fakten, nicht Fantasie! 📶",
+      "en": "At Vodafone, we stand for facts, not fiction! 📶"
     }
   }
 }
-🛠️ Local Development
-Prerequisites
+```
 
-Python 3.11+
-OpenAI API key
-Git
+## 🛠️ Local Development
 
-Installation
-bash# Clone repository
+### Prerequisites
+- Python 3.11+
+- OpenAI API key
+- Git
+
+### Installation
+```bash
+# Clone repository
 git clone https://github.com/dionisiou27/truthshield-api.git
 cd truthshield-api
 
-# Create virtual environment
+# Create virtual environment  
 python -m venv venv
 
 # Activate virtual environment
@@ -119,63 +151,92 @@ cp .env.example .env
 
 # Run development server
 uvicorn src.api.main:app --reload
-📈 Performance Metrics
-Live API Stats
+```
 
-Response Time: ~2-5 seconds (including AI processing)
-Uptime: 99.9% on Render free tier
-Supported Companies: BMW, Vodafone, Bayer, Siemens
-Languages: German & English
+## 📈 Performance Metrics
 
-🤝 Partnerships
+### Live API Stats
+- **Response Time**: ~2-5 seconds (including AI processing)
+- **Uptime**: 99.9% on Render deployment
+- **Supported Companies**: BMW, Vodafone, Bayer, Siemens
+- **Languages**: German & English
+- **Character Personas**: 8+ pre-configured
 
-Academic: Weizenbaum Institute (Meeting: June 13, 2025)
-Funding: Horizon Europe application (with Kyniska)
-Target Influencers: Mai Thi Nguyen-Kim, Louisa Dellert, Raul Krauthausen
+## 🤝 Market Validation & Opportunities
 
-🚀 Roadmap
-Phase 1: MVP ✅ (Current)
+### Academic Interest
+- **Tomorrow University of Applied Sciences** - Grant proposal discussions with Prof. Jonathan Costa
 
-✅ Live API deployment
-✅ Bilingual support
-✅ Core fact-checking engine
-✅ TikTok compliance framework
-🔄 First influencer partnership
+### Industry Validation
+- **RHEINPFALZ Media Group** - Documented need: 3000+ weekly hate comments requiring moderation
+- **Amadeu Antonio Stiftung** - Research data: 54% of Germans avoid political expression due to hate speech
 
-Phase 2: Scale (Q3 2025)
+### Funding Opportunities
+- **Horizon Europe** Democracy-03 call (€3.5M available, deadline Sept 16, 2025)
+- **Academic collaboration** discussions for joint grant applications
 
-Multi-influencer support
-Real-time TikTok monitoring
-Advanced analytics dashboard
-EU-based infrastructure
+### Target Market
+- German influencers and democratic voices under attack
+- Media companies needing automated moderation solutions
+- Political figures requiring reputation protection
 
-Phase 3: Expansion (Q4 2025)
+## 🚀 Roadmap
 
-Instagram, Twitter integration
-Enterprise brand partnerships
-€25K MRR target
-Series A fundraising
+### Phase 1: MVP ✅ (Current)
+- ✅ Live API deployment
+- ✅ Character Intelligence Framework  
+- ✅ Bilingual support
+- ✅ Academic discussions initiated
+- 🔄 First influencer partnership negotiations
 
-🔒 Security & Compliance
+### Phase 2: Scale (Q3 2025)
+- Multi-character deployment across platforms
+- Real-time social media monitoring
+- Advanced analytics dashboard
+- EU Horizon funding application planned
 
-GDPR Compliant: No personal data storage
-API Rate Limiting: Prevents abuse
-TikTok Compliant: Manual posting only
-AI Transparency: Clear disclosure on all content
+### Phase 3: Expansion (Q4 2025)
+- Instagram, Twitter, LinkedIn integration
+- Enterprise brand partnerships
+- €25K MRR target
+- Series A fundraising
 
-📞 Contact
-Dionysios Andres - Founder & CEO
-📧 contact@truthshield.eu
-🌐 truthshield.eu
-🔗 LinkedIn
-📄 License
+## 📊 Market Opportunity
+
+### German Market Data
+- **€60M annual market** for hate speech protection
+- **54% of Germans** avoid political expression due to online hate
+- **77% of hate comments** come from organized extremist campaigns
+- **3000+ comments weekly** need moderation at major media companies
+
+## 🔒 Security & Compliance
+
+- **GDPR Compliant**: No personal data storage
+- **API Rate Limiting**: Prevents abuse
+- **Platform Compliant**: Manual posting protocols
+- **AI Transparency**: Clear disclosure on all AI-generated content
+- **Character Ethics**: Humor without harm principles
+
+## 📞 Contact
+
+**Dionysios Andres** - Founder & CEO  
+📧 contact@truthshield.eu  
+🌐 truthshield.eu  
+📱 Testing: Personal TikTok deployment  
+
+## 📄 License
+
 This project is licensed under the MIT License - see the LICENSE file for details.
-🙏 Acknowledgments
 
-Weizenbaum Institute for research collaboration
-Our early adopters and testers
-The open-source community
+## 🙏 Acknowledgments
 
+- **Tomorrow University of Applied Sciences** for ongoing grant collaboration discussions
+- **Prof. Jonathan Costa** for academic guidance and grant application expertise  
+- **Our early adopters and testers**
+- **The open-source community**
+- **German civil society organizations** providing validation data
+
+---
 
 <p align="center">
   <b>🚀 API Status: LIVE</b><br>
@@ -183,6 +244,5 @@ The open-source community
   <br><br>
   <i>"Making truth more entertaining than lies"</i> 🎭
   <br><br>
-  <b>TruthShield - Where AI meets Accountability</b>
+  <b>TruthShield - Where AI meets Democracy</b>
 </p>
-```
