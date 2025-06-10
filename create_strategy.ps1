@@ -20,8 +20,7 @@ foreach ($folder in $folders) {
 # Create empty MD files
 $files = @(
     "STRATEGY\00_MASTER_PLAN.md",
-    "STRATEGY\Quick_Links.md",
-    "STRATEGY\Meeting_Notes\01_Weizenbaum_Prep.md",
+    "STRATEGY\Quick_Links.md",    
     "STRATEGY\Influencer_Research\02_Target_List.md",
     "STRATEGY\Technical_Docs\03_Tech_Roadmap.md",
     "STRATEGY\Progress_Tracking\04_Progress.md"

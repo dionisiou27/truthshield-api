@@ -6,7 +6,7 @@
 - **Followers:** 1M+
 - **Why:** Science communicator, daily misinformation target
 - **Attack vectors:** Vaccine myths, science denial
-- **Approach:** Academic angle with Weizenbaum
+- **Approach:** Academic angle 
 
 ### 2. Louisa Dellert (@louisadellert)
 - **Followers:** 600K+
@@ -34,11 +34,11 @@
 
 ## OUTREACH EMAIL TEMPLATE
 
-Subject: AI Protection Against Hate - Weizenbaum Institute Project
+Subject: AI Protection Against Hate 
 
 Hi [Name],
 
-We're developing an AI bodyguard with the Weizenbaum Institute that automatically detects and counters misinformation about you with humor.
+
 
 Free protection. Real impact. Interested?
 
