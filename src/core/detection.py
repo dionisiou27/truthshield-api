@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from pydantic import BaseModel
 import logging
 from datetime import datetime
@@ -21,7 +21,7 @@ class DetectionResult(BaseModel):
     # NEW: Fact-checking fields
     request_id: str
     fact_check: Optional[AIFactCheckResult] = None
-    ai_response: Optional[AIInfluencerResponse] = None
+    ai_response: Optional[Union[AIInfluencerResponse, Dict[str, AIInfluencerResponse]]] = None
     processing_time_ms: int
 
 class CompanyFactCheckRequest(BaseModel):
@@ -110,13 +110,16 @@ class TruthShieldDetector:
             
             # Step 2: Generate AI brand response (if requested)
             ai_response = None
+            ai_responses = None
             if request.generate_ai_response:
-                ai_response = await self.ai_engine.generate_brand_response(
+                ai_responses = await self.ai_engine.generate_brand_response(
                     claim=request.text,
                     fact_check=fact_check_result,
                     company=request.company,
                     language=request.language
                 )
+                # Get the response for the requested language
+                ai_response = ai_responses.get(request.language, ai_responses.get('en'))
             
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
             
@@ -131,12 +134,13 @@ class TruthShieldDetector:
                     "language": request.language,
                     "category": fact_check_result.category,
                     "sources_found": len(fact_check_result.sources),
-                    "ai_response_generated": ai_response is not None
+                    "ai_response_generated": ai_response is not None,
+                    "ai_responses": ai_responses if ai_responses else None  # Include both language responses
                 },
                 timestamp=datetime.now().isoformat(),
                 request_id=request_id,
                 fact_check=fact_check_result,
-                ai_response=ai_response,
+                ai_response=ai_response,  # Single response for requested language
                 processing_time_ms=int(processing_time)
             )
             
@@ -231,7 +235,7 @@ class TruthShieldDetector:
                 "source_verification": True,
                 "universal_guardian_bot": True  # NEW
             },
-            "supported_companies": list(self.ai_engine.company_personas.keys()) + ["Guardian"],
+            "supported_companies": list(self.ai_engine.company_personas.keys()),
             "supported_languages": ["de", "en"],
             "version": "1.1.0-guardian",
             "uptime": "active"
