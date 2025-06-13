@@ -40,6 +40,8 @@ class AIInfluencerResponse(BaseModel):
     engagement_score: float
     hashtags: List[str]
     company_voice: str
+    bot_name: Optional[str] = None  # Added for Guardian Bot
+    bot_type: Optional[str] = None  # Added for Guardian Bot
 
 class TruthShieldAI:
     """Real AI-powered fact-checking engine"""
@@ -53,22 +55,45 @@ class TruthShieldAI:
             "BMW": {
                 "voice": "premium, technical, German engineering pride",
                 "tone": "confident, fact-based, slightly humorous", 
-                "style": "engineering precision meets approachable communication"
+                "style": "engineering precision meets approachable communication",
+                "emoji": "🚗"
             },
             "Vodafone": {
                 "voice": "innovative, connected, tech-savvy",
                 "tone": "friendly, educational, forward-thinking", 
-                "style": "modern communication technology expert"
+                "style": "modern communication technology expert",
+                "emoji": "📱"
             },
             "Bayer": {
                 "voice": "scientific, healthcare-focused, responsible",
                 "tone": "professional, caring, evidence-based",
-                "style": "trusted healthcare and science authority"
+                "style": "trusted healthcare and science authority",
+                "emoji": "💊"
             },
             "Siemens": {
                 "voice": "industrial innovation, German precision",
                 "tone": "technical expertise, reliable, progressive",
-                "style": "engineering excellence with human touch"
+                "style": "engineering excellence with human touch",
+                "emoji": "⚡"
+            },
+            # NEW: Guardian Bot for universal fact-checking
+            "Guardian": {
+                "voice": "universal truth defender, witty, sharp",
+                "tone": "humorous, factual, engaging, unbiased",
+                "style": "The digital Charlie Chaplin - making misinformation look ridiculous",
+                "emoji": "🛡️",
+                "examples": {
+                    "de": [
+                        "Guardian Bot hier! 🛡️ Diese alte Legende? Zeit für einen Reality-Check mit Humor...",
+                        "Ach herrje, das klingt ja spannend! Aber die Wahrheit ist noch viel interessanter... 😄",
+                        "Moment mal! *kramt in der Faktenkiste* Das riecht nach einer urbanen Legende..."
+                    ],
+                    "en": [
+                        "Guardian Bot here! 🛡️ This old tale? Time for a reality check with humor...",
+                        "Oh my, that sounds exciting! But the truth is even more interesting... 😄",
+                        "Hold on! *digging through the fact box* This smells like an urban legend..."
+                    ]
+                }
             }
         }
     
@@ -91,7 +116,7 @@ class TruthShieldAI:
         
         try:
             # Step 1: Analyze claim with AI
-            analysis = await self._analyze_with_ai(text)
+            analysis = await self._analyze_with_ai(text, company)
             
             # Step 2: Search for supporting sources  
             sources = await self._search_sources(text)
@@ -122,49 +147,78 @@ class TruthShieldAI:
                 processing_time_ms=1000
             )
     
-    async def _analyze_with_ai(self, text: str) -> Dict:
+    async def _analyze_with_ai(self, text: str, company: str = "BMW") -> Dict:
         """Enhanced AI analysis with better prompting for clear misinformation detection"""
         if not self.openai_client:
             return {"assessment": "limited", "reasoning": "No AI available"}
         
         try:
-            prompt = f"""
-            You are an expert fact-checker specializing in German automotive industry claims.
-            
-            Analyze this claim for factual accuracy:
-            "{text}"
-            
-            CONTEXT KNOWLEDGE:
-            - Electric vehicles (BMW i3, i4, iX) are extensively tested in extreme cold
-            - BMW conducts winter testing at -40°C in Arjeplog, Sweden annually
-            - EV batteries lose range in cold but DO NOT "explode"
-            - Thermal management systems prevent dangerous overheating/cooling
-            - No documented cases of EV explosions due to cold weather
-            - Claims about "exploding" EVs are typically misinformation
-            
-            ANALYSIS CRITERIA:
-            1. Does this contradict established automotive engineering facts?
-            2. Are there inflammatory/sensational terms like "explode" without basis?
-            3. Does this spread unfounded fear about established technology?
-            4. Would this claim damage a company's reputation unfairly?
-            
-            Be DECISIVE in your assessment. If a claim is clearly false/misleading, rate it accordingly.
-            
-            Respond with JSON:
-            {{
-                "is_verifiable": true,
-                "plausibility_score": 10,
-                "red_flags": ["sensational explosion claim", "contradicts established EV safety", "no scientific basis"],
-                "verification_needed": "BMW winter testing documentation",
-                "reasoning": "Electric vehicles are extensively cold-weather tested and do not explode from temperature",
-                "misinformation_indicators": ["inflammatory language", "unfounded safety fears", "contradicts engineering facts"],
-                "factual_basis": "BMW and other manufacturers conduct extensive winter testing at -40°C with no explosion incidents"
-            }}
-            
-            For claims about EVs exploding in cold weather, the plausibility_score should be very low (10-20) as this contradicts established automotive engineering and safety testing.
-            
-            Be confident in your assessment - don't default to 50/50 for clearly false claims.
-            """
+            # Adjust prompt based on company type
+            if company == "Guardian":
+                # Universal fact-checking prompt
+                prompt = f"""
+                You are Guardian Bot, a universal fact-checker and misinformation detective.
+                
+                Analyze this claim for factual accuracy:
+                "{text}"
+                
+                ANALYSIS CRITERIA:
+                1. Is this claim supported by verifiable facts?
+                2. Are there sensational/inflammatory terms without basis?
+                3. Does this contradict established scientific/historical knowledge?
+                4. Would believing this cause harm or spread fear?
+                
+                Be DECISIVE in your assessment. Common misinformation includes:
+                - Conspiracy theories (moon landing, flat earth, chemtrails)
+                - Health misinformation (miracle cures, vaccine myths)
+                - Political disinformation
+                - Urban legends presented as fact
+                
+                Respond with JSON:
+                {{
+                    "is_verifiable": true/false,
+                    "plausibility_score": 0-100,
+                    "red_flags": ["list", "of", "concerns"],
+                    "verification_needed": "what to check",
+                    "reasoning": "clear explanation",
+                    "misinformation_indicators": ["list", "of", "indicators"],
+                    "factual_basis": "what we actually know"
+                }}
+                
+                Be confident - don't default to 50/50 for clearly false claims.
+                """
+            else:
+                # Company-specific prompt (existing code)
+                prompt = f"""
+                You are an expert fact-checker specializing in {company} and German industry claims.
+                
+                Analyze this claim for factual accuracy:
+                "{text}"
+                
+                CONTEXT KNOWLEDGE for {company}:
+                - Electric vehicles (BMW i3, i4, iX) are extensively tested in extreme cold
+                - BMW conducts winter testing at -40°C in Arjeplog, Sweden annually
+                - EV batteries lose range in cold but DO NOT "explode"
+                - Thermal management systems prevent dangerous overheating/cooling
+                - No documented cases of EV explosions due to cold weather
+                
+                ANALYSIS CRITERIA:
+                1. Does this contradict established facts about {company}?
+                2. Are there inflammatory/sensational terms without basis?
+                3. Does this spread unfounded fear about the technology?
+                4. Would this claim damage the company's reputation unfairly?
+                
+                Respond with JSON:
+                {{
+                    "is_verifiable": true,
+                    "plausibility_score": 0-100,
+                    "red_flags": ["list", "of", "red", "flags"],
+                    "verification_needed": "specific verification needed",
+                    "reasoning": "detailed reasoning",
+                    "misinformation_indicators": ["list", "of", "indicators"],
+                    "factual_basis": "established facts"
+                }}
+                """
             
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
@@ -172,7 +226,7 @@ class TruthShieldAI:
                 messages=[
                     {
                         "role": "system", 
-                        "content": "You are a German automotive industry expert and misinformation detection specialist. Be decisive in identifying clear misinformation about electric vehicles."
+                        "content": f"You are {'Guardian Bot, a universal misinformation detector' if company == 'Guardian' else f'a {company} industry expert and misinformation specialist'}. Be decisive in identifying clear misinformation."
                     },
                     {
                         "role": "user", 
@@ -206,7 +260,8 @@ class TruthShieldAI:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     search_url,
-                    headers={"User-Agent": "TruthShield/1.0"}
+                    headers={"User-Agent": "TruthShield/1.0"},
+                    timeout=5.0
                 )
                 
                 if response.status_code == 200:
@@ -324,6 +379,12 @@ class TruthShieldAI:
         # Generate German response
         responses['de'] = await self._generate_single_response(claim, fact_check, company, "de")
         
+        # Add Guardian Bot metadata if applicable
+        if company == "Guardian":
+            for lang in responses:
+                responses[lang].bot_name = "Guardian Bot 🛡️"
+                responses[lang].bot_type = "universal"
+        
         return responses
 
     async def _generate_single_response(self,
@@ -335,54 +396,94 @@ class TruthShieldAI:
         
         if not self.openai_client:
             # Fallback responses
-            fallback_texts = {
-                "en": f"As {company}, we take this claim seriously and verify all facts.",
-                "de": f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten."
-            }
+            if company == "Guardian":
+                fallback_texts = {
+                    "en": "Guardian Bot here! 🛡️ Let me fact-check this claim with humor and truth...",
+                    "de": "Guardian Bot hier! 🛡️ Lass mich diese Behauptung mit Humor und Wahrheit prüfen..."
+                }
+            else:
+                fallback_texts = {
+                    "en": f"As {company}, we take this claim seriously and verify all facts.",
+                    "de": f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten."
+                }
             
             return AIInfluencerResponse(
                 response_text=fallback_texts.get(language, fallback_texts["en"]),
                 tone="professional",
                 engagement_score=0.6,
-                hashtags=[f"#{company}Facts"],
+                hashtags=[f"#{company}Facts"] if company != "Guardian" else ["#TruthShield", "#FactCheck"],
                 company_voice=company
             )
         
         try:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
             
-            # Language-specific instructions
-            lang_instructions = {
-                "en": "Create an English response that",
-                "de": "Erstelle eine deutsche Antwort, die"
-            }
-            
-            prompt = f"""
-            You are the official AI brand influencer for {company}.
-            
-            Company Voice: {persona['voice']}
-            Tone: {persona['tone']}
-            Style: {persona['style']}
-            
-            A claim about {company} is circulating:
-            "{claim}"
-            
-            Fact-check result:
-            - Is fake: {fact_check.is_fake}
-            - Confidence: {fact_check.confidence}
-            - Category: {fact_check.category}
-            - Explanation: {fact_check.explanation}
-            
-            {lang_instructions.get(language, lang_instructions["en"])}:
-            1. Addresses the claim directly
-            2. Uses {company}'s brand voice
-            3. Is engaging and shareable
-            4. Includes relevant emojis
-            5. Is 1-2 sentences max
-            
-            {"Respond in German." if language == "de" else "Respond in English."}
-            Make it feel authentic to {company}'s communication style.
-            """
+            # Special handling for Guardian Bot
+            if company == "Guardian":
+                lang_instructions = {
+                    "en": "Create a witty English response that",
+                    "de": "Erstelle eine witzige deutsche Antwort, die"
+                }
+                
+                prompt = f"""
+                You are Guardian Bot 🛡️, TruthShield's universal fact-checker.
+                
+                Style: {persona['style']}
+                Tone: {persona['tone']}
+                
+                A claim is circulating:
+                "{claim}"
+                
+                Fact-check result:
+                - Is fake: {fact_check.is_fake}
+                - Confidence: {fact_check.confidence}
+                - Category: {fact_check.category}
+                
+                {lang_instructions.get(language)}:
+                1. Uses humor to make misinformation look ridiculous
+                2. Is witty and engaging
+                3. Includes the truth in an entertaining way
+                4. Uses 1-2 emojis maximum
+                5. Is 2-3 sentences max
+                
+                {"Respond in German." if language == "de" else "Respond in English."}
+                
+                Examples of Guardian Bot style:
+                {persona['examples'][language][0]}
+                """
+            else:
+                # Existing company-specific prompt
+                lang_instructions = {
+                    "en": "Create an English response that",
+                    "de": "Erstelle eine deutsche Antwort, die"
+                }
+                
+                prompt = f"""
+                You are the official AI brand influencer for {company}.
+                
+                Company Voice: {persona['voice']}
+                Tone: {persona['tone']}
+                Style: {persona['style']}
+                
+                A claim about {company} is circulating:
+                "{claim}"
+                
+                Fact-check result:
+                - Is fake: {fact_check.is_fake}
+                - Confidence: {fact_check.confidence}
+                - Category: {fact_check.category}
+                - Explanation: {fact_check.explanation}
+                
+                {lang_instructions.get(language, lang_instructions["en"])}:
+                1. Addresses the claim directly
+                2. Uses {company}'s brand voice
+                3. Is engaging and shareable
+                4. Includes relevant emojis
+                5. Is 1-2 sentences max
+                
+                {"Respond in German." if language == "de" else "Respond in English."}
+                Make it feel authentic to {company}'s communication style.
+                """
             
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
@@ -393,25 +494,38 @@ class TruthShieldAI:
             
             response_text = response.choices[0].message.content
             
+            # Determine hashtags
+            if company == "Guardian":
+                hashtags = ["#TruthShield", "#FactCheck", "#GuardianBot"]
+            else:
+                hashtags = [f"#{company}Facts", "#TruthShield"]
+            
             return AIInfluencerResponse(
                 response_text=response_text,
                 tone=persona["tone"],
                 engagement_score=0.85,
-                hashtags=[f"#{company}Facts", "#TruthShield"],
+                hashtags=hashtags,
                 company_voice=company
             )
             
         except Exception as e:
             logger.error(f"Brand response generation failed: {e}")
-            fallback = {
-                "en": f"We at {company} stand for facts and transparency.",
-                "de": f"Wir bei {company} stehen für Fakten und Transparenz."
-            }
+            if company == "Guardian":
+                fallback = {
+                    "en": "Guardian Bot says: That's an interesting claim! Let me check the facts... 🛡️",
+                    "de": "Guardian Bot sagt: Das ist eine interessante Behauptung! Lass mich die Fakten prüfen... 🛡️"
+                }
+            else:
+                fallback = {
+                    "en": f"We at {company} stand for facts and transparency.",
+                    "de": f"Wir bei {company} stehen für Fakten und Transparenz."
+                }
+            
             return AIInfluencerResponse(
                 response_text=fallback.get(language, fallback["en"]),
                 tone="professional", 
                 engagement_score=0.5,
-                hashtags=[f"#{company}"],
+                hashtags=[f"#{company}"] if company != "Guardian" else ["#GuardianBot"],
                 company_voice=company
             )
 

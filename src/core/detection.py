@@ -167,6 +167,58 @@ class TruthShieldDetector:
                 processing_time_ms=int(processing_time)
             )
     
+    async def universal_fact_check(self, request: CompanyFactCheckRequest) -> DetectionResult:
+        """Universal Guardian Bot - fact-checks any misinformation"""
+        start_time = datetime.now()
+        request_id = str(uuid.uuid4())
+        
+        # Override company for universal bot
+        original_company = request.company
+        request.company = "Guardian"  # This will use Guardian persona
+        
+        logger.info(f"🛡️ Universal Guardian Bot fact-check: {request.text[:50]}...")
+        
+        try:
+            # Use the existing fact-checking logic
+            result = await self.fact_check_company_claim(request)
+            
+            # Customize the response for Guardian Bot
+            if result.ai_response:
+                result.ai_response.bot_name = "Guardian Bot 🛡️"
+                result.ai_response.bot_type = "universal"
+                
+            # Update details to show it's from Guardian Bot
+            result.details.update({
+                "bot_type": "universal",
+                "original_company": original_company,
+                "guardian_mode": True
+            })
+            
+            logger.info(f"✅ Guardian Bot check complete [{request_id}]")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Guardian Bot failed [{request_id}]: {e}")
+            
+            # Fallback response
+            processing_time = (datetime.now() - start_time).total_seconds() * 1000
+            
+            return DetectionResult(
+                content_type="text",
+                is_synthetic=False,
+                confidence=0.3,
+                detection_method="guardian_bot_error",
+                details={
+                    "error": str(e),
+                    "bot_type": "universal",
+                    "fallback_mode": True
+                },
+                timestamp=datetime.now().isoformat(),
+                request_id=request_id,
+                processing_time_ms=int(processing_time)
+            )
+    
     async def get_detection_stats(self) -> Dict:
         """Get detector statistics"""
         return {
@@ -176,10 +228,11 @@ class TruthShieldDetector:
                 "basic_image_detection": True,
                 "ai_fact_checking": self.ai_engine.openai_client is not None,
                 "company_responses": True,
-                "source_verification": True
+                "source_verification": True,
+                "universal_guardian_bot": True  # NEW
             },
-            "supported_companies": list(self.ai_engine.company_personas.keys()),
+            "supported_companies": list(self.ai_engine.company_personas.keys()) + ["Guardian"],
             "supported_languages": ["de", "en"],
-            "version": "1.0.0-ai",
+            "version": "1.1.0-guardian",
             "uptime": "active"
         }
