@@ -14,7 +14,40 @@
 
 ### EU Partners
 - 📋 Tomorrow University (Germany) - Prof. Costa discussions ongoing
-- 📋 SYNYO (Austria) - Contacted June 9, awaiting response
+- 📋 SYNYO (Austria) - Contacted
+- June 9, awaiting response
+- ## 🧠 HYBRID INTELLIGENCE SYSTEM
+
+TruthShield uses a **multi-layered hybrid intelligence model** that combines static knowledge, live fact-checking, academic validation, and real-time news to generate contextual, human-grade bot responses.
+
+### 💡 LAYER OVERVIEW
+
+| Layer               | Purpose                               | Examples                                      |
+|---------------------|----------------------------------------|-----------------------------------------------|
+| **Static Facts**     | Encyclopedic truth (unchanging)        | Wikidata, Wikipedia, DBpedia                  |
+| **Live News**        | Real-time events & headlines           | Reuters, Deutsche Welle, GDELT                |
+| **Fact-Checks**      | Certified disinfo rebuttals            | Snopes, FactCheck.org, EUvsDisinfo            |
+| **Academic Backing** | Methodological weight                  | Stanford IO, Oxford OII, PubMed               |
+| **Civic/Legal**      | Governmental authority                 | WHO, UN Digital Library, EU Open Data         |
+
+### 🔌 TECHNICAL LOGIC FLOW (MVP version)
+
+1. **Claim detected by bot**
+2. → Check against known fact-check DBs
+3. → If not found, search live news stream (Reuters/GDELT)
+4. → If still unverified, pull Wikipedia fallback + flag for review
+5. → Annotate source, generate character-aligned response
+6. → Push to TikTok/X/etc. if threshold conditions met (engagement, virality, etc.)
+
+### 🔐 TRUST-FIRST SOURCES (PRIORITIZED)
+
+- ✅ Wikidata + Wikipedia (stable)
+- ✅ Reuters (current events)
+- ✅ FactCheck.org + Snopes (debunks)
+- ✅ PubMed, CORE.ac.uk (academic)
+- ✅ WHO + EU Digital Portal (civic)
+
+_All sources tracked in `truthshield_hybrid_model.yaml` for backend consumption._
 
 ## 💰 MONEY & TIMELINE
 - **Need:** €1,200 for 6 months runway
