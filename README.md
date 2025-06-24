@@ -252,7 +252,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 <p align="center">
   <b>🚀 API Status: LIVE</b><br>
-  <a href="https://truthshield-api.onrender.com/docs">Try it now!</a>
+  <a href="https://demo.truthshield.eu">Try it now!</a>
   <br><br>
   <i>"Making truth more entertaining than lies"</i> 🎭
   <br><br>
