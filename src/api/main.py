@@ -1,8 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse  # ADD THIS
-from fastapi.staticfiles import StaticFiles  # ADD THIS
-from pathlib import Path  # ADD THIS
+from fastapi.responses import HTMLResponse
+from pathlib import Path
 from pydantic import BaseModel
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
@@ -13,7 +12,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# ADD CORS MIDDLEWARE
+# CORS MIDDLEWARE
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production: specific domains
@@ -45,27 +44,25 @@ async def root():
             "detection": "/api/v1/detect/",
             "monitoring": "/api/v1/monitor/",
             "docs": "/docs",
-            "demo": "/demo"  # ADD THIS
+            "demo": "/demo"
         }
     }
 
-# ADD THIS NEW ROUTE FOR THE HTML DEMO
+# HTML DEMO ROUTE
 @app.get("/demo", response_class=HTMLResponse)
 async def demo_page():
     """Serve the HTML demo page"""
-    html_path = Path(__file__).parent.parent / "templates" / "index.html"
-    
-    # Read the HTML file
-    with open(html_path, "r", encoding="utf-8") as file:
-        html_content = file.read()
-    
-    # Update the API base URL for production
-    html_content = html_content.replace(
-        "const API_BASE = 'http://localhost:8000';",
-        "const API_BASE = 'https://truthshield-api.onrender.com';"
-    )
-    
-    return HTMLResponse(content=html_content)
+    # For now, return a simple message
+    # You'll need to add your HTML file to the project
+    return HTMLResponse(content="""
+    <html>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1>🛡️ TruthShield Demo</h1>
+            <p>Please upload the demo.html file to your project.</p>
+            <p>Visit <a href="/docs">API Documentation</a></p>
+        </body>
+    </html>
+    """)
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():

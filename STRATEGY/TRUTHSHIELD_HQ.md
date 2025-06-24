@@ -1,75 +1,117 @@
-# 🎯 TRUTHSHIELD HQ - EVERYTHING IN ONE PLACE
-*Last Updated: June 10, 2025*
-
-## 🔥 TODAY'S TOP 3 PRIORITIES
-1. [ ] Wait for Ukrainian university responses (contacted today)
-2. [ ] Follow up with SYNYO Austria (contacted June 9)
-3. [ ] Check Tomorrow University status (Prof. Costa)
-
-## 📊 CONSORTIUM BUILDING STATUS
-### Ukrainian Partners (MANDATORY for Democracy-03)
-- ✅ Taras Shevchenko University - Contacted 10/06 11:34 via EU Portal
-- ✅ Kyiv-Mohyla Academy - Contacted 10/06 11:38 via EU Portal
-- 🎯 Need at least ONE to say yes!
-
-### EU Partners
-- 📋 Tomorrow University (Germany) - Prof. Costa discussions ongoing
-- 📋 SYNYO (Austria) - Contacted June 9, awaiting response
-
-## 💰 MONEY & TIMELINE
-- **Need:** €1,200 for 6 months runway
-- **Have:** €0
-- **Burn:** €200/month
-- **EU Deadline:** Sept 16, 2025 (98 days left)
-
-## ✅ WHAT'S ACTUALLY WORKING
-- Live API: https://truthshield-api.onrender.com ✅
-- GitHub: https://github.com/dionisiou27/truthshield-api ✅
-- 8 Characters ready (BMW, Vodafone, Bayer bots etc.) ✅
-- Character Framework got elite validation ✅
-
-## 📝 WAITING FOR RESPONSES
-| Who | When Contacted | Expected Response |
-|-----|----------------|-------------------|
-| Ukrainian Unis | June 10 | June 14-17 |
-| SYNYO Austria | June 9 | June 12-13 |
-| Tomorrow Uni | Ongoing | Check status |
-
-## 🎯 THIS WEEK (June 10-16)
-- Mon: ✅ Contacted Ukrainian universities
-- Tue: Follow up on Austria/Germany
-- Wed: Prep materials for responses
-- Thu: Check all emails
-- Fri: Plan next moves
-
-## 📈 PROJECT PHASES
-**Current: PHASE 0 - VALIDATION**
-- [ ] Get academic partner (Prof. Costa or Ukrainian uni)
-- [ ] First TikTok test
-- [ ] Find one paying customer
-
-**Next: PHASE 1 - DEPLOYMENT (July)**
-- Launch with partner
-- 1000 real interactions
-- Media pilot (RHEINPFALZ?)
-
-## 🚀 QUICK ACTIONS WHEN BORED
-1. Make ONE TikTok comment test
-2. Email RHEINPFALZ about pilot
-3. Update GitHub README
-4. Polish the demo
-
-## 🔗 EVERYTHING YOU NEED
-- **API:** https://truthshield-api.onrender.com/docs
-- **Email:** contact@truthshield.eu
-- **Concept Note:** STRATEGY/Concept_Note_2025.md
-- **Characters:** 8 ready to deploy
-
-## 📝 NOTES & REMINDERS
-- Prof. Costa = Tomorrow University contact
-- Ukrainian partner REQUIRED for Democracy-03
-- First customer target: July 2025
-- Don't panic about responses - takes 3-7 days
+# 🧠 TRUTHSHIELD HQ – CENTRAL COMMAND
+**Last Updated:** June 17, 2025  
+**Lead:** Dionysios Andres – Founder, TruthShield (in formation)  
+**API:** [truthshield-api.onrender.com](https://truthshield-api.onrender.com)  
+**GitHub:** [truthshield-api](https://github.com/dionisiou27/truthshield-api)
 
 ---
-*One file. One truth. No confusion.*
+
+## 🔥 TODAY’S TOP 3 PRIORITIES
+1. ⏳ Await university responses (Ukraine)
+2. ✅ Follow up with SYNYO Austria
+3. 📋 Confirm engagement from Prof. Costa (Tomorrow University)
+
+---
+
+## 📊 CONSORTIUM STATUS
+
+| Partner                     | Country | Status    | Contacted      |
+|----------------------------|---------|-----------|----------------|
+| Taras Shevchenko Univ.     | 🇺🇦 UA   | ✅ Contacted | June 10, 2025  |
+| Kyiv-Mohyla Academy        | 🇺🇦 UA   | ✅ Contacted | June 10, 2025  |
+| SYNYO                      | 🇦🇹 AT   | 🕓 Waiting  | June 9, 2025   |
+| Tomorrow University        | 🇩🇪 DE   | 🕓 Ongoing  | In discussion  |
+
+🎯 **NOTE:** At least ONE Ukrainian partner is required for DEMOCRACY-03
+
+📅 **EU Horizon Deadline:** Sept 16, 2025 (⏳ 98 days left)  
+💸 **Burn:** €200/month → **Runway needed:** €1,200 (6 months)
+
+---
+
+## 🧠 HYBRID INTELLIGENCE SYSTEM
+
+TruthShield integrates multi-layered, verified knowledge sources to produce **real-time**, **contextual**, **bot-personalized fact-checks**.
+
+### 💡 LAYER OVERVIEW
+
+| Layer         | Purpose                      | Sources                                                 |
+|---------------|------------------------------|----------------------------------------------------------|
+| Static Facts  | Stable knowledge base        | Wikipedia, Wikidata, DBpedia                            |
+| Live News     | Real-time event detection    | Reuters, Deutsche Welle, GDELT                          |
+| Fact-Checks   | Certified disinfo rebuttals  | Snopes, FactCheck.org, EUvsDisinfo                      |
+| Academic      | Methodological credibility   | Stanford IO, Oxford OII, PubMed, CORE.ac.uk             |
+| Civic/Legal   | Normative truth anchor       | WHO, UN Library, EU Open Data Portal, EUR-Lex           |
+
+🛠 **Integrated via** `truthshield_hybrid_model.yaml` (backend logic)
+
+---
+
+## 🤖 BOT-SPECIFIC SOURCE ROUTING
+
+| Bot            | Personality     | Tailored Sources                                    |
+|----------------|------------------|-----------------------------------------------------|
+| **MemeBot**     | Satirical        | Reddit, KnowYourMeme, Wikipedia                     |
+| **PolicyBot**   | Institutional    | EU Commission, WHO, EUR-Lex, EDMO                   |
+| **GuardianBot** | Protective       | Reuters, GDELT, TikTok, Hate Speech Trackers        |
+| **ScienceBot**  | Evidence-based   | PubMed, arXiv, ScienceFeedback, OpenAlex            |
+| **EuroShield**  | Strategic Defense| NATO StratCom, EUvsDisinfo, Ukrainian Universities  |
+
+✅ Attribution is **dynamic**, **source-labeled**, and **bot-specific**.
+
+---
+
+## 🔌 TECHNICAL LOGIC FLOW (MVP)
+
+1. Detect viral claim  
+2. Check known fact-check DBs  
+3. If unknown → Query Reuters/GDELT  
+4. If still unclear → Fallback: Wikipedia + Flag  
+5. Annotate source → Generate bot-personalized response  
+6. Auto-publish if virality threshold hit (likes/comments)
+
+---
+
+## ✅ LIVE STATUS
+
+| Component              | Status      | Notes                                 |
+|------------------------|-------------|----------------------------------------|
+| API Backend            | ✅ Online   | [API Docs](https://truthshield-api.onrender.com/docs) |
+| Bot Engine             | ✅ 8 Ready  | MemeBot, BMWBot, BayerBot, etc.        |
+| Attribution System     | ⚙️ In Progress | JSON-linked, visible trust trails     |
+| TikTok Comment Bot     | 🧪 Testing | First post scheduled July              |
+
+---
+
+## 🗓 WEEKLY PLAN: June 17–23
+
+- 📩 Confirm Ukraine responses  
+- 🧠 Prepare Stanford pitch for Maty Bohacek  
+- 📤 SYNYO follow-up  
+- 🧪 Deploy MemeBot test  
+- 🧾 Update hybrid model file
+
+---
+
+## 📈 ROADMAP PHASES
+
+| Phase     | Milestone Highlights                                      |
+|-----------|------------------------------------------------------------|
+| PHASE 0   | Consortium building, prototype live tests                  |
+| PHASE 1   | Partner launch, 1000 interactions, media pilot             |
+| PHASE 2   | Academic validation, ethics board, scalable deployment     |
+
+---
+
+## 📌 ESSENTIAL LINKS
+
+- 🔗 [API Docs](https://truthshield-api.onrender.com/docs)  
+- 📂 [GitHub Repository](https://github.com/dionisiou27/truthshield-api)  
+- 🧠 `Concept Note`: `STRATEGY/Concept_Note_2025.md`  
+- 🤖 `Character Sheet`: `bots/characters.md` (coming soon)  
+- 📧 Email: contact@truthshield.eu
+
+---
+
+## 🧭 MOTTO
+> **"We don’t just check facts — we change the narrative."**
