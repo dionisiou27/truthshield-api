@@ -23,6 +23,11 @@
         .bot-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #e0e0e0; }
         .bot-card h4 { color: #ff4b4b; margin-top: 0; }
         .bot-emoji { font-size: 48px; margin-bottom: 10px; }
+        .sources-list { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        .sources-list ul { margin: 5px 0; padding-left: 20px; }
+        .sources-list li { margin: 5px 0; }
+        .sources-list a { color: #0066cc; text-decoration: none; }
+        .sources-list a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -57,6 +62,7 @@
                     <p><strong>Confidence:</strong> <span id="confidence"></span>%</p>
                     <p><strong>Category:</strong> <span id="category"></span></p>
                     <p><strong>Sources Verified:</strong> <span id="sourcesCount"></span></p>
+                    <div id="sourcesList" class="sources-list" style="display: none;"></div>
                 </div>
                 <div class="metrics">
                     <div class="metric">
@@ -305,6 +311,23 @@
                 `${result.processing_time_ms}ms`;
             document.getElementById('requestId').textContent = 
                 result.request_id?.substring(0, 8) || 'Unknown';
+            
+            // Display actual sources if available
+            const sources = result.fact_check?.sources || [];
+            const sourcesListDiv = document.getElementById('sourcesList');
+            
+            if (sources.length > 0) {
+                let sourcesHTML = '<strong>Verified Sources:</strong><ul>';
+                sources.forEach(source => {
+                    const cleanUrl = source.url.replace(/^\/\//, 'https://');
+                    sourcesHTML += `<li><a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${source.title}</a></li>`;
+                });
+                sourcesHTML += '</ul>';
+                sourcesListDiv.innerHTML = sourcesHTML;
+                sourcesListDiv.style.display = 'block';
+            } else {
+                sourcesListDiv.style.display = 'none';
+            }
             
             // Display JSON details
             document.getElementById('jsonResponse').textContent = 
