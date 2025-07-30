@@ -233,7 +233,7 @@ class TruthShieldAI:
                         "content": prompt
                     }
                 ],
-                temperature=0.1  # Lower temperature for more consistent responses
+                temperature=0.7  # Lower temperature for more consistent responses
             )
             
             content = response.choices[0].message.content
