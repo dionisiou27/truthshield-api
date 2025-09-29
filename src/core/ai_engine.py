@@ -251,36 +251,81 @@ class TruthShieldAI:
             }
     
     async def _search_sources(self, query: str) -> List[Source]:
-        """Search for sources to verify the claim using real fact-checking APIs"""
+        """Search for sources to verify the claim using real fact-checking APIs and scrapers"""
         try:
+            # Trim overly long queries for site search endpoints
+            truncated_query = (query or "").strip()
+            if len(truncated_query) > 120:
+                truncated_query = truncated_query[:120]
+
+            # Detect language (very lightweight heuristic): 'de' if likely German, else 'en'
+            def _detect_language(text: str) -> str:
+                t = (text or "").lower()
+                german_markers = ["ä", "ö", "ü", "ß", " der ", " die ", " das ", " und ", " nicht ", " ist ", " mit "]
+                for m in german_markers:
+                    if m in t:
+                        return "de"
+                return "en"
+
+            detected_lang = _detect_language(truncated_query)
+
             # Run all searches in parallel
             tasks = [
-                self._search_google_factcheck(query),
-                self._search_news_api(query),
-                self._search_snopes(query),
-                self._search_factcheck_org(query),
-                self._search_politifact(query)
+                self._search_google_factcheck(truncated_query, detected_lang),
+                self._search_news_api(truncated_query, detected_lang),
+                self._search_snopes(truncated_query),
+                self._search_factcheck_org(truncated_query),
+                self._search_politifact(truncated_query),
+                self._search_mimikama(truncated_query),
+                self._search_correctiv(truncated_query),
             ]
-            
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
+            google_results, news_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results = await asyncio.gather(
+                *tasks, return_exceptions=True
+            )
+
             all_sources: List[Source] = []
-            
-            for i, result in enumerate(results):
-                if isinstance(result, Exception):
-                    logger.error(f"Search method {i} failed: {result}")
-                elif isinstance(result, list):
-                    all_sources.extend(result)
-            
-            # Sort by credibility_score descending and return top sources
-            all_sources.sort(key=lambda s: s.credibility_score, reverse=True)
-            return all_sources[:7]  # Return more sources now
-            
+
+            def extend_safe(results):
+                if isinstance(results, Exception):
+                    return []
+                return results or []
+
+            all_sources.extend(extend_safe(google_results))
+            all_sources.extend(extend_safe(news_results))
+            all_sources.extend(extend_safe(snopes_results))
+            all_sources.extend(extend_safe(factcheck_results))
+            all_sources.extend(extend_safe(politifact_results))
+            all_sources.extend(extend_safe(mimikama_results))
+            all_sources.extend(extend_safe(correctiv_results))
+
+            # De-duplicate by URL
+            dedup: Dict[str, Source] = {}
+            for src in all_sources:
+                if src and src.url and src.url not in dedup:
+                    dedup[src.url] = src
+
+            agg_counts = {
+                "google": 0 if isinstance(google_results, Exception) else len(google_results or []),
+                "news": 0 if isinstance(news_results, Exception) else len(news_results or []),
+                "snopes": 0 if isinstance(snopes_results, Exception) else len(snopes_results or []),
+                "factcheck": 0 if isinstance(factcheck_results, Exception) else len(factcheck_results or []),
+                "politifact": 0 if isinstance(politifact_results, Exception) else len(politifact_results or []),
+                "mimikama": 0 if isinstance(mimikama_results, Exception) else len(mimikama_results or []),
+                "correctiv": 0 if isinstance(correctiv_results, Exception) else len(correctiv_results or []),
+            }
+            logger.info(f"Source aggregation counts: {agg_counts}; dedup_total={len(dedup)}")
+
+            # Sort by credibility_score descending and return top 5
+            final_sources = list(dedup.values())
+            final_sources.sort(key=lambda s: s.credibility_score, reverse=True)
+            return final_sources[:5]
+
         except Exception as e:
             logger.error(f"Source search failed: {e}")
             return []
 
-    async def _search_google_factcheck(self, query: str) -> List[Source]:
+    async def _search_google_factcheck(self, query: str, language: str = "en") -> List[Source]:
         """Query Google Fact Check Tools API for fact-checked claims"""
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
@@ -291,13 +336,13 @@ class TruthShieldAI:
         params = {
             "key": api_key,
             "query": query,
-            "languageCode": "en",
+            "languageCode": language if language in ("en", "de") else "en",
             "pageSize": 10
         }
 
         try:
-            logger.debug(f"Google Fact Check query: {query}")
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            logger.debug(f"Google Fact Check query: {query} lang={params['languageCode']}")
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
                 resp = await client.get(url, params=params)
                 if resp.status_code != 200:
                     logger.error(f"Google Fact Check API HTTP {resp.status_code}: {resp.text[:200]}")
@@ -344,7 +389,7 @@ class TruthShieldAI:
             logger.error(f"Google Fact Check API error: {e}")
             return []
 
-    async def _search_news_api(self, query: str) -> List[Source]:
+    async def _search_news_api(self, query: str, language: str = "en") -> List[Source]:
         """Query NewsAPI for relevant news articles about the claim"""
         api_key = os.getenv("NEWS_API_KEY")
         if not api_key:
@@ -354,15 +399,15 @@ class TruthShieldAI:
         url = "https://newsapi.org/v2/everything"
         params = {
             "q": query,
-            "language": "en",
+            "language": language if language in ("en", "de") else "en",
             "sortBy": "relevancy",
             "pageSize": 10,
         }
         headers = {"X-Api-Key": api_key}
 
         try:
-            logger.debug(f"NewsAPI query: {query}")
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            logger.debug(f"NewsAPI query: {query} lang={params['language']}")
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
                 resp = await client.get(url, params=params, headers=headers)
                 if resp.status_code != 200:
                     logger.error(f"NewsAPI HTTP {resp.status_code}: {resp.text[:200]}")
@@ -396,27 +441,35 @@ class TruthShieldAI:
         """Scrape Snopes.com for fact-checks"""
         try:
             url = f"https://www.snopes.com/?s={quote(query)}"
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
                 response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     sources = []
-                    
-                    # Find article cards
-                    articles = soup.find_all('article', class_='media-wrapper')[:3]
-                    for article in articles:
-                        title_elem = article.find('h5', class_='title')
-                        link_elem = article.find('a', href=True)
-                        rating_elem = article.find('span', class_='rating-label')
+                    # Try multiple selectors for robustness
+                    candidates = soup.select('h2 a[href], h3 a[href], article a.card-title[href], article a[href]')
+                    for link in candidates[:8]:
+                        url_link = link.get('href')
+                        title_text = (link.get_text() or '').strip()
+                        if not url_link or not title_text:
+                            continue
+                        if url_link.startswith('/'):
+                            url_link = f"https://www.snopes.com{url_link}"
+                        # Try to find rating near the link
+                        rating_text = None
+                        art = link.find_parent('article')
+                        if art:
+                            badge = art.select_one('[class*="media-rating"], [class*="rating"]')
+                            if badge:
+                                rating_text = badge.get_text(strip=True)
                         
-                        if title_elem and link_elem:
-                            sources.append(Source(
-                                url=f"https://www.snopes.com{link_elem['href']}",
-                                title=title_elem.text.strip()[:180],
-                                snippet=f"Snopes: {rating_elem.text if rating_elem else 'See article'}",
-                                credibility_score=0.95,
-                                date_published=None
-                            ))
+                        sources.append(Source(
+                            url=url_link,
+                            title=title_text[:180],
+                            snippet=(f"Snopes rating: {rating_text}" if rating_text else "Snopes article")[:240],
+                            credibility_score=0.95,
+                            date_published=None
+                        ))
                     return sources
         except Exception as e:
             logger.error(f"Snopes search failed: {e}")
@@ -426,25 +479,23 @@ class TruthShieldAI:
         """Scrape FactCheck.org"""
         try:
             url = f"https://www.factcheck.org/?s={quote(query)}"
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
                 response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     sources = []
-                    
-                    articles = soup.find_all('article', class_='entry')[:3]
-                    for article in articles:
-                        title_elem = article.find('h2', class_='entry-title')
-                        if title_elem:
-                            link = title_elem.find('a')
-                            if link and link.get('href'):
-                                sources.append(Source(
-                                    url=link['href'],
-                                    title=title_elem.text.strip()[:180],
-                                    snippet="FactCheck.org verified analysis",
-                                    credibility_score=0.95,
-                                    date_published=None
-                                ))
+                    for item in soup.select('h2.entry-title a[href], h3.entry-title a[href], h2 a[href], h3 a[href]')[:8]:
+                        href = item.get('href')
+                        title_text = (item.get_text() or '').strip()
+                        if not href or not title_text:
+                            continue
+                        sources.append(Source(
+                            url=href,
+                            title=title_text[:180],
+                            snippet="FactCheck.org article",
+                            credibility_score=0.95,
+                            date_published=None
+                        ))
                     return sources
         except Exception as e:
             logger.error(f"FactCheck.org search failed: {e}")
@@ -454,28 +505,89 @@ class TruthShieldAI:
         """Scrape PolitiFact"""
         try:
             url = f"https://www.politifact.com/search/?q={quote(query)}"
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
                 response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     sources = []
-                    
-                    statements = soup.find_all('div', class_='m-statement')[:3]
-                    for stmt in statements:
-                        quote_elem = stmt.find('div', class_='m-statement__quote')
-                        link_elem = stmt.find('a', class_='m-statement__link')
-                        
-                        if quote_elem and link_elem:
-                            sources.append(Source(
-                                url=f"https://www.politifact.com{link_elem.get('href', '')}",
-                                title=quote_elem.text.strip()[:180],
-                                snippet="PolitiFact fact-check",
-                                credibility_score=0.95,
-                                date_published=None
-                            ))
+                    candidates = soup.select('a.m-statement__quote, article a[href], .c-list li a[href], h3 a[href]')
+                    for link in candidates[:8]:
+                        title_text = (link.get_text() or '').strip()
+                        href = link.get('href')
+                        if href and href.startswith('/'):
+                            href = f"https://www.politifact.com{href}"
+                        if not href or not title_text:
+                            continue
+                        # Try to extract rating from enclosing statement
+                        rating = None
+                        parent = link.find_parent(class_='m-statement') or link.find_parent('article')
+                        if parent:
+                            r = parent.select_one('.m-statement__meter .c-image__original, img[alt*="Truth-O-Meter"], img[alt]')
+                            if r and r.get('alt'):
+                                rating = r.get('alt')
+                        snippet = f"PolitiFact rating: {rating}" if rating else "PolitiFact article"
+                        sources.append(Source(
+                            url=href,
+                            title=title_text[:180],
+                            snippet=snippet[:240],
+                            credibility_score=0.95,
+                            date_published=None
+                        ))
                     return sources
         except Exception as e:
             logger.error(f"PolitiFact search failed: {e}")
+        return []
+
+    async def _search_mimikama(self, query: str) -> List[Source]:
+        """Scrape Mimikama (DE)"""
+        try:
+            url = f"https://www.mimikama.org/?s={quote(query)}"
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    sources = []
+                    for link in soup.select('h2.entry-title a[href], h3.entry-title a[href], h2 a[href], h3 a[href]')[:8]:
+                        href = link.get('href')
+                        title_text = (link.get_text() or '').strip()
+                        if not href or not title_text:
+                            continue
+                        sources.append(Source(
+                            url=href,
+                            title=title_text[:180],
+                            snippet="Mimikama Artikel",
+                            credibility_score=0.95,
+                            date_published=None
+                        ))
+                    return sources
+        except Exception as e:
+            logger.error(f"Mimikama search failed: {e}")
+        return []
+
+    async def _search_correctiv(self, query: str) -> List[Source]:
+        """Scrape Correctiv (DE)"""
+        try:
+            url = f"https://correctiv.org/?s={quote(query)}"
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    sources = []
+                    for link in soup.select('h2 a[href], h3 a[href], .c-archive__item a[href]')[:8]:
+                        href = link.get('href')
+                        title_text = (link.get_text() or '').strip()
+                        if not href or not title_text:
+                            continue
+                        sources.append(Source(
+                            url=href,
+                            title=title_text[:180],
+                            snippet="CORRECTIV.Faktencheck",
+                            credibility_score=0.95,
+                            date_published=None
+                        ))
+                    return sources
+        except Exception as e:
+            logger.error(f"Correctiv search failed: {e}")
         return []
     
     def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 class Settings(BaseSettings):
     """Application configuration"""
@@ -15,14 +15,10 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
     
-    # Social Media APIs
-    twitter_api_key: str = ""
-    twitter_api_secret: str = ""
-    twitter_bearer_token: str = ""
-    
-    # AI APIs
-    openai_api_key: str = ""
-    huggingface_api_key: str = ""
+    # AI APIs - Diese werden von Environment Variables geladen
+    openai_api_key: Optional[str] = None
+    google_api_key: Optional[str] = None  # NEU
+    news_api_key: Optional[str] = None    # NEU
     
     # Security
     secret_key: str = "your-secret-key-change-this"
@@ -33,6 +29,7 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        case_sensitive = False  # Erlaubt GOOGLE_API_KEY oder google_api_key
 
 # Global settings instance
 settings = Settings()

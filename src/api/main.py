@@ -71,3 +71,14 @@ async def health_check():
         message="TruthShield API is running - All systems operational",
         version="0.1.0"
     )
+
+@app.get("/debug/env")
+async def debug_environment():
+    """Debug endpoint to check if environment variables are loaded"""
+    import os
+    return {
+        "openai_key_exists": bool(os.getenv("OPENAI_API_KEY")),
+        "google_key_exists": bool(os.getenv("GOOGLE_API_KEY")),
+        "news_key_exists": bool(os.getenv("NEWS_API_KEY")),
+        "debug_info": "Check if environment variables are loaded on Render"
+    }
