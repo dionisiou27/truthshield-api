@@ -271,8 +271,9 @@ class TruthShieldAI:
             logger.info(f"=== SEARCHING FOR: {truncated_query} (lang={detected_lang}) ===")
             
             # Check API availability
-            google_api_available = bool(os.getenv("GOOGLE_API_KEY") and os.getenv("GOOGLE_API_KEY") != "test")
-            news_api_available = bool(os.getenv("NEWS_API_KEY") and os.getenv("NEWS_API_KEY") != "test")
+            from .config import settings
+            google_api_available = bool(settings.google_api_key and settings.google_api_key != "your_google_api_key_here")
+            news_api_available = bool(settings.news_api_key and settings.news_api_key != "your_news_api_key_here")
             logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}")
             
             # Enhance query for better relevance
@@ -416,8 +417,9 @@ class TruthShieldAI:
 
     async def _search_google_factcheck(self, query: str, language: str = "en") -> List[Source]:
         """Query Google Fact Check Tools API for fact-checked claims"""
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key or api_key == "test":
+        from .config import settings
+        api_key = settings.google_api_key
+        if not api_key or api_key == "your_google_api_key_here":
             logger.warning("GOOGLE_API_KEY not set or invalid; skipping Google Fact Check search")
             # Return empty list but don't fail - other sources will still work
             return []
@@ -481,8 +483,9 @@ class TruthShieldAI:
 
     async def _search_news_api(self, query: str, language: str = "en") -> List[Source]:
         """Query NewsAPI for relevant news articles about the claim"""
-        api_key = os.getenv("NEWS_API_KEY")
-        if not api_key or api_key == "test":
+        from .config import settings
+        api_key = settings.news_api_key
+        if not api_key or api_key == "your_news_api_key_here":
             logger.warning("NEWS_API_KEY not set or invalid; skipping NewsAPI search")
             # Return empty list but don't fail - other sources will still work
             return []
