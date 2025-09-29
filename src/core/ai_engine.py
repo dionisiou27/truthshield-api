@@ -316,10 +316,28 @@ class TruthShieldAI:
             }
             logger.info(f"Source aggregation counts: {agg_counts}; dedup_total={len(dedup)}")
 
-            # Sort by credibility_score descending and return top 5
+            # Sort by credibility_score descending, then limit to 2 per domain, top 5
             final_sources = list(dedup.values())
             final_sources.sort(key=lambda s: s.credibility_score, reverse=True)
-            return final_sources[:5]
+
+            def _domain(url: str) -> str:
+                try:
+                    return url.split('//', 1)[-1].split('/', 1)[0].lower()
+                except Exception:
+                    return ""
+
+            per_domain_count: Dict[str, int] = {}
+            limited: List[Source] = []
+            for src in final_sources:
+                dom = _domain(src.url)
+                cnt = per_domain_count.get(dom, 0)
+                if cnt >= 2:
+                    continue
+                per_domain_count[dom] = cnt + 1
+                limited.append(src)
+                if len(limited) >= 5:
+                    break
+            return limited
 
         except Exception as e:
             logger.error(f"Source search failed: {e}")
@@ -467,7 +485,7 @@ class TruthShieldAI:
                             url=url_link,
                             title=title_text[:180],
                             snippet=(f"Snopes rating: {rating_text}" if rating_text else "Snopes article")[:240],
-                            credibility_score=0.95,
+                            credibility_score=0.9,
                             date_published=None
                         ))
                     return sources
@@ -493,7 +511,7 @@ class TruthShieldAI:
                             url=href,
                             title=title_text[:180],
                             snippet="FactCheck.org article",
-                            credibility_score=0.95,
+                            credibility_score=0.9,
                             date_published=None
                         ))
                     return sources
@@ -518,6 +536,28 @@ class TruthShieldAI:
                             href = f"https://www.politifact.com{href}"
                         if not href or not title_text:
                             continue
+                        # Only accept actual factcheck article pages
+                        if '/factchecks/' not in href:
+                            # Try to find enclosing link to a factcheck
+                            parent_article = link.find_parent('article')
+                            if parent_article:
+                                fact_link = parent_article.find('a', href=True)
+                                if fact_link:
+                                    fh = fact_link.get('href')
+                                    if fh and '/factchecks/' in fh:
+                                        href = fh if fh.startswith('http') else f"https://www.politifact.com{fh}"
+                                    else:
+                                        continue
+                            else:
+                                continue
+                        # Prefer quote text inside statement if available
+                        parent_stmt = link.find_parent(class_='m-statement') or link.find_parent('article')
+                        if parent_stmt:
+                            q = parent_stmt.select_one('.m-statement__quote')
+                            if q:
+                                tt = (q.get_text() or '').strip()
+                                if tt:
+                                    title_text = tt
                         # Try to extract rating from enclosing statement
                         rating = None
                         parent = link.find_parent(class_='m-statement') or link.find_parent('article')
@@ -530,7 +570,7 @@ class TruthShieldAI:
                             url=href,
                             title=title_text[:180],
                             snippet=snippet[:240],
-                            credibility_score=0.95,
+                            credibility_score=0.9,
                             date_published=None
                         ))
                     return sources
@@ -556,7 +596,7 @@ class TruthShieldAI:
                             url=href,
                             title=title_text[:180],
                             snippet="Mimikama Artikel",
-                            credibility_score=0.95,
+                            credibility_score=0.9,
                             date_published=None
                         ))
                     return sources
@@ -582,7 +622,7 @@ class TruthShieldAI:
                             url=href,
                             title=title_text[:180],
                             snippet="CORRECTIV.Faktencheck",
-                            credibility_score=0.95,
+                            credibility_score=0.9,
                             date_published=None
                         ))
                     return sources

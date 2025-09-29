@@ -123,6 +123,41 @@ class TruthShieldDetector:
             
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
             
+            # Build verified sources: pick up to 3 from distinct trusted domains
+            def _domain(url: str) -> str:
+                try:
+                    return url.split('//', 1)[-1].split('/', 1)[0].lower()
+                except Exception:
+                    return ""
+
+            reputable_domains = {
+                "reuters.com", "apnews.com", "associatedpress.com", "bbc.com", "bbc.co.uk",
+                "nytimes.com", "washingtonpost.com", "wsj.com", "bloomberg.com", "theguardian.com",
+                "factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org",
+                "afp.com", "afp.com/en", "afp.com/de", "apfactcheck.com", "afpfactcheck.com", "mimikama.org"
+            }
+
+            sorted_sources = sorted((fact_check_result.sources or []), key=lambda s: s.credibility_score, reverse=True)
+            picked = []
+            seen = set()
+            # First pass: reputable domains only
+            for s in sorted_sources:
+                dom = _domain(s.url)
+                if dom in reputable_domains and dom not in seen:
+                    picked.append(s)
+                    seen.add(dom)
+                if len(picked) >= 3:
+                    break
+            # Fallback pass: any remaining distinct domains
+            if len(picked) < 3:
+                for s in sorted_sources:
+                    dom = _domain(s.url)
+                    if dom not in seen and dom:
+                        picked.append(s)
+                        seen.add(dom)
+                    if len(picked) >= 3:
+                        break
+
             # Create enhanced detection result
             result = DetectionResult(
                 content_type="text",
@@ -134,6 +169,7 @@ class TruthShieldDetector:
                     "language": request.language,
                     "category": fact_check_result.category,
                     "sources_found": len(fact_check_result.sources),
+                    "verified_sources": [s.model_dump() for s in picked],
                     "ai_response_generated": ai_response is not None,
                     "ai_responses": ai_responses if ai_responses else None  # Include both language responses
                 },
