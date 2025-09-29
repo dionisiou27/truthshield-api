@@ -270,6 +270,11 @@ class TruthShieldAI:
             detected_lang = _detect_language(truncated_query)
             logger.info(f"=== SEARCHING FOR: {truncated_query} (lang={detected_lang}) ===")
             
+            # Check API availability
+            google_api_available = bool(os.getenv("GOOGLE_API_KEY") and os.getenv("GOOGLE_API_KEY") != "test")
+            news_api_available = bool(os.getenv("NEWS_API_KEY") and os.getenv("NEWS_API_KEY") != "test")
+            logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}")
+            
             # Enhance query for better relevance
             enhanced_query = truncated_query
             if "BMW" in truncated_query.upper() and "electric" in truncated_query.lower():
@@ -412,8 +417,9 @@ class TruthShieldAI:
     async def _search_google_factcheck(self, query: str, language: str = "en") -> List[Source]:
         """Query Google Fact Check Tools API for fact-checked claims"""
         api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            logger.warning("GOOGLE_API_KEY not set; skipping Google Fact Check search")
+        if not api_key or api_key == "test":
+            logger.warning("GOOGLE_API_KEY not set or invalid; skipping Google Fact Check search")
+            # Return empty list but don't fail - other sources will still work
             return []
 
         url = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
@@ -476,8 +482,9 @@ class TruthShieldAI:
     async def _search_news_api(self, query: str, language: str = "en") -> List[Source]:
         """Query NewsAPI for relevant news articles about the claim"""
         api_key = os.getenv("NEWS_API_KEY")
-        if not api_key:
-            logger.warning("NEWS_API_KEY not set; skipping NewsAPI search")
+        if not api_key or api_key == "test":
+            logger.warning("NEWS_API_KEY not set or invalid; skipping NewsAPI search")
+            # Return empty list but don't fail - other sources will still work
             return []
 
         url = "https://newsapi.org/v2/everything"
