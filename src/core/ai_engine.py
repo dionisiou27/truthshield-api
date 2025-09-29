@@ -4,6 +4,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import json
+from urllib.parse import quote
 
 # ADD THESE LINES:
 from dotenv import load_dotenv
@@ -233,7 +234,7 @@ class TruthShieldAI:
                         "content": prompt
                     }
                 ],
-                temperature=0.7  # Lower temperature for more consistent responses
+                temperature=0.1  # Lower temperature for more consistent responses
             )
             
             content = response.choices[0].message.content
@@ -250,43 +251,232 @@ class TruthShieldAI:
             }
     
     async def _search_sources(self, query: str) -> List[Source]:
-        """Search for sources to verify the claim"""
-        sources = []
-        
+        """Search for sources to verify the claim using real fact-checking APIs"""
         try:
-            # Use DuckDuckGo search (no API key needed)
-            search_url = f"https://html.duckduckgo.com/html/?q={query}"
+            # Run all searches in parallel
+            tasks = [
+                self._search_google_factcheck(query),
+                self._search_news_api(query),
+                self._search_snopes(query),
+                self._search_factcheck_org(query),
+                self._search_politifact(query)
+            ]
             
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    search_url,
-                    headers={"User-Agent": "TruthShield/1.0"},
-                    timeout=5.0
-                )
-                
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, 'html.parser')
-                    
-                    # Extract search results
-                    for result in soup.find_all('a', class_='result__a')[:3]:
-                        try:
-                            url = result.get('href')
-                            title = result.get_text().strip()
-                            
-                            if url and title:
-                                sources.append(Source(
-                                    url=url,
-                                    title=title[:100],
-                                    snippet="Search result",
-                                    credibility_score=0.7  # Default score
-                                ))
-                        except Exception:
-                            continue
-                            
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            all_sources: List[Source] = []
+            
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    logger.error(f"Search method {i} failed: {result}")
+                elif isinstance(result, list):
+                    all_sources.extend(result)
+            
+            # Sort by credibility_score descending and return top sources
+            all_sources.sort(key=lambda s: s.credibility_score, reverse=True)
+            return all_sources[:7]  # Return more sources now
+            
         except Exception as e:
             logger.error(f"Source search failed: {e}")
-        
-        return sources
+            return []
+
+    async def _search_google_factcheck(self, query: str) -> List[Source]:
+        """Query Google Fact Check Tools API for fact-checked claims"""
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            logger.warning("GOOGLE_API_KEY not set; skipping Google Fact Check search")
+            return []
+
+        url = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
+        params = {
+            "key": api_key,
+            "query": query,
+            "languageCode": "en",
+            "pageSize": 10
+        }
+
+        try:
+            logger.debug(f"Google Fact Check query: {query}")
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(url, params=params)
+                if resp.status_code != 200:
+                    logger.error(f"Google Fact Check API HTTP {resp.status_code}: {resp.text[:200]}")
+                    return []
+
+                data = resp.json()
+                claims = data.get("claims", [])
+
+                sources: List[Source] = []
+                for claim in claims:
+                    claim_text = claim.get("text", "")
+                    claim_reviews = claim.get("claimReview", []) or []
+                    for review in claim_reviews:
+                        publisher = (review.get("publisher") or {}).get("name") or ""
+                        title = review.get("title") or claim_text or "Fact-check review"
+                        url_review = review.get("url") or ""
+                        textual_rating = (review.get("textualRating") or "").strip()
+                        review_date = review.get("reviewDate") or None
+
+                        # Score mapping
+                        rating_lower = textual_rating.lower()
+                        if any(k in rating_lower for k in ["false", "pants on fire", "mostly false", "incorrect", "fake"]):
+                            score = 0.95
+                        elif any(k in rating_lower for k in ["mixture", "half true", "partly true", "needs context", "unproven", "misleading"]):
+                            score = 0.8
+                        elif any(k in rating_lower for k in ["true", "mostly true", "accurate"]):
+                            score = 0.75
+                        else:
+                            score = 0.7
+
+                        snippet = f"{publisher} rated: {textual_rating}" if textual_rating else f"Review by {publisher}"
+
+                        if url_review:
+                            sources.append(Source(
+                                url=url_review,
+                                title=title[:180],
+                                snippet=snippet[:240],
+                                credibility_score=min(score, 0.99),
+                                date_published=review_date
+                            ))
+
+                return sources
+        except Exception as e:
+            logger.error(f"Google Fact Check API error: {e}")
+            return []
+
+    async def _search_news_api(self, query: str) -> List[Source]:
+        """Query NewsAPI for relevant news articles about the claim"""
+        api_key = os.getenv("NEWS_API_KEY")
+        if not api_key:
+            logger.warning("NEWS_API_KEY not set; skipping NewsAPI search")
+            return []
+
+        url = "https://newsapi.org/v2/everything"
+        params = {
+            "q": query,
+            "language": "en",
+            "sortBy": "relevancy",
+            "pageSize": 10,
+        }
+        headers = {"X-Api-Key": api_key}
+
+        try:
+            logger.debug(f"NewsAPI query: {query}")
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(url, params=params, headers=headers)
+                if resp.status_code != 200:
+                    logger.error(f"NewsAPI HTTP {resp.status_code}: {resp.text[:200]}")
+                    return []
+
+                data = resp.json()
+                articles = data.get("articles", []) or []
+
+                sources: List[Source] = []
+                for art in articles:
+                    title = (art.get("title") or "").strip()
+                    description = (art.get("description") or art.get("content") or "").strip()
+                    url_art = art.get("url") or ""
+                    published_at = art.get("publishedAt") or None
+
+                    if url_art and title:
+                        sources.append(Source(
+                            url=url_art,
+                            title=title[:180],
+                            snippet=(description or "News article")[:240],
+                            credibility_score=0.75,
+                            date_published=published_at
+                        ))
+
+                return sources
+        except Exception as e:
+            logger.error(f"NewsAPI error: {e}")
+            return []
+
+    async def _search_snopes(self, query: str) -> List[Source]:
+        """Scrape Snopes.com for fact-checks"""
+        try:
+            url = f"https://www.snopes.com/?s={quote(query)}"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    sources = []
+                    
+                    # Find article cards
+                    articles = soup.find_all('article', class_='media-wrapper')[:3]
+                    for article in articles:
+                        title_elem = article.find('h5', class_='title')
+                        link_elem = article.find('a', href=True)
+                        rating_elem = article.find('span', class_='rating-label')
+                        
+                        if title_elem and link_elem:
+                            sources.append(Source(
+                                url=f"https://www.snopes.com{link_elem['href']}",
+                                title=title_elem.text.strip()[:180],
+                                snippet=f"Snopes: {rating_elem.text if rating_elem else 'See article'}",
+                                credibility_score=0.95,
+                                date_published=None
+                            ))
+                    return sources
+        except Exception as e:
+            logger.error(f"Snopes search failed: {e}")
+        return []
+
+    async def _search_factcheck_org(self, query: str) -> List[Source]:
+        """Scrape FactCheck.org"""
+        try:
+            url = f"https://www.factcheck.org/?s={quote(query)}"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    sources = []
+                    
+                    articles = soup.find_all('article', class_='entry')[:3]
+                    for article in articles:
+                        title_elem = article.find('h2', class_='entry-title')
+                        if title_elem:
+                            link = title_elem.find('a')
+                            if link and link.get('href'):
+                                sources.append(Source(
+                                    url=link['href'],
+                                    title=title_elem.text.strip()[:180],
+                                    snippet="FactCheck.org verified analysis",
+                                    credibility_score=0.95,
+                                    date_published=None
+                                ))
+                    return sources
+        except Exception as e:
+            logger.error(f"FactCheck.org search failed: {e}")
+        return []
+
+    async def _search_politifact(self, query: str) -> List[Source]:
+        """Scrape PolitiFact"""
+        try:
+            url = f"https://www.politifact.com/search/?q={quote(query)}"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    sources = []
+                    
+                    statements = soup.find_all('div', class_='m-statement')[:3]
+                    for stmt in statements:
+                        quote_elem = stmt.find('div', class_='m-statement__quote')
+                        link_elem = stmt.find('a', class_='m-statement__link')
+                        
+                        if quote_elem and link_elem:
+                            sources.append(Source(
+                                url=f"https://www.politifact.com{link_elem.get('href', '')}",
+                                title=quote_elem.text.strip()[:180],
+                                snippet="PolitiFact fact-check",
+                                credibility_score=0.95,
+                                date_published=None
+                            ))
+                    return sources
+        except Exception as e:
+            logger.error(f"PolitiFact search failed: {e}")
+        return []
     
     def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
         """Enhanced verdict logic with clearer thresholds for better misinformation detection"""
