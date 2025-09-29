@@ -132,11 +132,13 @@ class TruthShieldDetector:
 
             def _source_type(url: str) -> str:
                 dom = _domain(url)
-                if any(x in dom for x in ["wikipedia.org", "wikidata.org"]):
+                if any(x in dom for x in ["wikipedia.org", "wikidata.org", "dbpedia.org"]):
                     return "static"
-                elif any(x in dom for x in ["factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org", "mimikama.org"]):
+                elif any(x in dom for x in ["factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org", "mimikama.org", "euvsdisinfo.eu"]):
                     return "factcheck"
-                elif any(x in dom for x in ["reuters.com", "apnews.com", "bbc.com", "nytimes.com", "washingtonpost.com", "wsj.com", "bloomberg.com", "theguardian.com", "npr.org"]):
+                elif any(x in dom for x in ["pubmed.ncbi.nlm.nih.gov", "core.ac.uk", "stanford.edu", "oxford.ac.uk"]):
+                    return "academic"
+                elif any(x in dom for x in ["reuters.com", "apnews.com", "bbc.com", "nytimes.com", "washingtonpost.com", "wsj.com", "bloomberg.com", "theguardian.com", "npr.org", "dw.com"]):
                     return "news"
                 else:
                     return "other"
@@ -144,10 +146,10 @@ class TruthShieldDetector:
             sorted_sources = sorted((fact_check_result.sources or []), key=lambda s: s.credibility_score, reverse=True)
             picked = []
             seen_domains = set()
-            source_types = {"static": 0, "factcheck": 0, "news": 0, "other": 0}
+            source_types = {"static": 0, "factcheck": 0, "academic": 0, "news": 0, "other": 0}
             
-            # Systematic selection: prioritize static sources, then fact-checkers, then news
-            for source_type in ["static", "factcheck", "news", "other"]:
+            # Systematic selection: prioritize static sources, then fact-checkers, then academic, then news
+            for source_type in ["static", "factcheck", "academic", "news", "other"]:
                 for s in sorted_sources:
                     if len(picked) >= 5:  # Increased to 5 sources
                         break

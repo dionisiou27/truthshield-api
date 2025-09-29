@@ -275,6 +275,7 @@ class TruthShieldAI:
                 # Static knowledge sources (highest priority)
                 self._search_wikipedia(truncated_query, detected_lang),
                 self._search_wikidata(truncated_query, detected_lang),
+                self._search_dbpedia(truncated_query, detected_lang),
                 # Fact-checking sources
                 self._search_google_factcheck(truncated_query, detected_lang),
                 self._search_snopes(truncated_query),
@@ -282,29 +283,41 @@ class TruthShieldAI:
                 self._search_politifact(truncated_query),
                 self._search_mimikama(truncated_query),
                 self._search_correctiv(truncated_query),
+                self._search_euvsdisinfo(truncated_query),
+                # Academic sources
+                self._search_pubmed(truncated_query),
+                self._search_core_ac_uk(truncated_query),
                 # Live news sources
                 self._search_news_api(truncated_query, detected_lang),
+                self._search_reuters(truncated_query, detected_lang),
+                self._search_deutsche_welle(truncated_query, detected_lang),
                 self._search_rss_news(truncated_query, detected_lang)
             ]
 
-            wikipedia_results, wikidata_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, news_results, rss_results = await asyncio.gather(
+            wikipedia_results, wikidata_results, dbpedia_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, euvsdisinfo_results, pubmed_results, core_results, news_results, reuters_results, dw_results, rss_results = await asyncio.gather(
                 *tasks, return_exceptions=True
             )
 
             method_names = [
                 "wikipedia",
-                "wikidata", 
+                "wikidata",
+                "dbpedia",
                 "google_factcheck",
                 "snopes",
                 "factcheck_org",
                 "politifact",
                 "mimikama",
                 "correctiv",
+                "euvsdisinfo",
+                "pubmed",
+                "core_ac_uk",
                 "news_api",
+                "reuters",
+                "deutsche_welle",
                 "rss_news"
             ]
             for i, result in enumerate([
-                wikipedia_results, wikidata_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, news_results, rss_results
+                wikipedia_results, wikidata_results, dbpedia_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, euvsdisinfo_results, pubmed_results, core_results, news_results, reuters_results, dw_results, rss_results
             ]):
                 name = method_names[i]
                 if isinstance(result, Exception):
@@ -321,13 +334,19 @@ class TruthShieldAI:
 
             all_sources.extend(extend_safe(wikipedia_results))
             all_sources.extend(extend_safe(wikidata_results))
+            all_sources.extend(extend_safe(dbpedia_results))
             all_sources.extend(extend_safe(google_results))
             all_sources.extend(extend_safe(snopes_results))
             all_sources.extend(extend_safe(factcheck_results))
             all_sources.extend(extend_safe(politifact_results))
             all_sources.extend(extend_safe(mimikama_results))
             all_sources.extend(extend_safe(correctiv_results))
+            all_sources.extend(extend_safe(euvsdisinfo_results))
+            all_sources.extend(extend_safe(pubmed_results))
+            all_sources.extend(extend_safe(core_results))
             all_sources.extend(extend_safe(news_results))
+            all_sources.extend(extend_safe(reuters_results))
+            all_sources.extend(extend_safe(dw_results))
             all_sources.extend(extend_safe(rss_results))
 
             # De-duplicate by URL
@@ -339,13 +358,19 @@ class TruthShieldAI:
             agg_counts = {
                 "wikipedia": 0 if isinstance(wikipedia_results, Exception) else len(wikipedia_results or []),
                 "wikidata": 0 if isinstance(wikidata_results, Exception) else len(wikidata_results or []),
+                "dbpedia": 0 if isinstance(dbpedia_results, Exception) else len(dbpedia_results or []),
                 "google": 0 if isinstance(google_results, Exception) else len(google_results or []),
                 "snopes": 0 if isinstance(snopes_results, Exception) else len(snopes_results or []),
                 "factcheck": 0 if isinstance(factcheck_results, Exception) else len(factcheck_results or []),
                 "politifact": 0 if isinstance(politifact_results, Exception) else len(politifact_results or []),
                 "mimikama": 0 if isinstance(mimikama_results, Exception) else len(mimikama_results or []),
                 "correctiv": 0 if isinstance(correctiv_results, Exception) else len(correctiv_results or []),
+                "euvsdisinfo": 0 if isinstance(euvsdisinfo_results, Exception) else len(euvsdisinfo_results or []),
+                "pubmed": 0 if isinstance(pubmed_results, Exception) else len(pubmed_results or []),
+                "core": 0 if isinstance(core_results, Exception) else len(core_results or []),
                 "news": 0 if isinstance(news_results, Exception) else len(news_results or []),
+                "reuters": 0 if isinstance(reuters_results, Exception) else len(reuters_results or []),
+                "dw": 0 if isinstance(dw_results, Exception) else len(dw_results or []),
                 "rss": 0 if isinstance(rss_results, Exception) else len(rss_results or []),
             }
             logger.info(f"Source aggregation counts: {agg_counts}; dedup_total={len(dedup)}")
@@ -605,6 +630,129 @@ class TruthShieldAI:
             logger.error(f"Wikipedia error: {e}")
             return []
 
+    async def _search_reuters(self, query: str, language: str = "en") -> List[Source]:
+        """Search Reuters for recent news articles."""
+        try:
+            # Reuters RSS feeds
+            rss_feeds = [
+                "https://feeds.reuters.com/reuters/topNews",
+                "https://feeds.reuters.com/reuters/worldNews",
+                "https://feeds.reuters.com/reuters/politicsNews"
+            ]
+            
+            if language == "de":
+                rss_feeds.extend([
+                    "https://feeds.reuters.com/reuters/DEWorldNews",
+                    "https://feeds.reuters.com/reuters/DEBusinessNews"
+                ])
+            
+            results: List[Source] = []
+            query_lower = query.lower()
+            
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                for feed_url in rss_feeds:
+                    try:
+                        resp = await client.get(feed_url, headers={"User-Agent": "TruthShield/1.0"})
+                        if resp.status_code != 200:
+                            continue
+                            
+                        soup = BeautifulSoup(resp.text, 'xml')
+                        items = soup.find_all('item')[:3]  # Top 3 items per feed
+                        
+                        for item in items:
+                            title = item.find('title')
+                            link = item.find('link')
+                            description = item.find('description')
+                            
+                            if not all([title, link]):
+                                continue
+                                
+                            title_text = title.get_text().strip()
+                            link_text = link.get_text().strip()
+                            desc_text = description.get_text().strip() if description else ""
+                            
+                            # Check if query terms appear in title or description
+                            content = f"{title_text} {desc_text}".lower()
+                            if any(term in content for term in query_lower.split()):
+                                results.append(Source(
+                                    url=link_text,
+                                    title=title_text[:180],
+                                    snippet=desc_text[:240] if desc_text else "Reuters article",
+                                    credibility_score=0.95,  # Very high credibility for Reuters
+                                    date_published=None
+                                ))
+                                
+                    except Exception as e:
+                        logger.warning(f"Reuters feed {feed_url} failed: {e}")
+                        continue
+                        
+            return results[:5]  # Return top 5 Reuters results
+            
+        except Exception as e:
+            logger.error(f"Reuters search failed: {e}")
+            return []
+
+    async def _search_deutsche_welle(self, query: str, language: str = "en") -> List[Source]:
+        """Search Deutsche Welle for German and international news."""
+        try:
+            # Deutsche Welle RSS feeds
+            rss_feeds = [
+                "https://rss.dw.com/rdf/rss-en-all",
+                "https://rss.dw.com/rdf/rss-en-top"
+            ]
+            
+            if language == "de":
+                rss_feeds.extend([
+                    "https://rss.dw.com/rdf/rss-de-all",
+                    "https://rss.dw.com/rdf/rss-de-top"
+                ])
+            
+            results: List[Source] = []
+            query_lower = query.lower()
+            
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                for feed_url in rss_feeds:
+                    try:
+                        resp = await client.get(feed_url, headers={"User-Agent": "TruthShield/1.0"})
+                        if resp.status_code != 200:
+                            continue
+                            
+                        soup = BeautifulSoup(resp.text, 'xml')
+                        items = soup.find_all('item')[:3]  # Top 3 items per feed
+                        
+                        for item in items:
+                            title = item.find('title')
+                            link = item.find('link')
+                            description = item.find('description')
+                            
+                            if not all([title, link]):
+                                continue
+                                
+                            title_text = title.get_text().strip()
+                            link_text = link.get_text().strip()
+                            desc_text = description.get_text().strip() if description else ""
+                            
+                            # Check if query terms appear in title or description
+                            content = f"{title_text} {desc_text}".lower()
+                            if any(term in content for term in query_lower.split()):
+                                results.append(Source(
+                                    url=link_text,
+                                    title=title_text[:180],
+                                    snippet=desc_text[:240] if desc_text else "Deutsche Welle article",
+                                    credibility_score=0.9,  # High credibility for DW
+                                    date_published=None
+                                ))
+                                
+                    except Exception as e:
+                        logger.warning(f"Deutsche Welle feed {feed_url} failed: {e}")
+                        continue
+                        
+            return results[:4]  # Return top 4 DW results
+            
+        except Exception as e:
+            logger.error(f"Deutsche Welle search failed: {e}")
+            return []
+
     async def _search_rss_news(self, query: str, language: str = "en") -> List[Source]:
         """Search RSS news feeds for recent articles about the claim."""
         try:
@@ -669,6 +817,68 @@ class TruthShieldAI:
             
         except Exception as e:
             logger.error(f"RSS news search failed: {e}")
+            return []
+
+    async def _search_dbpedia(self, query: str, language: str = "en") -> List[Source]:
+        """Search DBPedia for structured knowledge about entities."""
+        try:
+            # DBPedia SPARQL endpoint
+            sparql_url = "http://dbpedia.org/sparql"
+            
+            # Clean query for SPARQL
+            clean_query = query.replace("'", "\\'").replace('"', '\\"')
+            
+            # SPARQL query to find entities matching the query
+            sparql_query = f"""
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX dbo: <http://dbpedia.org/ontology/>
+            PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+            
+            SELECT DISTINCT ?entity ?label ?abstract ?url WHERE {{
+              ?entity rdfs:label ?label .
+              ?entity dbo:abstract ?abstract .
+              ?entity foaf:isPrimaryTopicOf ?url .
+              FILTER(LANG(?label) = "en" || LANG(?label) = "")
+              FILTER(LANG(?abstract) = "en" || LANG(?abstract) = "")
+              FILTER(CONTAINS(LCASE(?label), LCASE("{clean_query}")) || 
+                     CONTAINS(LCASE(?abstract), LCASE("{clean_query}")))
+            }} LIMIT 3
+            """
+            
+            params = {
+                "query": sparql_query,
+                "format": "json"
+            }
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(sparql_url, params=params, headers={"User-Agent": "TruthShield/1.0"})
+                if resp.status_code != 200:
+                    logger.warning(f"DBPedia HTTP {resp.status_code}")
+                    return []
+                
+                data = resp.json()
+                results: List[Source] = []
+                
+                bindings = data.get("results", {}).get("bindings", [])
+                for binding in bindings:
+                    entity = binding.get("entity", {}).get("value", "")
+                    label = binding.get("label", {}).get("value", "")
+                    abstract = binding.get("abstract", {}).get("value", "")
+                    url = binding.get("url", {}).get("value", "")
+                    
+                    if entity and label:
+                        results.append(Source(
+                            url=url or entity,
+                            title=label[:180],
+                            snippet=abstract[:240] if abstract else "DBPedia entity",
+                            credibility_score=0.9,  # High credibility for structured data
+                            date_published=None
+                        ))
+                
+                return results
+                
+        except Exception as e:
+            logger.error(f"DBPedia search failed: {e}")
             return []
 
     async def _search_wikidata(self, query: str, language: str = "en") -> List[Source]:
@@ -827,6 +1037,138 @@ class TruthShieldAI:
         except Exception as e:
             logger.error(f"Mimikama search failed: {e}")
         return []
+
+    async def _search_euvsdisinfo(self, query: str) -> List[Source]:
+        """Scrape EUvsDISINFO for EU disinformation fact-checks."""
+        try:
+            url = f"https://euvsdisinfo.eu/?s={quote(query)}"
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                response = await client.get(url, headers={"User-Agent": "TruthShield/1.0"})
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    sources = []
+                    for link in soup.select('h2 a[href], h3 a[href], .entry-title a[href], .post-title a[href]')[:6]:
+                        href = link.get('href')
+                        title_text = (link.get_text() or '').strip()
+                        if not href or not title_text:
+                            continue
+                        sources.append(Source(
+                            url=href,
+                            title=title_text[:180],
+                            snippet="EUvsDISINFO fact-check",
+                            credibility_score=0.9,
+                            date_published=None
+                        ))
+                    return sources
+        except Exception as e:
+            logger.error(f"EUvsDISINFO search failed: {e}")
+        return []
+
+    async def _search_pubmed(self, query: str) -> List[Source]:
+        """Search PubMed for academic research articles."""
+        try:
+            # PubMed E-utilities API
+            base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+            params = {
+                "db": "pubmed",
+                "term": query,
+                "retmax": 3,
+                "retmode": "json",
+                "sort": "relevance"
+            }
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # First, search for article IDs
+                resp = await client.get(base_url, params=params, headers={"User-Agent": "TruthShield/1.0"})
+                if resp.status_code != 200:
+                    return []
+                
+                data = resp.json()
+                id_list = data.get("esearchresult", {}).get("idlist", [])
+                
+                if not id_list:
+                    return []
+                
+                # Get article details
+                fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+                fetch_params = {
+                    "db": "pubmed",
+                    "id": ",".join(id_list),
+                    "retmode": "xml"
+                }
+                
+                fetch_resp = await client.get(fetch_url, params=fetch_params, headers={"User-Agent": "TruthShield/1.0"})
+                if fetch_resp.status_code != 200:
+                    return []
+                
+                soup = BeautifulSoup(fetch_resp.text, 'xml')
+                results: List[Source] = []
+                
+                for article in soup.find_all('PubmedArticle')[:3]:
+                    title_elem = article.find('ArticleTitle')
+                    abstract_elem = article.find('AbstractText')
+                    pmid_elem = article.find('PMID')
+                    
+                    if title_elem and pmid_elem:
+                        title = title_elem.get_text().strip()
+                        abstract = abstract_elem.get_text().strip() if abstract_elem else ""
+                        pmid = pmid_elem.get_text().strip()
+                        url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+                        
+                        results.append(Source(
+                            url=url,
+                            title=title[:180],
+                            snippet=abstract[:240] if abstract else "PubMed research article",
+                            credibility_score=0.95,  # Very high credibility for peer-reviewed research
+                            date_published=None
+                        ))
+                
+                return results
+                            
+        except Exception as e:
+            logger.error(f"PubMed search failed: {e}")
+            return []
+
+    async def _search_core_ac_uk(self, query: str) -> List[Source]:
+        """Search CORE.ac.uk for open access academic papers."""
+        try:
+            # CORE API endpoint
+            api_url = "https://core.ac.uk/api-v2/search/works"
+            params = {
+                "q": query,
+                "limit": 3,
+                "page": 1
+            }
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(api_url, params=params, headers={"User-Agent": "TruthShield/1.0"})
+                if resp.status_code != 200:
+                    return []
+                
+                data = resp.json()
+                results: List[Source] = []
+                
+                for item in data.get("data", [])[:3]:
+                    title = item.get("title", "").strip()
+                    abstract = item.get("abstract", "").strip()
+                    download_url = item.get("downloadUrl", "")
+                    view_url = item.get("links", {}).get("view", "")
+                    url = view_url or download_url
+                    
+                    if title and url:
+                        results.append(Source(
+                            url=url,
+                            title=title[:180],
+                            snippet=abstract[:240] if abstract else "CORE.ac.uk research paper",
+                            credibility_score=0.9,  # High credibility for academic papers
+                            date_published=None
+                        ))
+                
+                return results
+                
+        except Exception as e:
+            logger.error(f"CORE.ac.uk search failed: {e}")
+            return []
 
     async def _search_correctiv(self, query: str) -> List[Source]:
         """Scrape Correctiv (DE)"""
