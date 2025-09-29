@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TruthShield Demo - Stanford Presentation</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f0f2f6; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .demo-section { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .metrics { display: flex; gap: 20px; }
+        .metric { background: #e8f4fd; padding: 15px; border-radius: 5px; flex: 1; text-align: center; }
+        button { background: #ff4b4b; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #ff6b6b; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .response { background: #d4edda; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .loading { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .error { background: #f8d7da; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .json-details { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th { background: #f0f0f0; padding: 10px; border: 1px solid #ddd; text-align: left; }
+        td { padding: 8px; border: 1px solid #ddd; }
+        .bot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .bot-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #e0e0e0; }
+        .bot-card h4 { color: #ff4b4b; margin-top: 0; }
+        .bot-emoji { font-size: 48px; margin-bottom: 10px; }
+        .sources-list { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        .sources-list ul { margin: 5px 0; padding-left: 20px; }
+        .sources-list li { margin: 5px 0; }
+        .sources-list a { color: #0066cc; text-decoration: none; }
+        .sources-list a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ TruthShield</h1>
+            <h2>AI-Powered Fact-Checking Influencers</h2>
+            <p><strong>We Make Truth Go Viral</strong></p>
+            <p style="color: green;">✅ <strong>LIVE API DEMO</strong> - Real-time AI Response System</p>
+        </div>
+
+        <div class="demo-section">
+            <h3>🔍 Live AI Fact-Checking Demo</h3>
+            <p><em>Watch our AI respond to misinformation in under 20 minutes</em></p>
+            <textarea id="fakeNews" placeholder="Enter potential misinformation (e.g., BMW EVs explode in winter)" style="width: 100%; height: 80px; margin: 10px 0; padding: 10px;"></textarea>
+            
+            <select id="company" style="margin: 10px 0; padding: 8px;">
+                <option value="Guardian">Guardian Bot (Universal)</option>
+                <option value="BMW">BMW</option>
+                <option value="Vodafone">Vodafone</option>
+                <option value="Bayer">Bayer</option>
+                <option value="Siemens">Siemens</option>
+            </select>
+            
+            <br><button id="analyzeBtn" onclick="analyzeWithRealAI()">🚀 Deploy AI Response</button>
+            
+            <div id="results" style="display: none; margin-top: 20px;">
+                <h4>✅ Analysis Complete!</h4>
+                <div id="responseSection" class="response">
+                    <h4>🤖 <span id="companyName"></span> AI Response:</h4>
+                    <p id="botResponse"></p>
+                    <p><strong>Confidence:</strong> <span id="confidence"></span>%</p>
+                    <p><strong>Category:</strong> <span id="category"></span></p>
+                    <p><strong>Sources Verified:</strong> <span id="sourcesCount"></span></p>
+                    <div id="sourcesList" class="sources-list" style="display: none;"></div>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <h4>Response Time</h4>
+                        <p><strong id="processingTime">-</strong><br><small>Real-time processing</small></p>
+                    </div>
+                    <div class="metric">
+                        <h4>AI Model</h4>
+                        <p><strong>GPT-4</strong><br><small>+ Multi-layer verification</small></p>
+                    </div>
+                    <div class="metric">
+                        <h4>Tracking ID</h4>
+                        <p><strong id="requestId">-</strong><br><small>Audit trail</small></p>
+                    </div>
+                </div>
+                
+                <details style="margin-top: 15px;">
+                    <summary><strong>🔍 Technical Details (JSON Response)</strong></summary>
+                    <div id="jsonResponse" class="json-details"></div>
+                </details>
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <p>🤖 <strong>AI Processing...</strong> Please wait 10-30 seconds</p>
+                <p>🔍 Analyzing claim across multiple sources...</p>
+                <p>🌐 Verifying with real-time data...</p>
+                <p>✨ Generating personalized bot response...</p>
+            </div>
+            
+            <div id="error" class="error" style="display: none;">
+                <h4>❌ Error</h4>
+                <p id="errorMessage"></p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🤖 Meet Our AI Influencer Personalities</h3>
+            <p>Each bot has a unique personality designed to combat different types of misinformation</p>
+            
+            <div class="bot-grid">
+                <div class="bot-card">
+                    <div class="bot-emoji">🛡️</div>
+                    <h4>GuardianBot</h4>
+                    <p><strong>Role:</strong> Universal fact-checker & protector</p>
+                    <p><strong>Style:</strong> Empathetic, supportive, fierce defender</p>
+                    <p><strong>Example:</strong> "Hey, that's misinformation. Here's the real story backed by 3 verified sources..."</p>
+                </div>
+                
+                <div class="bot-card">
+                    <div class="bot-emoji">😂</div>
+                    <h4>MemeBot</h4>
+                    <p><strong>Role:</strong> Fights memes with better memes</p>
+                    <p><strong>Style:</strong> Savage, hilarious, meme-fluent</p>
+                    <p><strong>Example:</strong> "Imagine believing 5G causes COVID 😂 Next you'll tell me WiFi makes frogs gay 🐸"</p>
+                </div>
+                
+                <div class="bot-card">
+                    <div class="bot-emoji">📊</div>
+                    <h4>PolicyBot</h4>
+                    <p><strong>Role:</strong> Institutional fact-checking</p>
+                    <p><strong>Style:</strong> Professional, authoritative, citation-heavy</p>
+                    <p><strong>Example:</strong> "According to EU Directive 2018/1972, that claim is factually incorrect. See official sources..."</p>
+                </div>
+                
+                <div class="bot-card">
+                    <div class="bot-emoji">🔬</div>
+                    <h4>ScienceBot</h4>
+                    <p><strong>Role:</strong> Debunks scientific misinformation</p>
+                    <p><strong>Style:</strong> Nerdy, excited about facts, educational</p>
+                    <p><strong>Example:</strong> "Actually, quantum physics is COOLER than that conspiracy! Let me blow your mind with real science..."</p>
+                </div>
+                
+                <div class="bot-card">
+                    <div class="bot-emoji">🇪🇺</div>
+                    <h4>EuroShieldBot</h4>
+                    <p><strong>Role:</strong> Defends EU institutions and values</p>
+                    <p><strong>Style:</strong> Multilingual, diplomatic, fact-based</p>
+                    <p><strong>Example:</strong> "That's Russian disinformation. Here's what the EU actually does for you..."</p>
+                </div>
+                
+                <div class="bot-card">
+                    <div class="bot-emoji">🏢</div>
+                    <h4>Brand Defenders</h4>
+                    <p><strong>Role:</strong> Custom bots for companies</p>
+                    <p><strong>Style:</strong> Brand-aligned personality</p>
+                    <p><strong>Example:</strong> BMWBot, VodafoneBot, BayerBot - each with company-specific responses</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🏗️ Technical Architecture - Hybrid Intelligence System</h3>
+            <p>Multi-layer knowledge integration for maximum accuracy and impact</p>
+            
+            <table>
+                <tr>
+                    <th>Layer</th>
+                    <th>Purpose</th>
+                    <th>Sources</th>
+                </tr>
+                <tr>
+                    <td><strong>Static Facts</strong></td>
+                    <td>Stable knowledge base</td>
+                    <td>Wikipedia, Wikidata, DBpedia</td>
+                </tr>
+                <tr>
+                    <td><strong>Live News</strong></td>
+                    <td>Real-time event detection</td>
+                    <td>Reuters, Deutsche Welle, GDELT</td>
+                </tr>
+                <tr>
+                    <td><strong>Fact-Checks</strong></td>
+                    <td>Certified disinfo rebuttals</td>
+                    <td>Snopes, FactCheck.org, EUvsDisinfo</td>
+                </tr>
+                <tr>
+                    <td><strong>Academic</strong></td>
+                    <td>Methodological credibility</td>
+                    <td>Stanford IO, Oxford OII, PubMed, CORE.ac.uk</td>
+                </tr>
+                <tr>
+                    <td><strong>Civic/Legal</strong></td>
+                    <td>Normative truth anchor</td>
+                    <td>WHO, UN Library, EU Open Data Portal, EUR-Lex</td>
+                </tr>
+            </table>
+            
+            <h4 style="margin-top: 25px;">🤖 Bot-Specific Intelligence Routing</h4>
+            <p>Each personality accesses tailored data sources for maximum effectiveness</p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                    <strong>GuardianBot</strong> → Reuters, GDELT, Hate Speech DBs
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                    <strong>MemeBot</strong> → Reddit, KnowYourMeme, Wikipedia
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                    <strong>PolicyBot</strong> → EU Commission, WHO, EUR-Lex
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                    <strong>ScienceBot</strong> → PubMed, arXiv, OpenAlex
+                </div>
+            </div>
+            
+            <p style="margin-top: 20px;"><strong>✅ Attribution is dynamic, source-labeled, and bot-specific</strong></p>
+        </div>
+
+        <div class="demo-section">
+            <h3>🔬 Stanford Collaboration Opportunity</h3>
+            <p><strong>Your detection + Our intervention = Complete protection pipeline</strong></p>
+            <ul>
+                <li>Test behavioral hypotheses at scale with real-world data</li>
+                <li>Integrate deepfake detection with character consistency</li>
+                <li>Build the world's first Humor Intelligence system</li>
+                <li>Research partnership / Advisory / Pilot program options</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <p><strong>TruthShield: We Make Truth Go Viral ✨</strong></p>
+            <p>🔗 GitHub: <a href="https://github.com/dionisiou27/truthshield-api">github.com/dionisiou27/truthshield-api</a></p>
+            <p>📧 Contact: contact@truthshield.eu</p>
+            <p>🔗 API: <a href="https://truthshield-api.onrender.com">truthshield-api.onrender.com</a></p>
+        </div>
+    </div>
+
+    <script>
+        // UPDATED: Using hosted API for reliability
+        const API_BASE = 'https://truthshield-api.onrender.com';
+        
+        async function analyzeWithRealAI() {
+            const text = document.getElementById('fakeNews').value;
+            const company = document.getElementById('company').value;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            if (!text || text.length < 10) {
+                alert('Please enter at least 10 characters to analyze!');
+                return;
+            }
+            
+            // Show loading state
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🤖 AI Processing...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/detect/fact-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        company: company,
+                        language: "en",  // English for Stanford
+                        generate_ai_response: true
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Show results
+                displayResults(result, company);
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Show error
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('errorMessage').innerHTML = `
+                    <strong>Connection Error</strong><br>
+                    <small>Unable to reach TruthShield API. Please check your internet connection.</small><br>
+                    <small>Error: ${error.message}</small>
+                `;
+            } finally {
+                // Reset button
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🚀 Deploy AI Response';
+            }
+        }
+        
+        function displayResults(result, company) {
+            // Display main results
+            document.getElementById('companyName').textContent = company;
+            document.getElementById('botResponse').textContent = 
+                result.ai_response?.response_text || 'No AI response generated';
+            document.getElementById('confidence').textContent = 
+                Math.round(result.fact_check?.confidence * 100) || 'Unknown';
+            document.getElementById('category').textContent = 
+                result.fact_check?.category || 'Unknown';
+            document.getElementById('sourcesCount').textContent = 
+                result.fact_check?.sources?.length || 0;
+            document.getElementById('processingTime').textContent = 
+                `${result.processing_time_ms}ms`;
+            document.getElementById('requestId').textContent = 
+                result.request_id?.substring(0, 8) || 'Unknown';
+            
+            // Display actual sources if available
+            const sources = result.fact_check?.sources || [];
+            const sourcesListDiv = document.getElementById('sourcesList');
+            
+            if (sources.length > 0) {
+                let sourcesHTML = '<strong>Verified Sources:</strong><ul>';
+                sources.forEach(source => {
+                    const cleanUrl = source.url.replace(/^\/\//, 'https://');
+                    sourcesHTML += `<li><a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${source.title}</a></li>`;
+                });
+                sourcesHTML += '</ul>';
+                sourcesListDiv.innerHTML = sourcesHTML;
+                sourcesListDiv.style.display = 'block';
+            } else {
+                sourcesListDiv.style.display = 'none';
+            }
+            
+            // Display JSON details
+            document.getElementById('jsonResponse').textContent = 
+                JSON.stringify(result, null, 2);
+            
+            // Show results section
+            document.getElementById('results').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // English sample texts for easy testing - INCLUDING GUARDIAN BOT
+        const sampleTexts = [
+            "The moon landing was faked in a Hollywood studio",  // Guardian Bot example
+            "BMW electric vehicles explode in freezing temperatures",
+            "Vodafone 5G towers cause cancer and mind control",
+            "Bayer COVID vaccine contains tracking microchips",
+            "Siemens wind turbines kill millions of birds yearly"
+        ];
+        
+        // Add quick test buttons - INCLUDING GUARDIAN
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('fakeNews');
+            const container = textarea.parentNode;
+            
+            const quickTestDiv = document.createElement('div');
+            quickTestDiv.style.marginTop = '10px';
+            quickTestDiv.innerHTML = '<small><strong>Quick Test Examples:</strong></small><br>';
+            
+            sampleTexts.forEach((text, index) => {
+                const btn = document.createElement('button');
+                const companies = ['Guardian', 'BMW', 'Vodafone', 'Bayer', 'Siemens'];
+                btn.textContent = `${companies[index]} Test`;
+                btn.style.margin = '2px';
+                btn.style.padding = '5px 10px';
+                btn.style.fontSize = '12px';
+                btn.onclick = () => {
+                    textarea.value = text;
+                    document.getElementById('company').value = companies[index];
+                };
+                quickTestDiv.appendChild(btn);
+            });
+            
+            container.insertBefore(quickTestDiv, document.getElementById('company'));
+        });
+    </script>
+</body>
+</html>
