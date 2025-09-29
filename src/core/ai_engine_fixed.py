@@ -152,22 +152,15 @@ class TruthShieldAI:
         """Detect specific political astroturfing patterns"""
         
         # Known legitimate politicians who are often targeted by astroturfing
-        # Split into elected vs appointed officials
-        elected_politicians = [
+        legitimate_politicians = [
+            "ursula von der leyen", "von der leyen", "ursula",
             "angela merkel", "merkel", "angela",
-            "emmanuel macron", "macron", "emmanuel", 
+            "emmanuel macron", "macron", "emmanuel",
             "olaf scholz", "scholz", "olaf",
             "joe biden", "biden", "joseph biden",
             "donald trump", "trump", "donald",
             "volodymyr zelensky", "zelensky", "volodymyr"
         ]
-        
-        appointed_officials = [
-            "ursula von der leyen", "von der leyen", "ursula"
-        ]
-        
-        # Combine all legitimate politicians
-        legitimate_politicians = elected_politicians + appointed_officials
         
         # Generic corruption accusations without evidence
         corruption_patterns = [
@@ -187,8 +180,6 @@ class TruthShieldAI:
         
         # Check if text targets a legitimate politician
         targets_politician = any(politician in text_lower for politician in legitimate_politicians)
-        targets_elected = any(politician in text_lower for politician in elected_politicians)
-        targets_appointed = any(politician in text_lower for politician in appointed_officials)
         
         # Check for corruption accusations
         has_corruption_accusations = any(pattern in text_lower for pattern in corruption_patterns)
@@ -199,10 +190,7 @@ class TruthShieldAI:
         # Calculate political astroturfing score
         score = 0
         if targets_politician and has_corruption_accusations:
-            if targets_elected:
-                score += 0.6  # High score for targeting elected politicians with corruption claims
-            elif targets_appointed:
-                score += 0.4  # Lower score for appointed officials (less democratic legitimacy)
+            score += 0.6  # High score for targeting legitimate politicians with corruption claims
         if has_conspiracy_language:
             score += 0.3  # Medium score for conspiracy language
         if targets_politician and has_conspiracy_language:
@@ -210,8 +198,6 @@ class TruthShieldAI:
         
         return {
             "targets_legitimate_politician": targets_politician,
-            "targets_elected_politician": targets_elected,
-            "targets_appointed_official": targets_appointed,
             "has_corruption_accusations": has_corruption_accusations,
             "has_conspiracy_language": has_conspiracy_language,
             "political_astroturfing_score": min(score, 1.0),
@@ -219,9 +205,7 @@ class TruthShieldAI:
             "detected_patterns": {
                 "corruption_terms": [p for p in corruption_patterns if p in text_lower],
                 "conspiracy_terms": [p for p in conspiracy_language if p in text_lower],
-                "targeted_politicians": [p for p in legitimate_politicians if p in text_lower],
-                "targeted_elected": [p for p in elected_politicians if p in text_lower],
-                "targeted_appointed": [p for p in appointed_officials if p in text_lower]
+                "targeted_politicians": [p for p in legitimate_politicians if p in text_lower]
             }
         }
 
@@ -539,14 +523,7 @@ class TruthShieldAI:
                 result["plausibility_score"] = 5  # Very low plausibility for political astroturfing
                 result["red_flags"] = result.get("red_flags", []) + ["political_astroturfing", "unsubstantiated_corruption_claims"]
                 result["misinformation_indicators"] = result.get("misinformation_indicators", []) + ["coordinated_political_smear", "astroturfing"]
-                
-                # Differentiate between elected and appointed officials
-                if political_astroturfing.get("targets_elected_politician", False):
-                    result["reasoning"] = f"POLITICAL ASTROTURFING DETECTED: This appears to be coordinated disinformation targeting elected politicians with unsubstantiated corruption claims. {result.get('reasoning', '')}"
-                elif political_astroturfing.get("targets_appointed_official", False):
-                    result["reasoning"] = f"POLITICAL ASTROTURFING DETECTED: This appears to be coordinated disinformation targeting appointed officials with unsubstantiated corruption claims. Note: Appointed officials have less direct democratic legitimacy than elected politicians. {result.get('reasoning', '')}"
-                else:
-                    result["reasoning"] = f"POLITICAL ASTROTURFING DETECTED: This appears to be coordinated disinformation targeting legitimate politicians with unsubstantiated corruption claims. {result.get('reasoning', '')}"
+                result["reasoning"] = f"POLITICAL ASTROTURFING DETECTED: This appears to be coordinated disinformation targeting legitimate politicians with unsubstantiated corruption claims. {result.get('reasoning', '')}"
             
             return result
             
