@@ -24,12 +24,24 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-change-this"
     jwt_secret: str = "your-jwt-secret-change-this"
     
+    # TikTok Config (optional)
+    tiktok_username: Optional[str] = None
+    tiktok_password: Optional[str] = None
+    
+    # Monitoring (optional)
+    sentry_dsn: Optional[str] = None
+    
+    # Development
+    debug: bool = True
+    environment: str = "development"
+    
     # German Companies to Monitor
     default_companies: List[str] = ["vodafone", "bmw", "bayer", "deutsche_telekom"]
     
     class Config:
         env_file = ".env"
         case_sensitive = False  # Erlaubt GOOGLE_API_KEY oder google_api_key
+        extra = "ignore"  # Ignoriere zusätzliche Felder in .env
 
 # Global settings instance
 settings = Settings()
