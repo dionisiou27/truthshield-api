@@ -134,7 +134,8 @@ class TruthShieldDetector:
                 "reuters.com", "apnews.com", "associatedpress.com", "bbc.com", "bbc.co.uk",
                 "nytimes.com", "washingtonpost.com", "wsj.com", "bloomberg.com", "theguardian.com",
                 "factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org",
-                "afp.com", "afp.com/en", "afp.com/de", "apfactcheck.com", "afpfactcheck.com", "mimikama.org"
+                "mimikama.org", "wikipedia.org", "wikidata.org", "npr.org", "theguardian.com",
+                "afp.com", "apfactcheck.com", "afpfactcheck.com"
             }
 
             sorted_sources = sorted((fact_check_result.sources or []), key=lambda s: s.credibility_score, reverse=True)
@@ -155,6 +156,14 @@ class TruthShieldDetector:
                     if dom not in seen and dom:
                         picked.append(s)
                         seen.add(dom)
+                    if len(picked) >= 3:
+                        break
+
+            # Final fill: if still fewer than 3 but sources exist, allow duplicates of existing domains
+            if len(picked) < 3:
+                for s in sorted_sources:
+                    if s not in picked:
+                        picked.append(s)
                     if len(picked) >= 3:
                         break
 

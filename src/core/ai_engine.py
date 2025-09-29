@@ -268,11 +268,14 @@ class TruthShieldAI:
                 return "en"
 
             detected_lang = _detect_language(truncated_query)
+            logger.info(f"=== SEARCHING FOR: {truncated_query} (lang={detected_lang}) ===")
 
             # Run all searches in parallel
             tasks = [
                 self._search_google_factcheck(truncated_query, detected_lang),
                 self._search_news_api(truncated_query, detected_lang),
+                self._search_wikipedia(truncated_query, detected_lang),
+                self._search_wikidata(truncated_query, detected_lang),
                 self._search_snopes(truncated_query),
                 self._search_factcheck_org(truncated_query),
                 self._search_politifact(truncated_query),
@@ -280,9 +283,27 @@ class TruthShieldAI:
                 self._search_correctiv(truncated_query),
             ]
 
-            google_results, news_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results = await asyncio.gather(
+            google_results, news_results, wikipedia_results, wikidata_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results = await asyncio.gather(
                 *tasks, return_exceptions=True
             )
+
+            method_names = [
+                "google_factcheck",
+                "news_api",
+                "snopes",
+                "factcheck_org",
+                "politifact",
+                "mimikama",
+                "correctiv",
+            ]
+            for i, result in enumerate([
+                google_results, news_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results
+            ]):
+                name = method_names[i]
+                if isinstance(result, Exception):
+                    logger.error(f"search::{name} failed: {result}")
+                elif isinstance(result, list):
+                    logger.info(f"search::{name} returned {len(result)} sources")
 
             all_sources: List[Source] = []
 
@@ -293,6 +314,8 @@ class TruthShieldAI:
 
             all_sources.extend(extend_safe(google_results))
             all_sources.extend(extend_safe(news_results))
+            all_sources.extend(extend_safe(wikipedia_results))
+            all_sources.extend(extend_safe(wikidata_results))
             all_sources.extend(extend_safe(snopes_results))
             all_sources.extend(extend_safe(factcheck_results))
             all_sources.extend(extend_safe(politifact_results))
@@ -308,6 +331,8 @@ class TruthShieldAI:
             agg_counts = {
                 "google": 0 if isinstance(google_results, Exception) else len(google_results or []),
                 "news": 0 if isinstance(news_results, Exception) else len(news_results or []),
+                "wikipedia": 0 if isinstance(wikipedia_results, Exception) else len(wikipedia_results or []),
+                "wikidata": 0 if isinstance(wikidata_results, Exception) else len(wikidata_results or []),
                 "snopes": 0 if isinstance(snopes_results, Exception) else len(snopes_results or []),
                 "factcheck": 0 if isinstance(factcheck_results, Exception) else len(factcheck_results or []),
                 "politifact": 0 if isinstance(politifact_results, Exception) else len(politifact_results or []),
@@ -316,7 +341,7 @@ class TruthShieldAI:
             }
             logger.info(f"Source aggregation counts: {agg_counts}; dedup_total={len(dedup)}")
 
-            # Sort by credibility_score descending, then limit to 2 per domain, top 5
+            # Sort by credibility_score descending, then limit to 3 per domain, top 5
             final_sources = list(dedup.values())
             final_sources.sort(key=lambda s: s.credibility_score, reverse=True)
 
@@ -331,7 +356,7 @@ class TruthShieldAI:
             for src in final_sources:
                 dom = _domain(src.url)
                 cnt = per_domain_count.get(dom, 0)
-                if cnt >= 2:
+                if cnt >= 3:
                     continue
                 per_domain_count[dom] = cnt + 1
                 limited.append(src)
@@ -492,6 +517,95 @@ class TruthShieldAI:
         except Exception as e:
             logger.error(f"Snopes search failed: {e}")
         return []
+
+    async def _search_wikipedia(self, query: str, language: str = "en") -> List[Source]:
+        """Search Wikipedia API for related articles (supports en/de)."""
+        try:
+            lang = "de" if language == "de" else "en"
+            base = f"https://{lang}.wikipedia.org/w/api.php"
+            params = {
+                "action": "query",
+                "list": "search",
+                "format": "json",
+                "srsearch": query,
+                "srlimit": 3
+            }
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(base, params=params, headers={"User-Agent": "TruthShield/1.0"})
+                if resp.status_code != 200:
+                    if resp.status_code == 429:
+                        logger.warning("Wikipedia rate limited")
+                    else:
+                        logger.error(f"Wikipedia HTTP {resp.status_code}: {resp.text[:200]}")
+                    return []
+                data = resp.json()
+                hits = ((data.get("query") or {}).get("search") or [])[:3]
+                results: List[Source] = []
+                for h in hits:
+                    title = (h.get("title") or "").strip()
+                    snippet_html = h.get("snippet") or ""
+                    # Wikipedia returns HTML snippets; strip tags crudely
+                    snippet = BeautifulSoup(snippet_html, 'html.parser').get_text(" ")
+                    pageid = h.get("pageid")
+                    url = f"https://{lang}.wikipedia.org/?curid={pageid}" if pageid else f"https://{lang}.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
+                    if title and url:
+                        results.append(Source(
+                            url=url,
+                            title=title[:180],
+                            snippet=snippet[:240] if snippet else "Wikipedia article",
+                            credibility_score=0.85,
+                            date_published=None
+                        ))
+                return results
+        except Exception as e:
+            logger.error(f"Wikipedia error: {e}")
+            return []
+
+    async def _search_wikidata(self, query: str, language: str = "en") -> List[Source]:
+        """Search Wikidata for entities and referenced facts.
+
+        Returns Source items pointing to the entity page with a snippet summarizing matched description.
+        """
+        try:
+            lang = "de" if language == "de" else "en"
+            base = "https://www.wikidata.org/w/api.php"
+            params = {
+                "action": "wbsearchentities",
+                "format": "json",
+                "search": query,
+                "language": lang,
+                "limit": 3
+            }
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(base, params=params, headers={"User-Agent": "TruthShield/1.0"})
+                if resp.status_code != 200:
+                    if resp.status_code == 429:
+                        logger.warning("Wikidata rate limited")
+                    else:
+                        logger.error(f"Wikidata HTTP {resp.status_code}: {resp.text[:200]}")
+                    return []
+                data = resp.json()
+                results_json = data.get("search") or []
+                results: List[Source] = []
+                for item in results_json[:3]:
+                    title = (item.get("label") or item.get("id") or "").strip()
+                    description = (item.get("description") or "").strip()
+                    qid = item.get("id")
+                    url = f"https://www.wikidata.org/wiki/{qid}" if qid else None
+                    if not (title and url):
+                        continue
+                    # Credibility: referenced claims on Wikidata are generally curated; set 0.9
+                    results.append(Source(
+                        url=url,
+                        title=title[:180],
+                        snippet=(description or "Wikidata entity")[:240],
+                        credibility_score=0.9,
+                        date_published=None
+                    ))
+                return results
+        except Exception as e:
+            logger.error(f"Wikidata error: {e}")
+            return []
 
     async def _search_factcheck_org(self, query: str) -> List[Source]:
         """Scrape FactCheck.org"""
