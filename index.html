@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TruthShield • Live Fact-Checking</title>
+    <style>
+        :root {
+            --bg: #0b1020; --card: #11162a; --muted: #8ea1c0; --accent: #6aa0ff; --accent2: #7bf1a8; --danger: #ff6b6b;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+               background: linear-gradient(180deg, #0b1020 0%, #0f1630 100%); color: #e8eefc; }
+        .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 20px 64px; }
+        .nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .3px; }
+        .badge { background: #12214a; padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; }
+        .hero { background: radial-gradient(1200px 600px at 10% -10%, #20336b66, transparent), #0c1328; border: 1px solid #233057; border-radius: 14px; padding: 26px; }
+        .hero h1 { margin: 0 0 8px; font-size: 28px; }
+        .hero p { margin: 0; color: var(--muted); }
+        .grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; margin-top: 16px; }
+        .card { background: var(--card); border: 1px solid #243154; border-radius: 12px; padding: 18px; }
+        .card h3 { margin: 0 0 10px; font-size: 16px; color: #cfe0ff; }
+        textarea, select, input[type="text"] { width: 100%; background: #0e1430; color: #e8eefc; border: 1px solid #2b3a68; border-radius: 10px; padding: 12px 12px; outline: none; }
+        textarea { min-height: 120px; resize: vertical; }
+        .row { display: flex; gap: 10px; margin-top: 10px; }
+        .btn { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; border: none; border-radius: 10px; padding: 12px 16px; font-weight: 700; cursor: pointer; }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .btn-outline { background: transparent; color: var(--accent); border: 1px solid #32509b; }
+        .kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .kpi .item { background: #0e1430; border: 1px solid #263662; border-radius: 10px; padding: 12px; }
+        .kpi h4 { margin: 0 0 6px; color: #cfe0ff; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; }
+        .kpi .val { font-size: 18px; font-weight: 800; }
+        .status { background: #0e1430; border: 1px dashed #32509b; padding: 10px 12px; border-radius: 10px; color: var(--muted); font-size: 13px; }
+        .sources { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 10px; }
+        .source { background: #0f1533; border: 1px solid #2c3b6a; border-radius: 10px; padding: 12px; }
+        .source a { color: var(--accent2); text-decoration: none; }
+        .tabs { display: flex; gap: 8px; margin: 10px 0; }
+        .tab { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .tab.active { background: #173065; border-color: #3f60ab; }
+        .json { background: #0b1128; border: 1px solid #233057; border-radius: 10px; padding: 12px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px; color: #cfe0ff; max-height: 320px; overflow: auto; }
+        .foot { margin-top: 24px; display: grid; gap: 10px; color: var(--muted); text-align: center; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #2c3b6a; font-size: 11px; color: #b9c7e6; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="nav">
+            <div class="brand"><span style="font-size:24px;">🛡️</span> TruthShield</div>
+            <div class="badge">Live API Demo</div>
+        </div>
+        <div class="hero">
+            <h1>AI Fact-Checking • Instant, Credible, Transparent</h1>
+            <p>Analyze a claim, aggregate sources (Fact-checkers, News, Wikipedia/Wikidata), and get a shareable response.</p>
+            <div class="grid">
+                <div class="card">
+                    <h3>Claim</h3>
+                    <textarea id="fakeNews" placeholder="e.g., BMW EVs explode in winter"></textarea>
+                    <div class="row">
+                        <select id="company">
+                            <option value="Guardian">Guardian Bot (Universal)</option>
+                            <option value="BMW">BMW</option>
+                            <option value="Vodafone">Vodafone</option>
+                            <option value="Bayer">Bayer</option>
+                            <option value="Siemens">Siemens</option>
+                        </select>
+                        <select id="language">
+                            <option value="auto">Auto language</option>
+                            <option value="en">English</option>
+                            <option value="de">Deutsch</option>
+                        </select>
+                        <select id="apiBase">
+                            <option value="https://truthshield-api.onrender.com">Render</option>
+                            <option value="http://127.0.0.1:8000">Local</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <button class="btn" id="analyzeBtn" onclick="analyzeWithRealAI()">Analyze Claim</button>
+                        <button class="btn btn-outline" onclick="fillSample('Guardian')">Guardian Sample</button>
+                        <button class="btn btn-outline" onclick="fillSample('BMW')">BMW Sample</button>
+                    </div>
+                    <div id="status" class="status" style="margin-top:10px; display:none;"></div>
+                </div>
+                <div class="card">
+                    <h3>Key Metrics</h3>
+                    <div class="kpi">
+                        <div class="item"><h4>Confidence</h4><div class="val" id="kpiConfidence">–</div></div>
+                        <div class="item"><h4>Category</h4><div class="val" id="kpiCategory">–</div></div>
+                        <div class="item"><h4>Duration</h4><div class="val" id="kpiTime">–</div></div>
+                    </div>
+                    <div style="margin-top:10px;"><span class="pill" id="kpiId">request: –</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" style="margin-top: 16px;">
+            <div class="card">
+                <h3>Results</h3>
+                <div id="results" style="display:none;">
+                    <div class="tabs">
+                        <div id="tab-summary" class="tab active" onclick="switchTab('summary')">Summary</div>
+                        <div id="tab-sources" class="tab" onclick="switchTab('sources')">Verified Sources</div>
+                        <div id="tab-json" class="tab" onclick="switchTab('json')">Raw JSON</div>
+                    </div>
+                    <div id="panel-summary">
+                        <div class="status" id="summaryText">–</div>
+                    </div>
+                    <div id="panel-sources" style="display:none;">
+                        <div class="sources" id="verifiedSources"></div>
+                    </div>
+                    <div id="panel-json" style="display:none;">
+                        <pre class="json" id="jsonResponse"></pre>
+                    </div>
+                </div>
+                <div id="loading" class="status" style="display:none;">Processing… contacting fact-checkers, news, Wikipedia/Wikidata…</div>
+                <div id="error" class="status" style="display:none; color:#ffb4b4; border-color:#733;">Error: <span id="errorMessage"></span></div>
+            </div>
+            <div class="card">
+                <h3>Personas</h3>
+                <div class="sources">
+                    <div class="source"><strong>Guardian</strong><br><small>Universal, witty, debunks broadly</small></div>
+                    <div class="source"><strong>PolicyBot</strong><br><small>Official sources and citations</small></div>
+                    <div class="source"><strong>ScienceBot</strong><br><small>Scientific evidence and methodology</small></div>
+                    <div class="source"><strong>Brand</strong><br><small>Company-aligned communications</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="foot">
+            <div>TruthShield • We Make Truth Go Viral ✨</div>
+            <div><a href="https://github.com/dionisiou27/truthshield-api" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">GitHub</a> · <a href="https://truthshield-api.onrender.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">API</a></div>
+        </div>
+    </div>
+
+    <script>
+        let API_BASE = 'https://truthshield-api.onrender.com';
+        
+        async function analyzeWithRealAI() {
+            const text = document.getElementById('fakeNews').value;
+            const company = document.getElementById('company').value;
+            const langSel = document.getElementById('language').value;
+            API_BASE = document.getElementById('apiBase').value || API_BASE;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            if (!text || text.length < 10) {
+                alert('Please enter at least 10 characters to analyze!');
+                return;
+            }
+            
+            // Show loading state
+            setVisible('results', false);
+            setVisible('error', false);
+            setVisible('loading', true);
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Processing…';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/detect/fact-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        company: company,
+                        language: langSel === 'auto' ? (detectLang(text)) : langSel,
+                        generate_ai_response: true
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Hide loading
+                setVisible('loading', false);
+                
+                // Show results
+                displayResults(result, company);
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                // Hide loading
+                setVisible('loading', false);
+                
+                // Show error
+                setVisible('error', true);
+                document.getElementById('errorMessage').innerHTML = `
+                    <strong>Connection Error</strong><br>
+                    <small>Unable to reach TruthShield API. Please check your internet connection.</small><br>
+                    <small>Error: ${error.message}</small>
+                `;
+            } finally {
+                // Reset button
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze Claim';
+            }
+        }
+        
+        function displayResults(result, company) {
+            // KPIs
+            const conf = result?.fact_check?.confidence;
+            document.getElementById('kpiConfidence').textContent = conf != null ? Math.round(conf * 100) + '%' : '–';
+            document.getElementById('kpiCategory').textContent = result?.fact_check?.category || '–';
+            document.getElementById('kpiTime').textContent = (result?.processing_time_ms ?? '–') + ' ms';
+            document.getElementById('kpiId').textContent = 'request: ' + (result?.request_id?.slice(0, 8) || '–');
+
+            // Summary
+            const botTxt = (result?.ai_response?.response_text || '').trim();
+            const summary = botTxt ? `Response (${company}): ${escapeHtml(botTxt)}` : 'No AI response generated.';
+            document.getElementById('summaryText').innerHTML = summary;
+
+            // Verified sources (prefer details.verified_sources, fallback to fact_check.sources)
+            const verified = (result?.details?.verified_sources && result.details.verified_sources.length > 0)
+                ? result.details.verified_sources
+                : (result?.fact_check?.sources || []);
+            const vsDiv = document.getElementById('verifiedSources');
+            vsDiv.innerHTML = '';
+            verified.slice(0, 6).forEach(s => {
+                const cleanUrl = (s.url || '').replace(/^\/\//, 'https://');
+                const el = document.createElement('div');
+                el.className = 'source';
+                el.innerHTML = `<div style="font-weight:700; margin-bottom:6px;">${escapeHtml(s.title || cleanUrl)}</div>
+                                <div style="font-size:12px; color:#9db1d6; margin-bottom:6px;">${escapeHtml(s.snippet || '')}</div>
+                                <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${cleanUrl}</a>`;
+                vsDiv.appendChild(el);
+            });
+
+            // JSON panel
+            document.getElementById('jsonResponse').textContent = JSON.stringify(result, null, 2);
+
+            // Show
+            setVisible('results', true);
+            switchTab('summary');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function detectLang(t) {
+            const s = (t || '').toLowerCase();
+            const de = [' der ', ' die ', ' das ', ' nicht ', ' ist ', ' mit ', 'und ', 'ä', 'ö', 'ü', 'ß'];
+            return de.some(x => s.includes(x)) ? 'de' : 'en';
+        }
+        function setVisible(id, v) { document.getElementById(id).style.display = v ? 'block' : 'none'; }
+        function switchTab(name) {
+            const tabs = ['summary','sources','json'];
+            tabs.forEach(t => {
+                document.getElementById('tab-'+t).classList.toggle('active', t===name);
+                document.getElementById('panel-'+t).style.display = t===name ? 'block' : 'none';
+            });
+        }
+        function fillSample(kind) {
+            const m = {
+                'Guardian': 'The moon landing was faked in a Hollywood studio',
+                'BMW': 'BMW electric vehicles explode in freezing temperatures'
+            };
+            document.getElementById('fakeNews').value = m[kind] || '';
+            document.getElementById('company').value = kind;
+        }
+        function escapeHtml(s){return (s||'').replace(/[&<>"]+/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+    </script>
+</body>
+</html>
