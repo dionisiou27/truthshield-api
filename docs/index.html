@@ -217,8 +217,18 @@
             const verified = (result?.details?.verified_sources && result.details.verified_sources.length > 0)
                 ? result.details.verified_sources
                 : (result?.fact_check?.sources || []);
+            const allSources = result?.details?.all_sources_checked || result?.fact_check?.sources || [];
             const vsDiv = document.getElementById('verifiedSources');
             vsDiv.innerHTML = '';
+            
+            // Add info about total sources checked
+            if (allSources.length > verified.length) {
+                const infoEl = document.createElement('div');
+                infoEl.style.cssText = 'background: #1a2332; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #9db1d6;';
+                infoEl.innerHTML = `📊 Showing ${verified.length} curated sources (${allSources.length} total sources checked - see Raw JSON for complete list)`;
+                vsDiv.appendChild(infoEl);
+            }
+            
             verified.slice(0, 6).forEach(s => {
                 const cleanUrl = (s.url || '').replace(/^\/\//, 'https://');
                 const el = document.createElement('div');

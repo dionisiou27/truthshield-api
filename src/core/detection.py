@@ -178,7 +178,8 @@ class TruthShieldDetector:
                     "language": request.language,
                     "category": fact_check_result.category,
                     "sources_found": len(fact_check_result.sources),
-                    "verified_sources": [s.model_dump() for s in picked],
+                    "all_sources_checked": [s.model_dump() for s in (fact_check_result.sources or [])],  # All sources for Raw JSON
+                    "verified_sources": [s.model_dump() for s in picked],  # Curated selection for UI
                     "ai_response_generated": ai_response is not None,
                     "ai_responses": ai_responses if ai_responses else None  # Include both language responses
                 },
