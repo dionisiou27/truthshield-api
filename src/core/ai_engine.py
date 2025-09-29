@@ -278,8 +278,10 @@ class TruthShieldAI:
             
             # Enhance query for better relevance
             enhanced_query = truncated_query
-            if "BMW" in truncated_query.upper() and "electric" in truncated_query.lower():
-                enhanced_query = f"{truncated_query} BMW i3 iX i4 electric vehicle safety"
+            if "electric" in truncated_query.lower() and ("explode" in truncated_query.lower() or "explosion" in truncated_query.lower()):
+                enhanced_query = f"{truncated_query} electric vehicle safety battery fires"
+            elif "electric" in truncated_query.lower() and ("winter" in truncated_query.lower() or "cold" in truncated_query.lower()):
+                enhanced_query = f"{truncated_query} electric vehicle cold weather safety"
             elif "BMW" in truncated_query.upper():
                 enhanced_query = f"{truncated_query} BMW"
 
@@ -424,62 +426,97 @@ class TruthShieldAI:
             # Return empty list but don't fail - other sources will still work
             return []
 
+        # Try multiple query variations to increase chances of finding results
+        query_variations = [
+            query,  # Original query
+            query.split()[0] if query.split() else query,  # First word only
+            " ".join(query.split()[:3]) if len(query.split()) > 3 else query,  # First 3 words
+        ]
+        
+        # Add specific variations for common topics
+        if "electric" in query.lower() or "ev" in query.lower():
+            query_variations.extend(["electric vehicles", "electric cars", "EV safety", "electric car safety"])
+        if "explode" in query.lower() or "explosion" in query.lower():
+            query_variations.extend(["car explosions", "vehicle safety", "car fires", "EV explosions"])
+        if "winter" in query.lower() or "cold" in query.lower() or "freezing" in query.lower():
+            query_variations.extend(["electric vehicles cold weather", "EV winter safety", "electric car cold"])
+        if "battery" in query.lower():
+            query_variations.extend(["electric vehicle battery", "EV battery safety", "battery fires"])
+
         url = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
-        params = {
-            "key": api_key,
-            "query": query,
-            "languageCode": language if language in ("en", "de") else "en",
-            "pageSize": 10
-        }
+        all_sources = []
+        
+        for variation in query_variations[:3]:  # Try max 3 variations
+            params = {
+                "key": api_key,
+                "query": variation,
+                "languageCode": language if language in ("en", "de") else "en",
+                "pageSize": 5
+            }
 
-        try:
-            logger.debug(f"Google Fact Check query: {query} lang={params['languageCode']}")
-            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-                resp = await client.get(url, params=params)
-                if resp.status_code != 200:
-                    logger.error(f"Google Fact Check API HTTP {resp.status_code}: {resp.text[:200]}")
-                    return []
+            try:
+                logger.debug(f"Google Fact Check query variation: {variation} lang={params['languageCode']}")
+                async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
+                    resp = await client.get(url, params=params)
+                    if resp.status_code != 200:
+                        logger.warning(f"Google Fact Check API HTTP {resp.status_code} for '{variation}': {resp.text[:100]}")
+                        continue  # Try next variation
 
-                data = resp.json()
-                claims = data.get("claims", [])
+                    data = resp.json()
+                    claims = data.get("claims", [])
+                    
+                    if not claims:
+                        logger.debug(f"No claims found for variation: {variation}")
+                        continue
 
-                sources: List[Source] = []
-                for claim in claims:
-                    claim_text = claim.get("text", "")
-                    claim_reviews = claim.get("claimReview", []) or []
-                    for review in claim_reviews:
-                        publisher = (review.get("publisher") or {}).get("name") or ""
-                        title = review.get("title") or claim_text or "Fact-check review"
-                        url_review = review.get("url") or ""
-                        textual_rating = (review.get("textualRating") or "").strip()
-                        review_date = review.get("reviewDate") or None
+                    logger.info(f"Found {len(claims)} claims for variation: {variation}")
 
-                        # Score mapping
-                        rating_lower = textual_rating.lower()
-                        if any(k in rating_lower for k in ["false", "pants on fire", "mostly false", "incorrect", "fake"]):
-                            score = 0.95
-                        elif any(k in rating_lower for k in ["mixture", "half true", "partly true", "needs context", "unproven", "misleading"]):
-                            score = 0.8
-                        elif any(k in rating_lower for k in ["true", "mostly true", "accurate"]):
-                            score = 0.75
-                        else:
-                            score = 0.7
+                    for claim in claims:
+                        claim_text = claim.get("text", "")
+                        claim_reviews = claim.get("claimReview", []) or []
+                        for review in claim_reviews:
+                            publisher = (review.get("publisher") or {}).get("name") or ""
+                            title = review.get("title") or claim_text or "Fact-check review"
+                            url_review = review.get("url") or ""
+                            textual_rating = (review.get("textualRating") or "").strip()
+                            review_date = review.get("reviewDate") or None
 
-                        snippet = f"{publisher} rated: {textual_rating}" if textual_rating else f"Review by {publisher}"
+                            # Score mapping
+                            rating_lower = textual_rating.lower()
+                            if any(k in rating_lower for k in ["false", "pants on fire", "mostly false", "incorrect", "fake"]):
+                                score = 0.95
+                            elif any(k in rating_lower for k in ["mixture", "half true", "partly true", "needs context", "unproven", "misleading"]):
+                                score = 0.8
+                            elif any(k in rating_lower for k in ["true", "mostly true", "accurate"]):
+                                score = 0.75
+                            else:
+                                score = 0.7
 
-                        if url_review:
-                            sources.append(Source(
-                                url=url_review,
-                                title=title[:180],
-                                snippet=snippet[:240],
-                                credibility_score=min(score, 0.99),
-                                date_published=review_date
-                            ))
+                            snippet = f"{publisher} rated: {textual_rating}" if textual_rating else f"Review by {publisher}"
 
-                return sources
-        except Exception as e:
-            logger.error(f"Google Fact Check API error: {e}")
-            return []
+                            if url_review:
+                                all_sources.append(Source(
+                                    url=url_review,
+                                    title=title[:180],
+                                    snippet=snippet[:240],
+                                    credibility_score=min(score, 0.99),
+                                    date_published=review_date
+                                ))
+
+            except Exception as e:
+                logger.warning(f"Google Fact Check API error for variation '{variation}': {e}")
+                continue  # Try next variation
+
+        # Remove duplicates by URL and return
+        seen_urls = set()
+        unique_sources = []
+        for source in all_sources:
+            if source.url not in seen_urls:
+                seen_urls.add(source.url)
+                unique_sources.append(source)
+        
+        logger.info(f"Google Fact Check total unique sources: {len(unique_sources)}")
+        return unique_sources[:10]  # Limit to top 10 results
 
     async def _search_news_api(self, query: str, language: str = "en") -> List[Source]:
         """Query NewsAPI for relevant news articles about the claim"""
