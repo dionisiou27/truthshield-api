@@ -270,34 +270,41 @@ class TruthShieldAI:
             detected_lang = _detect_language(truncated_query)
             logger.info(f"=== SEARCHING FOR: {truncated_query} (lang={detected_lang}) ===")
 
-            # Run all searches in parallel
+            # Run all searches in parallel - ordered by priority
             tasks = [
-                self._search_google_factcheck(truncated_query, detected_lang),
-                self._search_news_api(truncated_query, detected_lang),
+                # Static knowledge sources (highest priority)
                 self._search_wikipedia(truncated_query, detected_lang),
                 self._search_wikidata(truncated_query, detected_lang),
+                # Fact-checking sources
+                self._search_google_factcheck(truncated_query, detected_lang),
                 self._search_snopes(truncated_query),
                 self._search_factcheck_org(truncated_query),
                 self._search_politifact(truncated_query),
                 self._search_mimikama(truncated_query),
                 self._search_correctiv(truncated_query),
+                # Live news sources
+                self._search_news_api(truncated_query, detected_lang),
+                self._search_rss_news(truncated_query, detected_lang)
             ]
 
-            google_results, news_results, wikipedia_results, wikidata_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results = await asyncio.gather(
+            wikipedia_results, wikidata_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, news_results, rss_results = await asyncio.gather(
                 *tasks, return_exceptions=True
             )
 
             method_names = [
+                "wikipedia",
+                "wikidata", 
                 "google_factcheck",
-                "news_api",
                 "snopes",
                 "factcheck_org",
                 "politifact",
                 "mimikama",
                 "correctiv",
+                "news_api",
+                "rss_news"
             ]
             for i, result in enumerate([
-                google_results, news_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results
+                wikipedia_results, wikidata_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, news_results, rss_results
             ]):
                 name = method_names[i]
                 if isinstance(result, Exception):
@@ -312,15 +319,16 @@ class TruthShieldAI:
                     return []
                 return results or []
 
-            all_sources.extend(extend_safe(google_results))
-            all_sources.extend(extend_safe(news_results))
             all_sources.extend(extend_safe(wikipedia_results))
             all_sources.extend(extend_safe(wikidata_results))
+            all_sources.extend(extend_safe(google_results))
             all_sources.extend(extend_safe(snopes_results))
             all_sources.extend(extend_safe(factcheck_results))
             all_sources.extend(extend_safe(politifact_results))
             all_sources.extend(extend_safe(mimikama_results))
             all_sources.extend(extend_safe(correctiv_results))
+            all_sources.extend(extend_safe(news_results))
+            all_sources.extend(extend_safe(rss_results))
 
             # De-duplicate by URL
             dedup: Dict[str, Source] = {}
@@ -329,19 +337,20 @@ class TruthShieldAI:
                     dedup[src.url] = src
 
             agg_counts = {
-                "google": 0 if isinstance(google_results, Exception) else len(google_results or []),
-                "news": 0 if isinstance(news_results, Exception) else len(news_results or []),
                 "wikipedia": 0 if isinstance(wikipedia_results, Exception) else len(wikipedia_results or []),
                 "wikidata": 0 if isinstance(wikidata_results, Exception) else len(wikidata_results or []),
+                "google": 0 if isinstance(google_results, Exception) else len(google_results or []),
                 "snopes": 0 if isinstance(snopes_results, Exception) else len(snopes_results or []),
                 "factcheck": 0 if isinstance(factcheck_results, Exception) else len(factcheck_results or []),
                 "politifact": 0 if isinstance(politifact_results, Exception) else len(politifact_results or []),
                 "mimikama": 0 if isinstance(mimikama_results, Exception) else len(mimikama_results or []),
                 "correctiv": 0 if isinstance(correctiv_results, Exception) else len(correctiv_results or []),
+                "news": 0 if isinstance(news_results, Exception) else len(news_results or []),
+                "rss": 0 if isinstance(rss_results, Exception) else len(rss_results or []),
             }
             logger.info(f"Source aggregation counts: {agg_counts}; dedup_total={len(dedup)}")
 
-            # Sort by credibility_score descending, then limit to 3 per domain, top 5
+            # Sort by credibility_score descending, then limit to 2 per domain, top 10
             final_sources = list(dedup.values())
             final_sources.sort(key=lambda s: s.credibility_score, reverse=True)
 
@@ -356,11 +365,11 @@ class TruthShieldAI:
             for src in final_sources:
                 dom = _domain(src.url)
                 cnt = per_domain_count.get(dom, 0)
-                if cnt >= 3:
+                if cnt >= 2:
                     continue
                 per_domain_count[dom] = cnt + 1
                 limited.append(src)
-                if len(limited) >= 5:
+                if len(limited) >= 10:
                     break
             return limited
 
@@ -523,13 +532,17 @@ class TruthShieldAI:
         try:
             lang = "de" if language == "de" else "en"
             base = f"https://{lang}.wikipedia.org/w/api.php"
+            
+            # First try exact title search
             params = {
                 "action": "query",
-                "list": "search",
+                "titles": query,
                 "format": "json",
-                "srsearch": query,
-                "srlimit": 3
+                "prop": "extracts",
+                "exintro": True,
+                "explaintext": True
             }
+            
             async with httpx.AsyncClient(timeout=8.0) as client:
                 resp = await client.get(base, params=params, headers={"User-Agent": "TruthShield/1.0"})
                 if resp.status_code != 200:
@@ -538,27 +551,124 @@ class TruthShieldAI:
                     else:
                         logger.error(f"Wikipedia HTTP {resp.status_code}: {resp.text[:200]}")
                     return []
+                
                 data = resp.json()
-                hits = ((data.get("query") or {}).get("search") or [])[:3]
+                pages = (data.get("query") or {}).get("pages") or {}
                 results: List[Source] = []
-                for h in hits:
-                    title = (h.get("title") or "").strip()
-                    snippet_html = h.get("snippet") or ""
-                    # Wikipedia returns HTML snippets; strip tags crudely
-                    snippet = BeautifulSoup(snippet_html, 'html.parser').get_text(" ")
-                    pageid = h.get("pageid")
-                    url = f"https://{lang}.wikipedia.org/?curid={pageid}" if pageid else f"https://{lang}.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
-                    if title and url:
+                
+                # Check if we found exact matches
+                for page_id, page_data in pages.items():
+                    if page_id == "-1":  # No exact match
+                        continue
+                    title = page_data.get("title", "").strip()
+                    extract = page_data.get("extract", "").strip()
+                    if title and extract:
+                        url = f"https://{lang}.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
                         results.append(Source(
-                            url=url,
+                                    url=url,
                             title=title[:180],
-                            snippet=snippet[:240] if snippet else "Wikipedia article",
-                            credibility_score=0.85,
+                            snippet=extract[:240] if extract else "Wikipedia article",
+                            credibility_score=0.9,  # Higher score for exact matches
                             date_published=None
                         ))
+                
+                # If no exact matches, try search
+                if not results:
+                    search_params = {
+                        "action": "query",
+                        "list": "search",
+                        "format": "json",
+                        "srsearch": query,
+                        "srlimit": 3
+                    }
+                    resp = await client.get(base, params=search_params, headers={"User-Agent": "TruthShield/1.0"})
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        hits = ((data.get("query") or {}).get("search") or [])[:3]
+                        for h in hits:
+                            title = (h.get("title") or "").strip()
+                            snippet_html = h.get("snippet") or ""
+                            snippet = BeautifulSoup(snippet_html, 'html.parser').get_text(" ")
+                            pageid = h.get("pageid")
+                            url = f"https://{lang}.wikipedia.org/?curid={pageid}" if pageid else f"https://{lang}.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
+                            if title and url:
+                                results.append(Source(
+                                    url=url,
+                                    title=title[:180],
+                                    snippet=snippet[:240] if snippet else "Wikipedia article",
+                                    credibility_score=0.85,
+                                    date_published=None
+                                ))
+                
                 return results
         except Exception as e:
             logger.error(f"Wikipedia error: {e}")
+            return []
+
+    async def _search_rss_news(self, query: str, language: str = "en") -> List[Source]:
+        """Search RSS news feeds for recent articles about the claim."""
+        try:
+            # RSS feeds from major news sources
+            rss_feeds = [
+                "https://feeds.reuters.com/reuters/topNews",
+                "https://feeds.bbci.co.uk/news/rss.xml",
+                "https://rss.cnn.com/rss/edition.rss",
+                "https://feeds.npr.org/1001/rss.xml",
+                "https://feeds.washingtonpost.com/rss/world",
+                "https://feeds.washingtonpost.com/rss/politics"
+            ]
+            
+            if language == "de":
+                rss_feeds.extend([
+                    "https://www.tagesschau.de/xml/rss2/",
+                    "https://www.spiegel.de/schlagzeilen/index.rss",
+                    "https://www.zeit.de/news/index"
+                ])
+            
+            results: List[Source] = []
+            query_lower = query.lower()
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                for feed_url in rss_feeds[:3]:  # Limit to 3 feeds for performance
+                    try:
+                        resp = await client.get(feed_url, headers={"User-Agent": "TruthShield/1.0"})
+                        if resp.status_code != 200:
+                            continue
+                            
+                        soup = BeautifulSoup(resp.text, 'xml')
+                        items = soup.find_all('item')[:5]  # Top 5 items per feed
+                        
+                        for item in items:
+                            title = item.find('title')
+                            link = item.find('link')
+                            description = item.find('description')
+                            
+                            if not all([title, link]):
+                                continue
+                                
+                            title_text = title.get_text().strip()
+                            link_text = link.get_text().strip()
+                            desc_text = description.get_text().strip() if description else ""
+                            
+                            # Check if query terms appear in title or description
+                            content = f"{title_text} {desc_text}".lower()
+                            if any(term in content for term in query_lower.split()):
+                                results.append(Source(
+                                    url=link_text,
+                                    title=title_text[:180],
+                                    snippet=desc_text[:240] if desc_text else "News article",
+                                    credibility_score=0.8,
+                                    date_published=None
+                                ))
+                                
+                    except Exception as e:
+                        logger.warning(f"RSS feed {feed_url} failed: {e}")
+                        continue
+                        
+            return results[:5]  # Return top 5 RSS results
+            
+        except Exception as e:
+            logger.error(f"RSS news search failed: {e}")
             return []
 
     async def _search_wikidata(self, query: str, language: str = "en") -> List[Source]:

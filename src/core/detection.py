@@ -123,49 +123,49 @@ class TruthShieldDetector:
             
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
             
-            # Build verified sources: pick up to 3 from distinct trusted domains
+            # Build verified sources: systematic selection from different source types
             def _domain(url: str) -> str:
                 try:
                     return url.split('//', 1)[-1].split('/', 1)[0].lower()
                 except Exception:
                     return ""
 
-            reputable_domains = {
-                "reuters.com", "apnews.com", "associatedpress.com", "bbc.com", "bbc.co.uk",
-                "nytimes.com", "washingtonpost.com", "wsj.com", "bloomberg.com", "theguardian.com",
-                "factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org",
-                "mimikama.org", "wikipedia.org", "wikidata.org", "npr.org", "theguardian.com",
-                "afp.com", "apfactcheck.com", "afpfactcheck.com"
-            }
+            def _source_type(url: str) -> str:
+                dom = _domain(url)
+                if any(x in dom for x in ["wikipedia.org", "wikidata.org"]):
+                    return "static"
+                elif any(x in dom for x in ["factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org", "mimikama.org"]):
+                    return "factcheck"
+                elif any(x in dom for x in ["reuters.com", "apnews.com", "bbc.com", "nytimes.com", "washingtonpost.com", "wsj.com", "bloomberg.com", "theguardian.com", "npr.org"]):
+                    return "news"
+                else:
+                    return "other"
 
             sorted_sources = sorted((fact_check_result.sources or []), key=lambda s: s.credibility_score, reverse=True)
             picked = []
-            seen = set()
-            # First pass: reputable domains only
-            for s in sorted_sources:
-                dom = _domain(s.url)
-                if dom in reputable_domains and dom not in seen:
-                    picked.append(s)
-                    seen.add(dom)
-                if len(picked) >= 3:
-                    break
-            # Fallback pass: any remaining distinct domains
-            if len(picked) < 3:
+            seen_domains = set()
+            source_types = {"static": 0, "factcheck": 0, "news": 0, "other": 0}
+            
+            # Systematic selection: prioritize static sources, then fact-checkers, then news
+            for source_type in ["static", "factcheck", "news", "other"]:
                 for s in sorted_sources:
-                    dom = _domain(s.url)
-                    if dom not in seen and dom:
-                        picked.append(s)
-                        seen.add(dom)
-                    if len(picked) >= 3:
+                    if len(picked) >= 5:  # Increased to 5 sources
                         break
-
-            # Final fill: if still fewer than 3 but sources exist, allow duplicates of existing domains
-            if len(picked) < 3:
+                    dom = _domain(s.url)
+                    stype = _source_type(s.url)
+                    
+                    if stype == source_type and dom not in seen_domains:
+                        picked.append(s)
+                        seen_domains.add(dom)
+                        source_types[stype] += 1
+                        
+            # Fallback: if we still need more sources, allow duplicates from different domains
+            if len(picked) < 5:
                 for s in sorted_sources:
+                    if len(picked) >= 5:
+                        break
                     if s not in picked:
                         picked.append(s)
-                    if len(picked) >= 3:
-                        break
 
             # Create enhanced detection result
             result = DetectionResult(
