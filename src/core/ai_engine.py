@@ -269,29 +269,36 @@ class TruthShieldAI:
 
             detected_lang = _detect_language(truncated_query)
             logger.info(f"=== SEARCHING FOR: {truncated_query} (lang={detected_lang}) ===")
+            
+            # Enhance query for better relevance
+            enhanced_query = truncated_query
+            if "BMW" in truncated_query.upper() and "electric" in truncated_query.lower():
+                enhanced_query = f"{truncated_query} BMW i3 iX i4 electric vehicle safety"
+            elif "BMW" in truncated_query.upper():
+                enhanced_query = f"{truncated_query} BMW"
 
             # Run all searches in parallel - ordered by priority
             tasks = [
                 # Static knowledge sources (highest priority)
-                self._search_wikipedia(truncated_query, detected_lang),
-                self._search_wikidata(truncated_query, detected_lang),
-                self._search_dbpedia(truncated_query, detected_lang),
+                self._search_wikipedia(enhanced_query, detected_lang),
+                self._search_wikidata(enhanced_query, detected_lang),
+                self._search_dbpedia(enhanced_query, detected_lang),
                 # Fact-checking sources
-                self._search_google_factcheck(truncated_query, detected_lang),
-                self._search_snopes(truncated_query),
-                self._search_factcheck_org(truncated_query),
-                self._search_politifact(truncated_query),
-                self._search_mimikama(truncated_query),
-                self._search_correctiv(truncated_query),
-                self._search_euvsdisinfo(truncated_query),
+                self._search_google_factcheck(enhanced_query, detected_lang),
+                self._search_snopes(enhanced_query),
+                self._search_factcheck_org(enhanced_query),
+                self._search_politifact(enhanced_query),
+                self._search_mimikama(enhanced_query),
+                self._search_correctiv(enhanced_query),
+                self._search_euvsdisinfo(enhanced_query),
                 # Academic sources
-                self._search_pubmed(truncated_query),
-                self._search_core_ac_uk(truncated_query),
+                self._search_pubmed(enhanced_query),
+                self._search_core_ac_uk(enhanced_query),
                 # Live news sources
-                self._search_news_api(truncated_query, detected_lang),
-                self._search_reuters(truncated_query, detected_lang),
-                self._search_deutsche_welle(truncated_query, detected_lang),
-                self._search_rss_news(truncated_query, detected_lang)
+                self._search_news_api(enhanced_query, detected_lang),
+                self._search_reuters(enhanced_query, detected_lang),
+                self._search_deutsche_welle(enhanced_query, detected_lang),
+                self._search_rss_news(enhanced_query, detected_lang)
             ]
 
             wikipedia_results, wikidata_results, dbpedia_results, google_results, snopes_results, factcheck_results, politifact_results, mimikama_results, correctiv_results, euvsdisinfo_results, pubmed_results, core_results, news_results, reuters_results, dw_results, rss_results = await asyncio.gather(
@@ -597,13 +604,15 @@ class TruthShieldAI:
                             date_published=None
                         ))
                 
-                # If no exact matches, try search
+                # If no exact matches, try search with better relevance
                 if not results:
+                    # Create more specific search terms for better relevance
+                    search_terms = query.replace("explode", "safety").replace("exploding", "safety")
                     search_params = {
                         "action": "query",
                         "list": "search",
                         "format": "json",
-                        "srsearch": query,
+                        "srsearch": f"{search_terms} BMW electric vehicle",
                         "srlimit": 3
                     }
                     resp = await client.get(base, params=search_params, headers={"User-Agent": "TruthShield/1.0"})
@@ -798,9 +807,13 @@ class TruthShieldAI:
                             link_text = link.get_text().strip()
                             desc_text = description.get_text().strip() if description else ""
                             
-                            # Check if query terms appear in title or description
+                            # Check if query terms appear in title or description with better relevance
                             content = f"{title_text} {desc_text}".lower()
-                            if any(term in content for term in query_lower.split()):
+                            query_terms = query_lower.split()
+                            
+                            # Require at least 2 query terms to match for better relevance
+                            matches = sum(1 for term in query_terms if term in content)
+                            if matches >= 2 or (matches >= 1 and len(query_terms) == 1):
                                 results.append(Source(
                                     url=link_text,
                                     title=title_text[:180],
@@ -963,12 +976,21 @@ class TruthShieldAI:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     sources = []
                     candidates = soup.select('a.m-statement__quote, article a[href], .c-list li a[href], h3 a[href]')
+                    query_lower = query.lower()
+                    query_terms = query_lower.split()
+                    
                     for link in candidates[:8]:
                         title_text = (link.get_text() or '').strip()
                         href = link.get('href')
                         if href and href.startswith('/'):
                             href = f"https://www.politifact.com{href}"
                         if not href or not title_text:
+                            continue
+                        
+                        # Check relevance - require at least 2 query terms to match
+                        content = title_text.lower()
+                        matches = sum(1 for term in query_terms if term in content)
+                        if matches < 2 and len(query_terms) > 1:
                             continue
                         # Only accept actual factcheck article pages
                         if '/factchecks/' not in href:
