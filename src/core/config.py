@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # AI APIs
     openai_api_key: str = ""
     huggingface_api_key: str = ""
+    google_api_key: str = ""
     
     # Security
     secret_key: str = "your-secret-key-change-this"
