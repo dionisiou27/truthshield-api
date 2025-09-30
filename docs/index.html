@@ -55,14 +55,14 @@
             <div class="grid">
                 <div class="card">
                     <h3>Claim</h3>
-                    <textarea id="fakeNews" placeholder="e.g., BMW EVs explode in winter"></textarea>
+                    <textarea id="fakeNews" placeholder="e.g., As a concerned citizen, I think all politicians are corrupt"></textarea>
                     <div class="row">
                         <select id="company">
-                            <option value="Guardian">Guardian Bot (Universal)</option>
-                            <option value="BMW">BMW</option>
-                            <option value="Vodafone">Vodafone</option>
-                            <option value="Bayer">Bayer</option>
-                            <option value="Siemens">Siemens</option>
+                            <option value="Guardian">GuardianBot 🛡️ (Universal - Allrounder)</option>
+                            <option value="PolicyBot">PolicyBot (Policy Fighter - Serious)</option>
+                            <option value="MemeBot">MemeBot (Reddit Fluent - Max Humor)</option>
+                            <option value="EuroShieldBot">EuroShieldBot (EU Communicator - Serious)</option>
+                            <option value="ScienceBot">ScienceBot (Science Defender - Serious)</option>
                         </select>
                         <select id="language">
                             <option value="auto">Auto language</option>
@@ -70,14 +70,17 @@
                             <option value="de">Deutsch</option>
                         </select>
                         <select id="apiBase">
-                            <option value="https://truthshield-api.onrender.com">Render</option>
                             <option value="http://127.0.0.1:8000">Local</option>
+                            <option value="https://truthshield-api.onrender.com">Render</option>
                         </select>
                     </div>
                     <div class="row">
                         <button class="btn" id="analyzeBtn" onclick="analyzeWithRealAI()">Analyze Claim</button>
-                        <button class="btn btn-outline" onclick="fillSample('Guardian')">Guardian Sample</button>
-                        <button class="btn btn-outline" onclick="fillSample('BMW')">BMW Sample</button>
+                        <button class="btn btn-outline" onclick="fillSample('Guardian')">Guardian</button>
+                        <button class="btn btn-outline" onclick="fillSample('PolicyBot')">Policy</button>
+                        <button class="btn btn-outline" onclick="fillSample('MemeBot')">Meme</button>
+                        <button class="btn btn-outline" onclick="fillSample('EuroShieldBot')">EuroShield</button>
+                        <button class="btn btn-outline" onclick="fillSample('ScienceBot')">Science</button>
                     </div>
                     <div id="status" class="status" style="margin-top:10px; display:none;"></div>
                 </div>
@@ -118,10 +121,11 @@
             <div class="card">
                 <h3>Personas</h3>
                 <div class="sources">
-                    <div class="source"><strong>Guardian</strong><br><small>Universal, witty, debunks broadly</small></div>
-                    <div class="source"><strong>PolicyBot</strong><br><small>Official sources and citations</small></div>
-                    <div class="source"><strong>ScienceBot</strong><br><small>Scientific evidence and methodology</small></div>
-                    <div class="source"><strong>Brand</strong><br><small>Company-aligned communications</small></div>
+                    <div class="source"><strong>GuardianBot 🛡️</strong><br><small>Universal fact-checker with humor (Allrounder)</small></div>
+                    <div class="source"><strong>PolicyBot</strong><br><small>Policy fighter with official sources (Serious)</small></div>
+                    <div class="source"><strong>MemeBot</strong><br><small>Speaks fluent Reddit (Maximum Humor)</small></div>
+                    <div class="source"><strong>EuroShieldBot</strong><br><small>Gentle EU communicator (Serious)</small></div>
+                    <div class="source"><strong>ScienceBot</strong><br><small>Science innovation defender (Serious)</small></div>
                 </div>
             </div>
         </div>
@@ -263,8 +267,11 @@
         }
         function fillSample(kind) {
             const m = {
-                'Guardian': 'The moon landing was faked in a Hollywood studio',
-                'BMW': 'BMW electric vehicles explode in freezing temperatures'
+                'Guardian': 'As a concerned citizen, I think all politicians are corrupt',
+                'PolicyBot': 'The EU is implementing mandatory mind control through 5G towers',
+                'MemeBot': 'The moon landing was faked and aliens are controlling the government',
+                'EuroShieldBot': 'The European Union is secretly planning to abolish all national governments',
+                'ScienceBot': 'Vaccines contain microchips that track your every move and control your brain'
             };
             document.getElementById('fakeNews').value = m[kind] || '';
             document.getElementById('company').value = kind;

@@ -30,7 +30,7 @@ class FactCheckRequest(BaseModel):
     
     @validator('company')
     def validate_company(cls, v):
-        supported = ["BMW", "Vodafone", "Bayer", "Siemens", "Mercedes", "SAP", "Guardian"]  # Added Guardian
+        supported = ["BMW", "Vodafone", "Bayer", "Siemens", "Mercedes", "SAP", "Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]
         if v not in supported:
             raise ValueError(f'Company must be one of: {supported}')
         return v

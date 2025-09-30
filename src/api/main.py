@@ -52,17 +52,22 @@ async def root():
 @app.get("/demo", response_class=HTMLResponse)
 async def demo_page():
     """Serve the HTML demo page"""
-    # For now, return a simple message
-    # You'll need to add your HTML file to the project
-    return HTMLResponse(content="""
-    <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1>🛡️ TruthShield Demo</h1>
-            <p>Please upload the demo.html file to your project.</p>
-            <p>Visit <a href="/docs">API Documentation</a></p>
-        </body>
-    </html>
-    """)
+    # Read the demo HTML file
+    demo_file = Path(__file__).parent.parent.parent / "docs" / "index.html"
+    if demo_file.exists():
+        with open(demo_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    else:
+        return HTMLResponse(content="""
+        <html>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h1>🛡️ TruthShield Demo</h1>
+                <p>Demo file not found. Please check the docs/index.html file.</p>
+                <p>Visit <a href="/docs">API Documentation</a></p>
+            </body>
+        </html>
+        """)
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
