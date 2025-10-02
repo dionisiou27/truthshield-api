@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     google_api_key: Optional[str] = None  # NEU
     news_api_key: Optional[str] = None    # NEU
+    claimbuster_api_key: Optional[str] = None  # NEU
+    
+    # Social Media APIs
+    twitter_api_key: Optional[str] = None
+    twitter_api_secret: Optional[str] = None
+    twitter_access_token: Optional[str] = None
+    twitter_access_token_secret: Optional[str] = None
     
     # Security
     secret_key: str = "your-secret-key-change-this"

@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import json
 from urllib.parse import quote
-import httpx
 
 # ADD THESE LINES:
 from dotenv import load_dotenv
@@ -197,7 +196,7 @@ class TruthShieldAI:
             analysis = await self._analyze_with_ai(text, company)
             
             # Step 2: Search for supporting sources  
-            sources = await self._search_sources(text, company)
+            sources = await self._search_sources(text)
             
             # Step 3: Determine final verdict
             verdict = self._determine_verdict(analysis, sources)
@@ -643,7 +642,7 @@ class TruthShieldAI:
                 "misinformation_indicators": []
             }
     
-    async def _search_sources(self, query: str, company: str = "Guardian") -> List[Source]:
+    async def _search_sources(self, query: str) -> List[Source]:
         """Search for sources to verify the claim using real fact-checking APIs and scrapers"""
         try:
             # For political astroturfing claims, return minimal sources since they're not fact-checkable
@@ -674,19 +673,81 @@ class TruthShieldAI:
             from .config import settings
             google_api_available = bool(settings.google_api_key and settings.google_api_key != "your_google_api_key_here")
             news_api_available = bool(settings.news_api_key and settings.news_api_key != "your_news_api_key_here")
-            logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}")
+            claimbuster_api_available = bool(settings.claimbuster_api_key and settings.claimbuster_api_key != "your_claimbuster_api_key_here")
+            logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}")
             
-            # Generate contextually relevant sources based on the claim with bot-specific prioritization
+            # Start with real Google Fact Check API results
             sources = []
-            text_lower = query.lower()
             
-            # Get bot-specific sources with primary/secondary prioritization
-            sources = self._get_prioritized_sources(query, company)
+            # 🔍 REAL GOOGLE FACT CHECK API INTEGRATION
+            if google_api_available:
+                try:
+                    from ..services.google_factcheck import search_google_factchecks
+                    google_results = await search_google_factchecks(truncated_query, detected_lang)
+                    
+                    # Convert Google results to Source objects
+                    for result in google_results[:3]:  # Max 3 Google results
+                        source = Source(
+                            url=result['url'],
+                            title=result['title'],
+                            snippet=result['snippet'],
+                            credibility_score=result['credibility_score'],
+                            date_published=result.get('date_published', '')
+                        )
+                        sources.append(source)
+                        logger.info(f"✅ Google Fact Check: {result['publisher']} - {result['rating']}")
+                        
+                except Exception as e:
+                    logger.error(f"❌ Google Fact Check API error: {e}")
             
-            # Add real API sources if available
-            if google_api_available or news_api_available:
-                real_sources = await self._search_real_apis(query, detected_lang)
-                sources.extend(real_sources)
+            # 📰 REAL NEWS API INTEGRATION
+            if news_api_available:
+                try:
+                    from ..services.news_api import search_news_context
+                    news_results = await search_news_context(truncated_query, detected_lang)
+                    
+                    # Convert News API results to Source objects
+                    for result in news_results[:2]:  # Max 2 News results for context
+                        source = Source(
+                            url=result['url'],
+                            title=result['title'],
+                            snippet=result['snippet'],
+                            credibility_score=result['credibility_score'],
+                            date_published=result.get('published_at', '')
+                        )
+                        sources.append(source)
+                        logger.info(f"✅ News Context: {result['source_name']} - {result['title'][:50]}...")
+                        
+                except Exception as e:
+                    logger.error(f"❌ News API error: {e}")
+            
+            # 🎯 REAL CLAIMBUSTER API INTEGRATION (Claim Scoring)
+            if claimbuster_api_available:
+                try:
+                    from ..services.claimbuster_api import score_claim_worthiness
+                    claimbuster_score = await score_claim_worthiness(truncated_query)
+                    
+                    # Add ClaimBuster analysis as a source if claim-worthy
+                    if claimbuster_score and claimbuster_score.get('claim_worthy', False):
+                        score = claimbuster_score['max_score']
+                        confidence = claimbuster_score['confidence']
+                        
+                        source = Source(
+                            url='https://claimbuster.org',
+                            title=f"ClaimBuster Analysis: Claim-worthy statement detected",
+                            snippet=f"ClaimBuster scored this as claim-worthy (score: {score:.3f}, confidence: {confidence:.3f}). {claimbuster_score['claim_sentences']}/{claimbuster_score['total_sentences']} sentences contain factual claims requiring verification.",
+                            credibility_score=0.85,  # ClaimBuster is high credibility
+                            date_published=''
+                        )
+                        sources.append(source)
+                        logger.info(f"✅ ClaimBuster: Claim-worthy detected (score: {score:.3f})")
+                        
+                except Exception as e:
+                    logger.error(f"❌ ClaimBuster API error: {e}")
+            
+            # Add bot-specific sources with primary/secondary prioritization
+            prioritized_sources = self._get_prioritized_sources(query, company)
+            sources.extend(prioritized_sources)
             
             return sources
             
@@ -824,127 +885,6 @@ class TruthShieldAI:
                 added_count += 1
         
         return sources
-    
-    async def _search_real_apis(self, query: str, language: str = "en") -> List[Source]:
-        """Search real APIs for fact-checking sources"""
-        sources = []
-        
-        # Google Fact Check API
-        google_sources = await self._search_google_factcheck(query, language)
-        sources.extend(google_sources)
-        
-        # News API
-        news_sources = await self._search_news_api(query, language)
-        sources.extend(news_sources)
-        
-        return sources
-    
-    async def _search_google_factcheck(self, query: str, language: str = "en") -> List[Source]:
-        """Query Google Fact Check Tools API for fact-checked claims"""
-        from .config import settings
-        api_key = settings.google_api_key
-        if not api_key or api_key == "your_google_api_key_here":
-            logger.warning("GOOGLE_API_KEY not set; skipping Google Fact Check search")
-            return []
-
-        url = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
-        params = {
-            "key": api_key,
-            "query": query,
-            "languageCode": language if language in ("en", "de") else "en",
-            "pageSize": 5
-        }
-
-        try:
-            logger.debug(f"Google Fact Check query: {query} lang={params['languageCode']}")
-            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-                resp = await client.get(url, params=params)
-                if resp.status_code != 200:
-                    logger.warning(f"Google Fact Check API HTTP {resp.status_code}: {resp.text[:100]}")
-                    return []
-
-                data = resp.json()
-                claims = data.get("claims", []) or []
-                
-                sources = []
-                for claim in claims:
-                    claim_text = claim.get("text", "")
-                    claimant = claim.get("claimant", "")
-                    claim_date = claim.get("claimDate", "")
-                    
-                    # Get the best rating
-                    best_rating = None
-                    for review in claim.get("claimReview", []):
-                        rating = review.get("textualRating", "")
-                        if rating and (not best_rating or len(rating) > len(best_rating)):
-                            best_rating = rating
-                    
-                    if claim_text:
-                        sources.append(Source(
-                            url=claim.get("url", ""),
-                            title=f"Google Fact Check: {claim_text[:100]}...",
-                            snippet=f"Claimant: {claimant} | Rating: {best_rating or 'Unknown'} | Date: {claim_date}",
-                            credibility_score=0.9,
-                            date_published=claim_date
-                        ))
-                
-                logger.info(f"Google Fact Check found {len(sources)} sources")
-                return sources[:5]  # Limit to top 5 results
-                
-        except Exception as e:
-            logger.error(f"Google Fact Check API error: {e}")
-            return []
-    
-    async def _search_news_api(self, query: str, language: str = "en") -> List[Source]:
-        """Query NewsAPI for relevant news articles about the claim"""
-        from .config import settings
-        api_key = settings.news_api_key
-        if not api_key or api_key == "your_news_api_key_here":
-            logger.warning("NEWS_API_KEY not set; skipping NewsAPI search")
-            return []
-
-        url = "https://newsapi.org/v2/everything"
-        params = {
-            "q": query,
-            "language": language if language in ("en", "de") else "en",
-            "sortBy": "relevancy",
-            "pageSize": 5,
-        }
-        headers = {"X-Api-Key": api_key}
-
-        try:
-            logger.debug(f"NewsAPI query: {query} lang={params['language']}")
-            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-                resp = await client.get(url, params=params, headers=headers)
-                if resp.status_code != 200:
-                    logger.error(f"NewsAPI HTTP {resp.status_code}: {resp.text[:200]}")
-                    return []
-
-                data = resp.json()
-                articles = data.get("articles", []) or []
-
-                sources = []
-                for art in articles:
-                    title = (art.get("title") or "").strip()
-                    description = (art.get("description") or art.get("content") or "").strip()
-                    url_art = art.get("url") or ""
-                    published_at = art.get("publishedAt") or None
-
-                    if url_art and title:
-                        sources.append(Source(
-                            url=url_art,
-                            title=title[:180],
-                            snippet=(description or "News article")[:240],
-                            credibility_score=0.75,
-                            date_published=published_at
-                        ))
-
-                logger.info(f"NewsAPI found {len(sources)} sources")
-                return sources[:5]  # Limit to top 5 results
-                
-        except Exception as e:
-            logger.error(f"NewsAPI error: {e}")
-            return []
 
     def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
         """Enhanced verdict logic with clearer thresholds for better misinformation detection"""

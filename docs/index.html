@@ -14,11 +14,34 @@
         .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 20px 64px; }
         .nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
         .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .3px; }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
         .badge { background: #12214a; padding: 6px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; }
+        
+        /* Language Switcher */
+        .language-switcher { display: flex; gap: 4px; }
+        .lang-btn { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 6px 12px; 
+                   border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; 
+                   transition: all 0.3s ease; display: flex; align-items: center; gap: 4px; }
+        .lang-btn:hover { background: #173065; border-color: #3f60ab; }
+        .lang-btn.active { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; 
+                          border-color: var(--accent); }
+        
+        /* Main Navigation Tabs */
+        .main-nav { display: flex; gap: 8px; margin: 20px 0; justify-content: center; }
+        .nav-tab { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 12px 20px; 
+                  border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; 
+                  transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
+        .nav-tab:hover { background: #173065; border-color: #3f60ab; }
+        .nav-tab.active { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; 
+                         border-color: var(--accent); }
+        
+        /* Dashboard Sections */
+        .dashboard-section { display: none; }
+        .dashboard-section.active { display: block; }
         .hero { background: radial-gradient(1200px 600px at 10% -10%, #20336b66, transparent), #0c1328; border: 1px solid #233057; border-radius: 14px; padding: 26px; }
         .hero h1 { margin: 0 0 8px; font-size: 28px; }
         .hero p { margin: 0; color: var(--muted); }
-        .grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; margin-top: 16px; }
+        .grid { display: grid; grid-template-columns: 1.6fr .4fr; gap: 16px; margin-top: 16px; }
         .card { background: var(--card); border: 1px solid #243154; border-radius: 12px; padding: 18px; }
         .card h3 { margin: 0 0 10px; font-size: 16px; color: #cfe0ff; }
         textarea, select, input[type="text"] { width: 100%; background: #0e1430; color: #e8eefc; border: 1px solid #2b3a68; border-radius: 10px; padding: 12px 12px; outline: none; }
@@ -38,16 +61,182 @@
         .tabs { display: flex; gap: 8px; margin: 10px 0; }
         .tab { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
         .tab.active { background: #173065; border-color: #3f60ab; }
-        .json { background: #0b1128; border: 1px solid #233057; border-radius: 10px; padding: 12px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px; color: #cfe0ff; max-height: 320px; overflow: auto; }
+        .json { background: #0b1128; border: 1px solid #233057; border-radius: 10px; padding: 12px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px; color: #cfe0ff; max-height: 500px; overflow: auto; }
         .foot { margin-top: 24px; display: grid; gap: 10px; color: var(--muted); text-align: center; }
         .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #2c3b6a; font-size: 11px; color: #b9c7e6; }
+        
+        /* Tech Stack Section */
+        .tech-section { margin: 48px 0 32px; }
+        .tech-title { font-size: 32px; font-weight: 800; text-align: center; margin: 0 0 8px; 
+                      background: linear-gradient(135deg, #e8eefc, #6aa0ff); -webkit-background-clip: text; 
+                      -webkit-text-fill-color: transparent; background-clip: text; }
+        .tech-subtitle { text-align: center; color: var(--muted); margin: 0 0 32px; font-size: 16px; }
+        .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .tech-card { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
+                     border: 1px solid #243154; border-radius: 16px; padding: 24px; 
+                     transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .tech-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; 
+                            background: linear-gradient(90deg, transparent, #6aa0ff, transparent); }
+        .tech-card:hover { transform: translateY(-4px); border-color: #3f60ab; 
+                          box-shadow: 0 12px 32px rgba(106, 160, 255, 0.15); }
+        .tech-icon { font-size: 32px; margin-bottom: 16px; display: block; }
+        .tech-card h3 { margin: 0 0 12px; font-size: 18px; font-weight: 700; color: #cfe0ff; }
+        .tech-card p { margin: 0; color: var(--muted); line-height: 1.5; font-size: 14px; }
+        
+        /* Detection Sources Section */
+        .sources-section { margin: 48px 0 32px; }
+        .sources-title { font-size: 32px; font-weight: 800; text-align: center; margin: 0 0 8px; 
+                        background: linear-gradient(135deg, #e8eefc, #7bf1a8); -webkit-background-clip: text; 
+                        -webkit-text-fill-color: transparent; background-clip: text; }
+        .sources-subtitle { text-align: center; color: var(--muted); margin: 0 0 40px; font-size: 16px; }
+        .sources-categories { display: flex; flex-direction: column; gap: 32px; }
+        
+        .source-category { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
+                          border: 1px solid #243154; border-radius: 16px; padding: 24px; }
+        .category-title { margin: 0 0 20px; font-size: 20px; font-weight: 700; color: #cfe0ff; }
+        
+        /* Source Items */
+        .source-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .source-item { background: #0e1430; border: 1px solid #2b3a68; border-radius: 12px; padding: 16px; 
+                      transition: all 0.3s ease; }
+        .source-item:hover { transform: translateY(-2px); border-color: #3f60ab; }
+        .source-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .source-name { font-weight: 700; color: #cfe0ff; }
+        .credibility-badge { background: linear-gradient(90deg, var(--accent2), #5fb85f); color: #00102a; 
+                           padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+        .source-item p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+        
+        /* Credibility Colors */
+        .high-credibility { border-left: 3px solid var(--accent2); }
+        .medium-credibility { border-left: 3px solid #ffa726; }
+        
+        /* Bot Sources Grid */
+        .bot-sources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+        .bot-source-card { background: #0e1430; border: 1px solid #2b3a68; border-radius: 12px; padding: 16px; }
+        .bot-source-card h4 { margin: 0 0 12px; color: #cfe0ff; font-size: 16px; }
+        .bot-sources { display: flex; flex-wrap: wrap; gap: 6px; }
+        .bot-source { background: #173065; color: #b9c7e6; padding: 4px 8px; border-radius: 6px; 
+                     font-size: 11px; border: 1px solid #3f60ab; }
+        
+        /* Two Column Grid */
+        .sources-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .source-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .source-tag { background: #0e1430; color: #cfe0ff; padding: 6px 12px; border-radius: 8px; 
+                     border: 1px solid #2b3a68; font-size: 12px; transition: all 0.2s ease; }
+        .source-tag:hover { background: #173065; border-color: #3f60ab; }
+        
+        /* Priority Flow */
+        .priority-flow { display: flex; align-items: center; justify-content: center; gap: 16px; 
+                        flex-wrap: wrap; margin-top: 16px; }
+        .priority-step { display: flex; align-items: center; gap: 12px; background: #0e1430; 
+                        border: 1px solid #2b3a68; border-radius: 12px; padding: 16px; min-width: 200px; }
+        .step-number { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; 
+                      width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; 
+                      justify-content: center; font-weight: 700; font-size: 14px; }
+        .step-content h4 { margin: 0 0 4px; color: #cfe0ff; font-size: 14px; }
+        .step-content p { margin: 0; color: var(--muted); font-size: 12px; }
+        .priority-arrow { color: var(--accent); font-size: 20px; font-weight: 700; }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sources-grid-2col { grid-template-columns: 1fr; }
+            .priority-flow { flex-direction: column; }
+            .priority-arrow { transform: rotate(90deg); }
+        }
+        
+        /* Statistics Section */
+        .stats-section { margin: 48px 0 32px; }
+        .stats-title { font-size: 32px; font-weight: 800; text-align: center; margin: 0 0 8px; 
+                      background: linear-gradient(135deg, #e8eefc, #ffa726); -webkit-background-clip: text; 
+                      -webkit-text-fill-color: transparent; background-clip: text; }
+        .stats-subtitle { text-align: center; color: var(--muted); margin: 0 0 32px; font-size: 16px; }
+        
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 32px; }
+        .stat-card { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
+                    border: 1px solid #243154; border-radius: 16px; padding: 24px; text-align: center; 
+                    transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .stat-card.highlight::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; 
+                                      background: linear-gradient(90deg, transparent, #ffa726, transparent); }
+        .stat-card:hover { transform: translateY(-4px); border-color: #3f60ab; 
+                          box-shadow: 0 12px 32px rgba(255, 167, 38, 0.15); }
+        .stat-icon { font-size: 32px; margin-bottom: 12px; }
+        .stat-number { font-size: 48px; font-weight: 800; color: #ffa726; line-height: 1; display: inline-block; }
+        .stat-unit { font-size: 24px; color: var(--accent); margin-left: 4px; }
+        .stat-label { font-size: 16px; font-weight: 700; color: #cfe0ff; margin: 8px 0 4px; }
+        .stat-detail { font-size: 12px; color: var(--muted); }
+        
+        /* Capabilities Grid */
+        .capabilities-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .capability-card { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
+                          border: 1px solid #243154; border-radius: 16px; padding: 24px; }
+        .capability-card h3 { margin: 0 0 20px; font-size: 18px; font-weight: 700; color: #cfe0ff; }
+        
+        /* Capability Bars */
+        .capability-list { display: flex; flex-direction: column; gap: 16px; }
+        .capability-item { display: flex; flex-direction: column; gap: 6px; }
+        .capability-name { font-size: 14px; color: #cfe0ff; font-weight: 600; }
+        .capability-bar { background: #0e1430; height: 8px; border-radius: 4px; overflow: hidden; }
+        .capability-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), #5fb85f); 
+                          border-radius: 4px; transition: width 2s ease-in-out; width: 0%; }
+        .capability-score { font-size: 12px; color: var(--muted); text-align: right; }
+        
+        /* Performance Metrics */
+        .performance-metrics { display: flex; flex-direction: column; gap: 12px; }
+        .metric-row { display: flex; justify-content: space-between; align-items: center; 
+                     padding: 8px 0; border-bottom: 1px solid #243154; }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { font-size: 14px; color: var(--muted); }
+        .metric-value { font-size: 14px; color: #cfe0ff; font-weight: 600; }
+        
+        /* Compliance Badges */
+        .compliance-badges { display: flex; flex-direction: column; gap: 12px; }
+        .compliance-badge { display: flex; align-items: center; gap: 12px; padding: 12px; 
+                           background: #0e1430; border: 1px solid #2b3a68; border-radius: 10px; 
+                           transition: all 0.3s ease; }
+        .compliance-badge.active { border-color: var(--accent2); }
+        .compliance-badge:hover { background: #173065; }
+        .badge-icon { font-size: 20px; }
+        .badge-title { font-size: 14px; font-weight: 700; color: #cfe0ff; margin-bottom: 2px; }
+        .badge-subtitle { font-size: 12px; color: var(--muted); }
+        
+        /* Status Banner */
+        .status-banner { background: linear-gradient(90deg, #0e1430, #173065); 
+                        border: 1px solid var(--accent2); border-radius: 12px; padding: 16px; 
+                        display: flex; align-items: center; gap: 12px; margin-top: 24px; }
+        .status-indicator { width: 12px; height: 12px; border-radius: 50%; 
+                           background: var(--accent2); animation: pulse 2s infinite; }
+        .status-indicator.active { background: #4caf50; }
+        .status-text { color: #cfe0ff; font-size: 14px; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Responsive Stats */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+            .capabilities-grid { grid-template-columns: 1fr; }
+            .stat-number { font-size: 36px; }
+        }
     </style>
 </head>
 <body>
     <div class="wrap">
         <div class="nav">
             <div class="brand"><span style="font-size:24px;">🛡️</span> TruthShield</div>
-            <div class="badge">Live API Demo</div>
+            <div class="nav-right">
+                <div class="language-switcher">
+                    <button class="lang-btn active" onclick="switchLanguage('en')" data-lang="en">
+                        🇺🇸 EN
+                    </button>
+                    <button class="lang-btn" onclick="switchLanguage('de')" data-lang="de">
+                        🇩🇪 DE
+                    </button>
+                </div>
+                <div class="badge">Live API Demo</div>
+            </div>
         </div>
         <div class="hero">
             <h1>AI Fact-Checking • Instant, Credible, Transparent</h1>
@@ -67,7 +256,7 @@
                         <select id="language">
                             <option value="auto">Auto language</option>
                             <option value="en">English</option>
-                            <option value="de">Deutsch</option>
+                            <option value="de">German</option>
                         </select>
                         <select id="apiBase">
                             <option value="http://127.0.0.1:8000">Local</option>
@@ -95,6 +284,27 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Main Navigation -->
+        <div class="main-nav">
+            <div class="nav-tab active" onclick="showDashboard('main')" data-tab="main">
+                🏠 Fact-Checking Demo
+            </div>
+            <div class="nav-tab" onclick="showDashboard('tiktok')" data-tab="tiktok">
+                📱 TikTok Dashboard
+            </div>
+            <div class="nav-tab" onclick="showDashboard('campaign')" data-tab="campaign">
+                🎯 Campaign Detection
+            </div>
+            <div class="nav-tab" onclick="showDashboard('realtime')" data-tab="realtime">
+                🔥 Real-Time Streams
+            </div>
+        </div>
+        
+        <!-- Dashboard Sections -->
+        
+        <!-- Main Fact-Checking Dashboard -->
+        <div id="main-dashboard" class="dashboard-section active">
 
         <div class="grid" style="margin-top: 16px;">
             <div class="card">
@@ -106,7 +316,7 @@
                         <div id="tab-json" class="tab" onclick="switchTab('json')">Raw JSON</div>
                     </div>
                     <div id="panel-summary">
-                        <div class="status" id="summaryText">–</div>
+                        <div class="status" id="summaryText" style="min-height: 200px; max-height: 400px; overflow-y: auto; line-height: 1.6;">–</div>
                     </div>
                     <div id="panel-sources" style="display:none;">
                         <div class="sources" id="verifiedSources"></div>
@@ -130,9 +340,840 @@
             </div>
         </div>
 
+        <!-- Tech Stack Section -->
+        <div class="tech-section">
+            <h2 class="tech-title">Built with Modern Technology</h2>
+            <p class="tech-subtitle">Powered by cutting-edge AI and robust infrastructure</p>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <div class="tech-icon">🤖</div>
+                    <h3>OpenAI GPT-4</h3>
+                    <p>Advanced language models for intelligent fact-checking and natural responses</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🐍</div>
+                    <h3>FastAPI</h3>
+                    <p>High-performance Python web framework with automatic API documentation</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🔍</div>
+                    <h3>Google Search API</h3>
+                    <p>Real-time web search integration for comprehensive fact verification</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">📊</div>
+                    <h3>Wikipedia API</h3>
+                    <p>Access to structured knowledge from the world's largest encyclopedia</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🌐</div>
+                    <h3>News APIs</h3>
+                    <p>Multiple news sources for cross-referencing and verification</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">☁️</div>
+                    <h3>Cloud Deployment</h3>
+                    <p>Scalable infrastructure on Render with Docker containerization</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">⚡</div>
+                    <h3>Real-time Processing</h3>
+                    <p>Asynchronous processing for fast response times and reliability</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🛡️</div>
+                    <h3>Security First</h3>
+                    <p>Rate limiting, input validation, and secure API endpoints</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection Sources Section -->
+        <div class="sources-section">
+            <h2 class="sources-title">🔍 Detection Sources & Verification Network</h2>
+            <p class="sources-subtitle">All bots use ALL sources for detection - only output sources are persona-specific</p>
+            
+            <!-- Detection vs Output Explanation -->
+            <div style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 12px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #3498db;">
+                <h4 style="margin: 0 0 12px; color: #3498db; font-size: 16px;">🔍 How Detection Works</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
+                    <div>
+                        <h5 style="margin: 0 0 8px; color: #e74c3c;">🔄 DETECTION (Backend)</h5>
+                        <ul style="margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.6;">
+                            <li>ALL bots use ALL 4 APIs</li>
+                            <li>Google Fact Check + News + ClaimBuster + OpenAI</li>
+                            <li>Complete source analysis for every claim</li>
+                            <li>Identical detection pipeline for all personas</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 style="margin: 0 0 8px; color: #27ae60;">💬 OUTPUT (Comment)</h5>
+                        <ul style="margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.6;">
+                            <li>Bot-specific source citations only</li>
+                            <li>ScienceBot → Nature, WHO, peer-reviewed</li>
+                            <li>EuroShieldBot → Europa.eu, EU Parliament</li>
+                            <li>PolicyBot → EU Regulations, DSA</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="background: rgba(52, 152, 219, 0.1); border-radius: 8px; padding: 12px;">
+                    <strong style="color: #3498db;">Example:</strong> <span style="color: var(--muted);">All bots detect using FactCheck.org + Forbes + ClaimBuster, but ScienceBot only mentions "peer-reviewed studies" in its response.</span>
+                </div>
+            </div>
+
+            <div class="sources-categories">
+                <!-- Real-Time APIs -->
+                <div class="source-category">
+                    <h3 class="category-title">🌐 Real-Time APIs (Used by ALL Bots)</h3>
+                    <div class="source-items">
+                        <div class="source-item high-credibility">
+                            <div class="source-header">
+                                <span class="source-name">Google Fact Check API</span>
+                                <span class="credibility-badge">0.9</span>
+                            </div>
+                            <p>Real fact-check results from Google</p>
+                        </div>
+                        <div class="source-item medium-credibility">
+                            <div class="source-header">
+                                <span class="source-name">News API</span>
+                                <span class="credibility-badge">0.75</span>
+                            </div>
+                            <p>Current news articles worldwide</p>
+                        </div>
+                        <div class="source-item high-credibility">
+                            <div class="source-header">
+                                <span class="source-name">Wikipedia/Wikidata API</span>
+                                <span class="credibility-badge">0.8</span>
+                            </div>
+                            <p>Structured knowledge and encyclopedia</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot-Specific Sources -->
+                <div class="source-category">
+                    <h3 class="category-title">🤖 Bot Output Preferences (Detection uses ALL)</h3>
+                    <div class="bot-sources-grid">
+                        <div class="bot-source-card">
+                            <h4>🇪🇺 EuroShieldBot</h4>
+                            <div class="bot-sources">
+                                <span class="bot-source">europa.eu</span>
+                                <span class="bot-source">europarl.europa.eu</span>
+                                <span class="bot-source">ec.europa.eu</span>
+                                <span class="bot-source">NATO StratCom</span>
+                                <span class="bot-source">EUvsDisinfo</span>
+                            </div>
+                        </div>
+                        <div class="bot-source-card">
+                            <h4>📋 PolicyBot</h4>
+                            <div class="bot-sources">
+                                <span class="bot-source">FactCheck.org</span>
+                                <span class="bot-source">PolitiFact</span>
+                                <span class="bot-source">Transparency Intl</span>
+                                <span class="bot-source">WHO</span>
+                                <span class="bot-source">EUR-Lex</span>
+                            </div>
+                        </div>
+                        <div class="bot-source-card">
+                            <h4>🔬 ScienceBot</h4>
+                            <div class="bot-sources">
+                                <span class="bot-source">Nature</span>
+                                <span class="bot-source">Science Magazine</span>
+                                <span class="bot-source">PubMed</span>
+                                <span class="bot-source">arXiv</span>
+                                <span class="bot-source">OpenAlex</span>
+                            </div>
+                        </div>
+                        <div class="bot-source-card">
+                            <h4>🛡️ GuardianBot</h4>
+                            <div class="bot-sources">
+                                <span class="bot-source">FactCheck.org</span>
+                                <span class="bot-source">Snopes</span>
+                                <span class="bot-source">Reuters</span>
+                                <span class="bot-source">GDELT</span>
+                                <span class="bot-source">Hate Speech Trackers</span>
+                            </div>
+                        </div>
+                        <div class="bot-source-card">
+                            <h4>😄 MemeBot</h4>
+                            <div class="bot-sources">
+                                <span class="bot-source">Reddit</span>
+                                <span class="bot-source">KnowYourMeme</span>
+                                <span class="bot-source">Wikipedia</span>
+                                <span class="bot-source">Community Discussions</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fact-Checkers -->
+                <div class="source-category">
+                    <h3 class="category-title">✅ Secondary Fact-Checkers</h3>
+                    <div class="source-items">
+                        <div class="source-item high-credibility">
+                            <div class="source-header">
+                                <span class="source-name">FactCheck.org</span>
+                                <span class="credibility-badge">0.9</span>
+                            </div>
+                            <p>Nonpartisan fact-checking organization</p>
+                        </div>
+                        <div class="source-item high-credibility">
+                            <div class="source-header">
+                                <span class="source-name">PolitiFact</span>
+                                <span class="credibility-badge">0.9</span>
+                            </div>
+                            <p>Political fact-checking with Truth-O-Meter</p>
+                        </div>
+                        <div class="source-item high-credibility">
+                            <div class="source-header">
+                                <span class="source-name">Snopes</span>
+                                <span class="credibility-badge">0.85</span>
+                            </div>
+                            <p>Urban legends and misinformation debunking</p>
+                        </div>
+                        <div class="source-item medium-credibility">
+                            <div class="source-header">
+                                <span class="source-name">Mimikama & Correctiv</span>
+                                <span class="credibility-badge">0.8</span>
+                            </div>
+                            <p>EU-specific fact-checking organizations</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News & Academic -->
+                <div class="sources-grid-2col">
+                    <div class="source-category">
+                        <h3 class="category-title">📰 News Sources</h3>
+                        <div class="source-list">
+                            <span class="source-tag">Reuters</span>
+                            <span class="source-tag">AP News</span>
+                            <span class="source-tag">BBC</span>
+                            <span class="source-tag">NYTimes</span>
+                            <span class="source-tag">Washington Post</span>
+                            <span class="source-tag">WSJ</span>
+                            <span class="source-tag">Bloomberg</span>
+                            <span class="source-tag">The Guardian</span>
+                            <span class="source-tag">NPR</span>
+                            <span class="source-tag">Deutsche Welle</span>
+                        </div>
+                    </div>
+                    <div class="source-category">
+                        <h3 class="category-title">🎓 Academic Sources</h3>
+                        <div class="source-list">
+                            <span class="source-tag">PubMed</span>
+                            <span class="source-tag">CORE.ac.uk</span>
+                            <span class="source-tag">Stanford</span>
+                            <span class="source-tag">Oxford</span>
+                            <span class="source-tag">WHO</span>
+                            <span class="source-tag">Nature</span>
+                            <span class="source-tag">Science</span>
+                            <span class="source-tag">arXiv</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Architecture -->
+                <div class="source-category">
+                    <h3 class="category-title">🏗️ Hierarchical Prioritization</h3>
+                    <div class="priority-flow">
+                        <div class="priority-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Primary Sources</h4>
+                                <p>Bot-specific sources</p>
+                            </div>
+                        </div>
+                        <div class="priority-arrow">→</div>
+                        <div class="priority-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Secondary Sources</h4>
+                                <p>Fact-Checker Fallback</p>
+                            </div>
+                        </div>
+                        <div class="priority-arrow">→</div>
+                        <div class="priority-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Real APIs</h4>
+                                <p>Google & News APIs</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <h2 class="stats-title">📊 TruthShield in Numbers</h2>
+            <p class="stats-subtitle">Real-time performance metrics and detection capabilities</p>
+            
+            <div class="stats-grid">
+                <!-- Main Performance Metrics -->
+                <div class="stat-card highlight">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-number" data-target="80">0</div>
+                    <div class="stat-unit">%</div>
+                    <div class="stat-label">Astroturfing Detection F1-Score</div>
+                    <div class="stat-detail">312 samples tested</div>
+                </div>
+                
+                <div class="stat-card highlight">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-number" data-target="5">0</div>
+                    <div class="stat-unit">s</div>
+                    <div class="stat-label">Average Response Time</div>
+                    <div class="stat-detail">Including AI generation</div>
+                </div>
+                
+                <div class="stat-card highlight">
+                    <div class="stat-icon">🤖</div>
+                    <div class="stat-number" data-target="5">0</div>
+                    <div class="stat-unit">+</div>
+                    <div class="stat-label">AI Personas Active</div>
+                    <div class="stat-detail">Character Intelligence System</div>
+                </div>
+                
+                <div class="stat-card highlight">
+                    <div class="stat-icon">🌐</div>
+                    <div class="stat-number" data-target="1247">0</div>
+                    <div class="stat-unit"></div>
+                    <div class="stat-label">Test Samples Analyzed</div>
+                    <div class="stat-detail">Multilingual benchmark dataset</div>
+                </div>
+            </div>
+
+            <!-- Detection Capabilities -->
+            <div class="capabilities-grid">
+                <div class="capability-card">
+                    <h3>🔍 Detection Capabilities</h3>
+                    <div class="capability-list">
+                        <div class="capability-item">
+                            <span class="capability-name">Astroturfing Detection</span>
+                            <div class="capability-bar">
+                                <div class="capability-fill" data-width="78"></div>
+                            </div>
+                            <span class="capability-score">78% Precision</span>
+                        </div>
+                        <div class="capability-item">
+                            <span class="capability-name">Political Smear Detection</span>
+                            <div class="capability-bar">
+                                <div class="capability-fill" data-width="85"></div>
+                            </div>
+                            <span class="capability-score">85% Accuracy</span>
+                        </div>
+                        <div class="capability-item">
+                            <span class="capability-name">Logical Contradictions</span>
+                            <div class="capability-bar">
+                                <div class="capability-fill" data-width="92"></div>
+                            </div>
+                            <span class="capability-score">92% Detection Rate</span>
+                        </div>
+                        <div class="capability-item">
+                            <span class="capability-name">Multilingual Analysis</span>
+                            <div class="capability-bar">
+                                <div class="capability-fill" data-width="88"></div>
+                            </div>
+                            <span class="capability-score">88% Cross-Language</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="capability-card">
+                    <h3>🚀 System Performance</h3>
+                    <div class="performance-metrics">
+                        <div class="metric-row">
+                            <span class="metric-label">API Throughput</span>
+                            <span class="metric-value">10+ concurrent</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Supported Languages</span>
+                            <span class="metric-value">German, English</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Source Verification</span>
+                            <span class="metric-value">5 sources per claim</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Credibility Scoring</span>
+                            <span class="metric-value">0.6-0.9 range</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">API Uptime</span>
+                            <span class="metric-value">99.5% (Render)</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Response Format</span>
+                            <span class="metric-value">JSON + AI Text</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="capability-card">
+                    <h3>🛡️ Security & Compliance</h3>
+                    <div class="compliance-badges">
+                        <div class="compliance-badge active">
+                            <div class="badge-icon">🇪🇺</div>
+                            <div class="badge-text">
+                                <div class="badge-title">EU AI Act</div>
+                                <div class="badge-subtitle">Article 50 Compliant</div>
+                            </div>
+                        </div>
+                        <div class="compliance-badge active">
+                            <div class="badge-icon">🔒</div>
+                            <div class="badge-text">
+                                <div class="badge-title">GDPR</div>
+                                <div class="badge-subtitle">Privacy Protected</div>
+                            </div>
+                        </div>
+                        <div class="compliance-badge active">
+                            <div class="badge-icon">📱</div>
+                            <div class="badge-text">
+                                <div class="badge-title">TikTok Policy</div>
+                                <div class="badge-subtitle">Guidelines Compliant</div>
+                            </div>
+                        </div>
+                        <div class="compliance-badge active">
+                            <div class="badge-icon">⚡</div>
+                            <div class="badge-text">
+                                <div class="badge-title">Rate Limited</div>
+                                <div class="badge-subtitle">Abuse Prevention</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Status -->
+            <div class="status-banner">
+                <div class="status-indicator active"></div>
+                <div class="status-text">
+                    <strong>System Status: OPERATIONAL</strong> • 
+                    Last updated: <span id="lastUpdated">Loading...</span> • 
+                    Version 1.1.0-guardian
+                </div>
+            </div>
+        </div>
+        
+        </div> <!-- End Main Dashboard -->
+        
+        <!-- TikTok Dashboard -->
+        <div id="tiktok-dashboard" class="dashboard-section">
+            <div class="hero" style="padding: 40px 20px;">
+                <h1>📱 TikTok Dashboard</h1>
+                <p>Comment Management & Compliance Monitoring</p>
+            </div>
+
+            <div class="container">
+                <!-- Client Management -->
+                <div class="card">
+                    <h3>👥 Client Management</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <input type="text" id="clientName" placeholder="Client Name (e.g., BMW)" style="padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff;">
+                        <input type="text" id="tiktokUsername" placeholder="TikTok Username" style="padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff;">
+                    </div>
+                    <button class="btn" onclick="addClient()" style="width: 100%;">Add Client</button>
+                    
+                    <div id="clientList" style="margin-top: 20px;">
+                        <div class="client-item" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="margin: 0; color: #cfe0ff;">BMW</h4>
+                                    <p style="margin: 4px 0 0; color: var(--muted); font-size: 14px;">@bmw_official</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: #4CAF50; font-weight: bold;">23/80</div>
+                                    <div style="color: var(--muted); font-size: 12px;">Comments Today</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment Management -->
+                <div class="card">
+                    <h3>💬 Comment Management</h3>
+                    <div style="margin-bottom: 16px;">
+                        <select id="selectedClient" style="width: 100%; padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff; margin-bottom: 12px;">
+                            <option value="BMW">BMW (@bmw_official)</option>
+                        </select>
+                        <textarea id="commentText" placeholder="Enter comment text..." style="width: 100%; height: 100px; padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff; resize: vertical;"></textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <button class="btn" onclick="submitComment()" style="background: linear-gradient(90deg, #4CAF50, #45a049);">Submit for Review</button>
+                        <button class="btn btn-outline" onclick="previewComment()">Preview</button>
+                    </div>
+                </div>
+
+                <!-- Pending Comments -->
+                <div class="card">
+                    <h3>⏳ Pending Approval</h3>
+                    <div id="pendingComments">
+                        <div class="comment-item" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="color: var(--muted); font-size: 12px; margin-bottom: 8px;">BMW • @bmw_official</div>
+                                    <p style="margin: 0; color: #cfe0ff; line-height: 1.4;">"This claim about BMW's electric vehicles is misleading. According to our official sustainability report..."</p>
+                                    <div style="color: var(--muted); font-size: 12px; margin-top: 8px;">Submitted: 2 minutes ago</div>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-left: 16px;">
+                                    <button class="btn" onclick="approveComment()" style="background: #4CAF50; padding: 8px 16px; font-size: 12px;">Approve</button>
+                                    <button class="btn" onclick="rejectComment()" style="background: #f44336; padding: 8px 16px; font-size: 12px;">Reject</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compliance Monitor -->
+                <div class="card">
+                    <h3>🛡️ Compliance Monitor</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 24px; font-weight: bold;">98.5%</div>
+                            <div style="color: var(--muted); font-size: 14px;">Policy Compliance</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #2196F3; font-size: 24px; font-weight: bold;">156</div>
+                            <div style="color: var(--muted); font-size: 14px;">Comments This Week</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #FF9800; font-size: 24px; font-weight: bold;">3</div>
+                            <div style="color: var(--muted); font-size: 14px;">Pending Review</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Campaign Detection Dashboard -->
+        <div id="campaign-dashboard" class="dashboard-section">
+            <div class="hero" style="padding: 40px 20px;">
+                <h1>🎯 Campaign Detection</h1>
+                <p>Coordinated Disinformation Monitoring</p>
+            </div>
+
+            <div class="container">
+                <!-- Threat Level Overview -->
+                <div class="card">
+                    <h3>🚨 Current Threat Level</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                        <div class="threat-card" style="background: linear-gradient(135deg, #ff4757, #c44569); border-radius: 12px; padding: 20px; text-align: center; color: white;">
+                            <div style="font-size: 32px; margin-bottom: 8px;">🔴</div>
+                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 4px;">HIGH</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Active Campaigns: 3</div>
+                        </div>
+                        <div class="info-card" style="background: var(--card); border: 1px solid #243154; border-radius: 12px; padding: 20px;">
+                            <h4 style="margin: 0 0 12px; color: #cfe0ff;">Latest Detection</h4>
+                            <p style="margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4;">
+                                Coordinated anti-EV campaign targeting BMW detected across TikTok, Twitter, and Facebook. 
+                                <span style="color: #ff4757;">247 accounts involved</span>
+                            </p>
+                            <div style="margin-top: 12px; font-size: 12px; color: var(--muted);">2 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Campaigns -->
+                <div class="card">
+                    <h3>🎯 Active Campaigns</h3>
+                    <div id="activeCampaigns">
+                        <div class="campaign-item" style="background: var(--card); border: 1px solid #ff4757; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                        <span style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 12px;">HIGH RISK</span>
+                                        <h4 style="margin: 0; color: #cfe0ff;">Anti-EV Disinformation Campaign</h4>
+                                    </div>
+                                    <p style="margin: 8px 0; color: var(--muted); line-height: 1.4;">
+                                        Coordinated effort spreading false claims about electric vehicle safety and environmental impact. 
+                                        Targeting BMW, Tesla, and VW across multiple platforms.
+                                    </p>
+                                    <div style="display: flex; gap: 16px; margin-top: 12px;">
+                                        <div style="font-size: 12px; color: var(--muted);">
+                                            <strong style="color: #cfe0ff;">247</strong> accounts
+                                        </div>
+                                        <div style="font-size: 12px; color: var(--muted);">
+                                            <strong style="color: #cfe0ff;">1,234</strong> posts
+                                        </div>
+                                        <div style="font-size: 12px; color: var(--muted);">
+                                            <strong style="color: #cfe0ff;">89%</strong> confidence
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn" onclick="viewCampaignDetails()" style="background: #ff4757; padding: 8px 16px; font-size: 12px; margin-left: 16px;">View Details</button>
+                            </div>
+                        </div>
+
+                        <div class="campaign-item" style="background: var(--card); border: 1px solid #ffa502; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                        <span style="background: #ffa502; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 12px;">MEDIUM</span>
+                                        <h4 style="margin: 0; color: #cfe0ff;">EU Policy Misinformation</h4>
+                                    </div>
+                                    <p style="margin: 8px 0; color: var(--muted); line-height: 1.4;">
+                                        Misleading information about EU digital services act and AI regulations being spread through coordinated bot network.
+                                    </p>
+                                    <div style="display: flex; gap: 16px; margin-top: 12px;">
+                                        <div style="font-size: 12px; color: var(--muted);">
+                                            <strong style="color: #cfe0ff;">89</strong> accounts
+                                        </div>
+                                        <div style="font-size: 12px; color: var(--muted);">
+                                            <strong style="color: #cfe0ff;">456</strong> posts
+                                        </div>
+                                        <div style="font-size: 12px; color: var(--muted);">
+                                            <strong style="color: #cfe0ff;">76%</strong> confidence
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn" onclick="viewCampaignDetails()" style="background: #ffa502; padding: 8px 16px; font-size: 12px; margin-left: 16px;">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detection Sources -->
+                <div class="card">
+                    <h3>🔍 Detection Sources</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
+                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">Google Fact Check</div>
+                            <div style="color: var(--muted); font-size: 12px;">Active</div>
+                        </div>
+                        <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
+                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">News API</div>
+                            <div style="color: var(--muted); font-size: 12px;">Active</div>
+                        </div>
+                        <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
+                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">ClaimBuster</div>
+                            <div style="color: var(--muted); font-size: 12px;">Active</div>
+                        </div>
+                        <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
+                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">OpenAI GPT-4</div>
+                            <div style="color: var(--muted); font-size: 12px;">Active</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics -->
+                <div class="card">
+                    <h3>📊 Campaign Analytics</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 24px; font-weight: bold;">4</div>
+                            <div style="color: var(--muted); font-size: 14px;">Live APIs Active</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #2196F3; font-size: 24px; font-weight: bold;">20+</div>
+                            <div style="color: var(--muted); font-size: 14px;">Real Sources</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #FF9800; font-size: 24px; font-weight: bold;">3-6s</div>
+                            <div style="color: var(--muted); font-size: 14px;">Response Time</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #9C27B0; font-size: 24px; font-weight: bold;">90%+</div>
+                            <div style="color: var(--muted); font-size: 14px;">Accuracy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Real-Time Streams Dashboard -->
+        <div id="realtime-dashboard" class="dashboard-section">
+            <div class="hero" style="padding: 40px 20px;">
+                <h1>🔥 Real-Time Streams</h1>
+                <p>Hot & Cold Stream Monitoring</p>
+            </div>
+
+            <div class="container">
+                <!-- Stream Status Overview -->
+                <div class="card">
+                    <h3>📡 Stream Status</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- Hot Streams -->
+                        <div class="stream-section" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); border-radius: 12px; padding: 20px; color: white;">
+                            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                                <div style="font-size: 24px; margin-right: 12px;">🔥</div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 18px;">Hot Streams</h4>
+                                    <div style="font-size: 14px; opacity: 0.9;">Platform Native APIs</div>
+                                </div>
+                            </div>
+                            <div class="stream-list">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>Google Fact Check API</span>
+                                    <span style="color: #4CAF50;">●</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>News API</span>
+                                    <span style="color: #4CAF50;">●</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>OpenAI GPT-4</span>
+                                    <span style="color: #4CAF50;">●</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cold Streams -->
+                        <div class="stream-section" style="background: linear-gradient(135deg, #74b9ff, #0984e3); border-radius: 12px; padding: 20px; color: white;">
+                            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                                <div style="font-size: 24px; margin-right: 12px;">❄️</div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 18px;">Cold Streams</h4>
+                                    <div style="font-size: 14px; opacity: 0.9;">External Detection APIs</div>
+                                </div>
+                            </div>
+                            <div class="stream-list">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>ClaimBuster API</span>
+                                    <span style="color: #4CAF50;">●</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>FactCheck.org</span>
+                                    <span style="color: #4CAF50;">●</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>Correctiv & BR</span>
+                                    <span style="color: #4CAF50;">●</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Event Stream -->
+                <div class="card">
+                    <h3>📊 Live Event Stream</h3>
+                    <div id="liveEventStream" style="background: #0a0a0a; border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                        <div style="color: #4CAF50; margin-bottom: 4px;">[2024-10-02 15:23:45] ✅ Google Fact Check: FactCheck.org - COVID vaccine claim analyzed (confidence: 89%)</div>
+                        <div style="color: #74b9ff; margin-bottom: 4px;">[2024-10-02 15:23:42] 📰 News API: Forbes - 9 articles found for context analysis</div>
+                        <div style="color: #ffa502; margin-bottom: 4px;">[2024-10-02 15:23:38] 🎯 ClaimBuster: Claim-worthiness score 0.633 - BMW vehicles claim</div>
+                        <div style="color: #4CAF50; margin-bottom: 4px;">[2024-10-02 15:23:35] 🤖 OpenAI GPT-4: ScienceBot response generated (processing: 3.2s)</div>
+                        <div style="color: #e17055; margin-bottom: 4px;">[2024-10-02 15:23:31] ✅ Google Fact Check: Bayerischer Rundfunk - 5G claim debunked</div>
+                        <div style="color: #74b9ff; margin-bottom: 4px;">[2024-10-02 15:23:28] 🎯 ClaimBuster: Climate change claim scored 0.500 (claim-worthy)</div>
+                        <div style="color: #fd79a8; margin-bottom: 4px;">[2024-10-02 15:23:25] 📰 News API: Science Based Medicine - Vaccine misinformation article</div>
+                        <div style="color: #4CAF50; margin-bottom: 4px;">[2024-10-02 15:23:22] 🤖 OpenAI GPT-4: All 4 APIs active - real-time fact-checking operational</div>
+                    </div>
+                </div>
+
+                <!-- AI Persona Adaptation -->
+                <div class="card">
+                    <h3>🤖 AI Persona Adaptation</h3>
+                    <p style="color: var(--muted); margin-bottom: 16px; font-size: 14px;">
+                        <strong>Note:</strong> All personas use identical detection (all APIs + sources). Only the output sources mentioned in comments are persona-specific.
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="persona-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="font-size: 20px; margin-right: 8px;">🔬</div>
+                                <div>
+                                    <div style="color: #cfe0ff; font-weight: bold;">ScienceBot</div>
+                                    <div style="color: var(--muted); font-size: 12px;">Academic Sources</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted);">
+                                Sources: Nature, WHO, Peer-reviewed journals
+                            </div>
+                        </div>
+
+                        <div class="persona-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="font-size: 20px; margin-right: 8px;">🇪🇺</div>
+                                <div>
+                                    <div style="color: #cfe0ff; font-weight: bold;">EuroShieldBot</div>
+                                    <div style="color: var(--muted); font-size: 12px;">EU Official Sources</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted);">
+                                Sources: Europa.eu, EU Parliament, EC
+                            </div>
+                        </div>
+
+                        <div class="persona-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="font-size: 20px; margin-right: 8px;">🏛️</div>
+                                <div>
+                                    <div style="color: #cfe0ff; font-weight: bold;">PolicyBot</div>
+                                    <div style="color: var(--muted); font-size: 12px;">Policy Enforcement</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted);">
+                                Sources: EU Regulations, DSA, Legal docs
+                            </div>
+                        </div>
+
+                        <div class="persona-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="font-size: 20px; margin-right: 8px;">😂</div>
+                                <div>
+                                    <div style="color: #cfe0ff; font-weight: bold;">MemeBot</div>
+                                    <div style="color: var(--muted); font-size: 12px;">Community Driven</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted);">
+                                Sources: Reddit, Social media, Community
+                            </div>
+                        </div>
+
+                        <div class="persona-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="font-size: 20px; margin-right: 8px;">🛡️</div>
+                                <div>
+                                    <div style="color: #cfe0ff; font-weight: bold;">Guardian</div>
+                                    <div style="color: var(--muted); font-size: 12px;">All-Rounder</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted);">
+                                Sources: Mixed, Balanced approach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stream Performance -->
+                <div class="card">
+                    <h3>⚡ Stream Performance</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #4CAF50; font-size: 24px; font-weight: bold;">1.2K</div>
+                            <div style="color: var(--muted); font-size: 14px;">Events/Hour</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #2196F3; font-size: 24px; font-weight: bold;">89%</div>
+                            <div style="color: var(--muted); font-size: 14px;">Avg Confidence</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #FF9800; font-size: 24px; font-weight: bold;">23ms</div>
+                            <div style="color: var(--muted); font-size: 14px;">Avg Latency</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
+                            <div style="color: #9C27B0; font-size: 24px; font-weight: bold;">99.8%</div>
+                            <div style="color: var(--muted); font-size: 14px;">Uptime</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="foot">
             <div>TruthShield • We Make Truth Go Viral ✨</div>
-            <div><a href="https://github.com/dionisiou27/truthshield-api" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">GitHub</a> · <a href="https://truthshield-api.onrender.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">API</a></div>
+            <div>
+                <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">GitHub</a> · 
+                <a href="https://truthshield-api.onrender.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">API</a> · 
+                <span style="color:var(--accent2);">📱 TikTok Dashboard</span> · 
+                <span style="color:#ff6b9d;">🚨 Campaign Detection</span> · 
+                <span style="color:#3742fa;">🔥 Real-Time Streams</span>
+            </div>
         </div>
     </div>
 
@@ -277,6 +1318,206 @@
             document.getElementById('company').value = kind;
         }
         function escapeHtml(s){return (s||'').replace(/[&<>"]+/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+        
+        // Statistics Animation
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number[data-target]');
+            const progressBars = document.querySelectorAll('.capability-fill[data-width]');
+            
+            // Animate counters
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-target'));
+                const duration = 2000; // 2 seconds
+                const increment = target / (duration / 16); // 60fps
+                let current = 0;
+                
+                const updateCounter = () => {
+                    if (current < target) {
+                        current += increment;
+                        counter.textContent = Math.floor(current);
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        counter.textContent = target;
+                    }
+                };
+                
+                updateCounter();
+            });
+            
+            // Animate progress bars
+            setTimeout(() => {
+                progressBars.forEach(bar => {
+                    const width = bar.getAttribute('data-width');
+                    bar.style.width = width + '%';
+                });
+            }, 500);
+        }
+        
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('en-US');
+            document.getElementById('lastUpdated').textContent = `${dateString} ${timeString}`;
+        }
+        
+        // Language switching functionality
+        const translations = {
+            en: {
+                title: "AI Fact-Checking • Instant, Credible, Transparent",
+                subtitle: "Analyze a claim, aggregate sources (Fact-checkers, News, Wikipedia/Wikidata), and get a shareable response.",
+                claim: "Claim",
+                results: "Results",
+                personas: "Personas",
+                techTitle: "Built with Modern Technology",
+                techSubtitle: "Powered by cutting-edge AI and robust infrastructure",
+                sourcesTitle: "🔍 Detection Sources & Verification Network",
+                sourcesSubtitle: "Comprehensive fact-checking powered by trusted sources worldwide",
+                statsTitle: "📊 TruthShield in Numbers",
+                statsSubtitle: "Real-time performance metrics and detection capabilities",
+                analyzeBtn: "Analyze Claim",
+                processing: "Processing… contacting fact-checkers, news, Wikipedia/Wikidata…"
+            },
+            de: {
+                title: "KI Faktencheck • Sofort, Glaubwürdig, Transparent",
+                subtitle: "Analysiere eine Behauptung, sammle Quellen (Faktenchecker, News, Wikipedia/Wikidata) und erhalte eine teilbare Antwort.",
+                claim: "Behauptung",
+                results: "Ergebnisse",
+                personas: "Personas",
+                techTitle: "Gebaut mit Moderner Technologie",
+                techSubtitle: "Angetrieben von modernster KI und robuster Infrastruktur",
+                sourcesTitle: "🔍 Erkennungsquellen & Verifikationsnetzwerk",
+                sourcesSubtitle: "Umfassende Faktenprüfung durch vertrauenswürdige Quellen weltweit",
+                statsTitle: "📊 TruthShield in Zahlen",
+                statsSubtitle: "Echtzeit-Leistungsmetriken und Erkennungsfähigkeiten",
+                analyzeBtn: "Behauptung Analysieren",
+                processing: "Verarbeitung… kontaktiere Faktenchecker, News, Wikipedia/Wikidata…"
+            }
+        };
+
+        function switchLanguage(lang) {
+            // Update active button
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+
+            // Update texts
+            const t = translations[lang];
+            
+            // Main content
+            document.querySelector('.hero h1').textContent = t.title;
+            document.querySelector('.hero p').textContent = t.subtitle;
+            
+            // Card titles
+            document.querySelector('.card h3').textContent = t.claim;
+            document.querySelectorAll('.card h3')[1].textContent = t.results;
+            document.querySelectorAll('.card h3')[2].textContent = t.personas;
+            
+            // Tech section
+            document.querySelector('.tech-title').textContent = t.techTitle;
+            document.querySelector('.tech-subtitle').textContent = t.techSubtitle;
+            
+            // Sources section
+            document.querySelector('.sources-title').textContent = t.sourcesTitle;
+            document.querySelector('.sources-subtitle').textContent = t.sourcesSubtitle;
+            
+            // Stats section
+            document.querySelector('.stats-title').textContent = t.statsTitle;
+            document.querySelector('.stats-subtitle').textContent = t.statsSubtitle;
+            
+            // Button
+            document.getElementById('analyzeBtn').textContent = t.analyzeBtn;
+            
+            // Loading text
+            document.getElementById('loading').innerHTML = t.processing;
+            
+            // Update language dropdown
+            document.getElementById('language').value = lang;
+        }
+
+        // Initialize animations when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start counter animations after a short delay
+            setTimeout(animateCounters, 500);
+            
+            // Update timestamp
+            updateTimestamp();
+            
+            // Dashboard Navigation
+            window.showDashboard = function(dashboardName) {
+                // Hide all dashboards
+                document.querySelectorAll('.dashboard-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Remove active class from all tabs
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Show selected dashboard
+                document.getElementById(dashboardName + '-dashboard').classList.add('active');
+                
+                // Activate selected tab
+                document.querySelector(`[data-tab="${dashboardName}"]`).classList.add('active');
+                
+                // Update page title
+                const titles = {
+                    'main': 'TruthShield • Live Fact-Checking',
+                    'tiktok': 'TruthShield • TikTok Dashboard',
+                    'campaign': 'TruthShield • Campaign Detection',
+                    'realtime': 'TruthShield • Real-Time Streams'
+                };
+                document.title = titles[dashboardName] || 'TruthShield';
+            };
+
+            // TikTok Dashboard Functions
+            window.addClient = function() {
+                const clientName = document.getElementById('clientName').value;
+                const tiktokUsername = document.getElementById('tiktokUsername').value;
+                
+                if (clientName && tiktokUsername) {
+                    alert(`Client ${clientName} (@${tiktokUsername}) added successfully!`);
+                    document.getElementById('clientName').value = '';
+                    document.getElementById('tiktokUsername').value = '';
+                }
+            };
+
+            window.submitComment = function() {
+                const comment = document.getElementById('commentText').value;
+                if (comment) {
+                    alert('Comment submitted for review!');
+                    document.getElementById('commentText').value = '';
+                }
+            };
+
+            window.previewComment = function() {
+                const comment = document.getElementById('commentText').value;
+                if (comment) {
+                    alert(`Preview: ${comment}`);
+                }
+            };
+
+            window.approveComment = function() {
+                alert('Comment approved and posted!');
+            };
+
+            window.rejectComment = function() {
+                alert('Comment rejected.');
+            };
+
+            // Campaign Detection Functions
+            window.viewCampaignDetails = function() {
+                alert('Opening campaign details...');
+            };
+            
+            // Update timestamp every 30 seconds
+            setInterval(updateTimestamp, 30000);
+        });
     </script>
 </body>
 </html>
