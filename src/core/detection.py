@@ -5,6 +5,7 @@ from datetime import datetime
 import uuid
 
 from .ai_engine import ai_engine, FactCheckResult as AIFactCheckResult, AIInfluencerResponse
+from .coordinated_behavior import CoordinatedBehaviorDetector
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class TruthShieldDetector:
     
     def __init__(self):
         self.ai_engine = ai_engine
+        self.astro_detector = CoordinatedBehaviorDetector()
         logger.info("🛡️ TruthShield Detector initialized with AI engine")
     
     async def detect_text(self, text: str) -> DetectionResult:
@@ -169,6 +171,10 @@ class TruthShieldDetector:
                     if s not in picked:
                         picked.append(s)
 
+            # Optional: derive a lightweight astro score from available signals (if any)
+            # For now, we expose a zeroed placeholder unless upstream provides signals.
+            astro = self.astro_detector.score({})
+
             # Create enhanced detection result
             result = DetectionResult(
                 content_type="text",
@@ -183,7 +189,12 @@ class TruthShieldDetector:
                     "all_sources_checked": [s.model_dump() for s in (fact_check_result.sources or [])],  # All sources for Raw JSON
                     "verified_sources": [s.model_dump() for s in picked],  # Curated selection for UI
                     "ai_response_generated": ai_response is not None,
-                    "ai_responses": ai_responses if ai_responses else None  # Include both language responses
+                    "ai_responses": ai_responses if ai_responses else None,  # Include both language responses
+                    "astroturfing_analysis": {
+                        "astro_score": astro.score_0_10,
+                        "category_scores": astro.category_scores,
+                        "notes": astro.notes,
+                    },
                 },
                 timestamp=datetime.now().isoformat(),
                 request_id=request_id,

@@ -160,6 +160,41 @@ Our approach is based on peer-reviewed research:
 | POST | `/api/v1/detect/text` | Legacy text detection (backward compatibility) |
 | POST | `/api/v1/detect/image` | Image analysis (planned) |
 
+### NEW Today: Prioritization, Astro-Score, Routing, Triage, Compliance
+- Prioritization & Prefilter
+  - GET `/api/v1/monitor/prioritization/config`
+  - POST `/api/v1/monitor/prioritization/prioritize`
+- Coordinated Behavior (Astro-Score)
+  - POST `/api/v1/monitor/astro/score`
+- Routing Pipeline (prefilter → astro → KPI)
+  - GET `/api/v1/monitor/pipeline/config`
+  - POST `/api/v1/monitor/pipeline/route`
+- KPI & Watchlists (ROI)
+  - GET `/api/v1/monitor/kpi/harm`
+  - POST `/api/v1/monitor/kpi/harm/{topic}`
+  - GET `/api/v1/monitor/watchlists`
+  - POST `/api/v1/monitor/watchlists/{client}`
+- QA & Red-team
+  - GET `/api/v1/monitor/qa/config`
+  - GET `/api/v1/monitor/qa/redteam/scenarios`
+- Triage (Quick UI backend)
+  - POST `/api/v1/monitor/triage/item`
+  - POST `/api/v1/monitor/triage/batch`
+  - POST `/api/v1/monitor/triage/action`
+- Capacity & Staffing
+  - POST `/api/v1/monitor/capacity/estimate`
+  - GET `/api/v1/monitor/staff/model`
+- Content Amplification
+  - GET `/api/v1/content/amplify/formats`
+  - POST `/api/v1/content/amplify/claim-vs-proof`
+  - POST `/api/v1/content/amplify/investigative-thread`
+  - POST `/api/v1/content/publish/enqueue`
+  - GET `/api/v1/content/publish/queue`
+- Compliance & Transparency
+  - GET `/api/v1/compliance/transparency`
+  - POST `/api/v1/compliance/transparency`
+  - GET `/api/v1/compliance/dpa/clauses`
+
 ### NEW: Advanced Detection Features
 | Feature | Description | Example |
 |---------|-------------|---------|
@@ -283,6 +318,7 @@ OPENAI_API_KEY=your_openai_api_key
 - **Repetition Analysis**: Detects suspicious word repetition
 - **Context Analysis**: Considers posting frequency and network patterns
 - **Political Targeting**: Specialized detection for political smear campaigns
+- **Coordinated Behavior (Astro-Score)**: Rule-based A–E signals with 0–10 score (ready for ML)
 
 ### Database & Monitoring
 - **SQLAlchemy Models**: Structured data storage for monitoring
@@ -434,6 +470,8 @@ uvicorn src.api.main:app --reload
 - **API Rate Limiting**: Prevents abuse
 - **Platform Compliant**: Manual posting protocols
 - **AI Transparency**: Clear disclosure on all AI-generated content
+- **Provenance Archiving**: Evidence snapshots with SHA-256 and metadata
+- **DPA Template**: See `docs/DPA_TEMPLATE.md` for roles, TOMs, and retention
 - **Character Ethics**: Humor without harm principles
 - **TikTok Policy Compliant**: Full adherence to community guidelines
 - **Audit Trails**: Complete logging of all detection decisions

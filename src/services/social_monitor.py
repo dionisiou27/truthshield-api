@@ -1,9 +1,11 @@
 import tweepy
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 import asyncio
 from src.core.config import settings
+from src.core.prioritization import PrioritizationEngine, PrioritizedItem
+from src.core.virality import ViralityPredictor
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,14 @@ class SocialMediaMonitor:
     
     def __init__(self):
         self.twitter_api = None
+        self.prioritizer = PrioritizationEngine(
+            track_pool_min_views=settings.track_pool_min_views,
+            track_pool_min_growth_rate_24h=settings.track_pool_min_growth_rate_24h,
+            account_pool_min_followers=settings.account_pool_min_followers,
+            account_pool_min_follower_spike_24h=settings.account_pool_min_follower_spike_24h,
+            coordination_min_score=settings.coordination_min_score,
+        )
+        self.virality = ViralityPredictor()
         self.company_targets = {
             "vodafone": ["Vodafone", "Vodafone Deutschland", "@VodafoneDE", "vodafone.de"],
             "bmw": ["BMW", "BMW Deutschland", "@BMW", "bmw.de"],
@@ -137,3 +147,10 @@ class SocialMediaMonitor:
             ])
         
         return await self.monitor_twitter_keywords(threat_keywords, limit)
+
+    def prioritize_batch(self, items: List[Dict]) -> List[PrioritizedItem]:
+        """Apply reach/risk/coordination prioritization to a batch of items."""
+        return [self.prioritizer.prioritize(item) for item in items]
+
+    def virality_score(self, item: Dict) -> float:
+        return self.virality.predict(item)

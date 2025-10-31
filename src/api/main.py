@@ -5,6 +5,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
+from src.api.content import router as content_router
+from src.api.compliance import router as compliance_router
 
 app = FastAPI(
     title="🛡️ TruthShield API",
@@ -24,6 +26,8 @@ app.add_middleware(
 # Include all routes
 app.include_router(detection_router)
 app.include_router(monitoring_router)
+app.include_router(content_router)
+app.include_router(compliance_router)
 
 class HealthResponse(BaseModel):
     status: str
@@ -43,6 +47,8 @@ async def root():
         "endpoints": {
             "detection": "/api/v1/detect/",
             "monitoring": "/api/v1/monitor/",
+            "content": "/api/v1/content/",
+            "compliance": "/api/v1/compliance/",
             "docs": "/docs",
             "demo": "/demo"
         }

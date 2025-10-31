@@ -1,0 +1,18 @@
+run_id: RS-20251031-1200-001
+seed: 1337
+watchlists: demo_data/watchlists.json
+kpi:
+  harm_weights:
+    elections: 3.0
+    health: 2.0
+    meme: 0.5
+  cpr_limit: 2.0e-5
+astro:
+  weights:
+    follower_spike_24h: 1.0
+    cross_post_clip_count_1h: 1.5
+bootstrap_iterations: 1000
+paths:
+  dataset_snapshot: data_snapshots/20251030_073000_astro/
+  artifacts_root: runs/RS-20251031-1200-001/
+
