@@ -49,3 +49,5 @@ cryptography>=41.0.0
 # Environment
 python-dotenv>=1.0.0
 beautifulsoup4==4.12.3
+easyocr>=1.7.1
+Pillow>=10.0.0

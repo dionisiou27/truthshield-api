@@ -1,16 +1,25 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+# Simple heuristic language hint
+def detect_language(text: str) -> str:
+    text_lower = (text or "").lower()
+    german_markers = [" der ", " die ", " das ", " nicht ", " ist ", " und ", " mit ", "für", "oder", "kein", "hallo", "ß", "ä", "ö", "ü"]
+    if any(marker in text_lower for marker in german_markers):
+        return "de"
+    return "en"
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel, validator
 from typing import Dict, List, Optional
 import logging
 from datetime import datetime
 
 from src.core.detection import TruthShieldDetector, DetectionResult, CompanyFactCheckRequest
+from src.services.ocr_service import extract_text_from_image
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/detect", tags=["Detection"])
 
 # Global detector instance
 detector = TruthShieldDetector()
+SUPPORTED_COMPANIES = ["BMW", "Vodafone", "Bayer", "Siemens", "Mercedes", "SAP", "Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]
 
 # Legacy request models (backward compatibility)
 class TextDetectionRequest(BaseModel):
@@ -30,9 +39,8 @@ class FactCheckRequest(BaseModel):
     
     @validator('company')
     def validate_company(cls, v):
-        supported = ["BMW", "Vodafone", "Bayer", "Siemens", "Mercedes", "SAP", "Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]
-        if v not in supported:
-            raise ValueError(f'Company must be one of: {supported}')
+        if v not in SUPPORTED_COMPANIES:
+            raise ValueError(f'Company must be one of: {SUPPORTED_COMPANIES}')
         return v
     
     @validator('text')
@@ -60,6 +68,76 @@ class UniversalFactCheckRequest(BaseModel):
         if len(v) > 1000:
             raise ValueError('Text must be less than 1000 characters')
         return v.strip()
+
+class OCRExtractResponse(BaseModel):
+    extracted_text: str
+    language_hint: Optional[str] = None
+
+# === OCR & IMAGE WORKFLOW ENDPOINTS ===
+
+@router.post("/ocr", response_model=OCRExtractResponse)
+async def ocr_extract_text(file: UploadFile = File(...)):
+    """🖼️ Extract text from an uploaded image (OCR)"""
+    try:
+        file_bytes = await file.read()
+        extracted_text = await extract_text_from_image(file_bytes)
+
+        if not extracted_text:
+            raise HTTPException(status_code=400, detail="No text detected in image.")
+
+        lang_hint = detect_language(extracted_text)
+        return OCRExtractResponse(extracted_text=extracted_text, language_hint=lang_hint)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OCR extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"OCR failed: {str(e)}")
+
+
+@router.post("/fact-check/image", response_model=DetectionResult)
+async def fact_check_image_upload(
+    file: UploadFile = File(...),
+    company: str = "Guardian",
+    language: Optional[str] = None,
+    generate_ai_response: bool = True
+):
+    """🧠 Upload an image, run OCR, then fact-check the extracted text"""
+    try:
+        if company not in SUPPORTED_COMPANIES:
+            raise HTTPException(status_code=400, detail=f"Company must be one of: {SUPPORTED_COMPANIES}")
+
+        file_bytes = await file.read()
+        extracted_text = await extract_text_from_image(file_bytes)
+
+        if not extracted_text:
+            raise HTTPException(status_code=400, detail="No text detected in image.")
+
+        lang = detect_language(extracted_text) if language in (None, "", "auto") else language
+
+        company_request = CompanyFactCheckRequest(
+            text=extracted_text,
+            company=company,
+            language=lang,
+            generate_ai_response=generate_ai_response
+        )
+
+        result = await detector.fact_check_company_claim(company_request)
+        result.details = result.details or {}
+        result.details.update({
+            "ocr": {
+                "language_hint": lang,
+                "character_count": len(extracted_text),
+            }
+        })
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Image fact-check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Image fact-check failed: {str(e)}")
+
 
 # === LEGACY ENDPOINTS (backward compatibility) ===
 

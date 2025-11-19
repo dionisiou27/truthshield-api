@@ -50,6 +50,8 @@
         .btn { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; border: none; border-radius: 10px; padding: 12px 16px; font-weight: 700; cursor: pointer; }
         .btn:disabled { opacity: .6; cursor: not-allowed; }
         .btn-outline { background: transparent; color: var(--accent); border: 1px solid #32509b; }
+        .upload-label { flex: 1; border: 1px dashed #32509b; border-radius: 10px; padding: 12px; color: #cfe0ff; cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; justify-content: center; min-width: 220px; background: rgba(14, 20, 48, 0.6); }
+        .upload-label input { display: none; }
         .kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .kpi .item { background: #0e1430; border: 1px solid #263662; border-radius: 10px; padding: 12px; }
         .kpi h4 { margin: 0 0 6px; color: #cfe0ff; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; }
@@ -291,6 +293,14 @@
                         <button class="btn btn-outline" onclick="fillSample('MemeBot')">Meme</button>
                         <button class="btn btn-outline" onclick="fillSample('EuroShieldBot')">EuroShield</button>
                         <button class="btn btn-outline" onclick="fillSample('ScienceBot')">Science</button>
+                    </div>
+                    <div class="row" style="flex-wrap: wrap;">
+                        <label class="upload-label">
+                            <span>📸 Upload Screenshot (TikTok, Twitter, etc.)</span>
+                            <small style="color: var(--muted);">We will extract text via OCR</small>
+                            <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
+                        </label>
+                        <button class="btn btn-outline" style="min-width: 220px;" onclick="factCheckImage()">OCR + Analyze Image</button>
                     </div>
                     <div id="status" class="status" style="margin-top:10px; display:none;"></div>
                 </div>
@@ -1200,6 +1210,108 @@
 
     <script>
         let API_BASE = 'https://truthshield-api.onrender.com';
+        const statusBanner = () => document.getElementById('status');
+        const fileInputEl = () => document.getElementById('imageUpload');
+
+        async function handleImageUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            await extractTextFromImage(file);
+        }
+
+        async function extractTextFromImage(file) {
+            try {
+                API_BASE = document.getElementById('apiBase').value || API_BASE;
+                const statusEl = statusBanner();
+                statusEl.style.display = 'block';
+                statusEl.textContent = 'Uploading image and running OCR…';
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE}/api/v1/detect/ocr`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`OCR Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                if (data.extracted_text) {
+                    document.getElementById('fakeNews').value = data.extracted_text;
+                    if (data.language_hint) {
+                        document.getElementById('language').value = data.language_hint;
+                    }
+                    statusEl.textContent = '✅ Text extrahiert. Sie können jetzt analysieren.';
+                } else {
+                    statusEl.textContent = '⚠️ Kein Text erkannt – bitte anderes Bild versuchen.';
+                }
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'OCR failed');
+                const statusEl = statusBanner();
+                statusEl.style.display = 'block';
+                statusEl.textContent = `❌ OCR fehlgeschlagen: ${error.message}`;
+            } finally {
+                setTimeout(() => {
+                    const statusEl = statusBanner();
+                    if (statusEl) statusEl.style.display = 'none';
+                }, 4000);
+            }
+        }
+
+        async function factCheckImage() {
+            const fileInput = fileInputEl();
+            if (!fileInput || !fileInput.files?.length) {
+                alert('Bitte zuerst ein Bild hochladen.');
+                return;
+            }
+
+            API_BASE = document.getElementById('apiBase').value || API_BASE;
+            const file = fileInput.files[0];
+            const company = document.getElementById('company').value;
+            const langSel = document.getElementById('language').value;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+
+            setVisible('results', false);
+            setVisible('error', false);
+            setVisible('loading', true);
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Processing image…';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('company', company);
+                formData.append('language', langSel);
+                formData.append('generate_ai_response', 'true');
+
+                const response = await fetch(`${API_BASE}/api/v1/detect/fact-check/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Image fact-check failed: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                setVisible('loading', false);
+                displayResults(result, company);
+            } catch (error) {
+                console.error(error);
+                setVisible('loading', false);
+                setVisible('error', true);
+                document.getElementById('errorMessage').innerHTML = `
+                    <strong>Image Fact-Check Error</strong><br>
+                    <small>${error.message}</small>`;
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze Claim';
+            }
+        }
         
         async function analyzeWithRealAI() {
             const text = document.getElementById('fakeNews').value;
