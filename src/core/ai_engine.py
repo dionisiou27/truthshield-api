@@ -590,11 +590,11 @@ class TruthShieldAI:
             
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
-                model="gpt-3.5-turbo",
+                model="gpt-4-turbo-preview",  # Use GPT-4 for better analysis
                 messages=[
                     {
                         "role": "system", 
-                        "content": f"You are {company}, a {persona['style']}. Be decisive in identifying clear misinformation."
+                        "content": f"You are {company}, a {persona['style']}. Be decisive in identifying clear misinformation. Use factual knowledge and reasoning."
                     },
                     {
                         "role": "user", 
@@ -1210,6 +1210,21 @@ class TruthShieldAI:
                     humor_level = "BALANCED HUMOR - Witty but factual, engaging"
                 
                 language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
+                
+                # Build sources context with snippets
+                sources_text = ""
+                if fact_check.sources:
+                    top_sources = fact_check.sources[:3]  # Top 3 sources
+                    sources_list = []
+                    for i, src in enumerate(top_sources, 1):
+                        snippet = src.snippet[:150] + "..." if len(src.snippet) > 150 else src.snippet
+                        sources_list.append(f"{i}. {src.title}\n   URL: {src.url}\n   Info: {snippet}")
+                    sources_text = f"""
+                
+                VERIFIED SOURCES (use these facts in your response):
+                {chr(10).join(sources_list)}
+                """
+                
                 prompt = f"""
                 You are {company} {persona['emoji']}, {persona['style']}.
                 
@@ -1224,13 +1239,17 @@ class TruthShieldAI:
                 - Is fake: {fact_check.is_fake}
                 - Confidence: {fact_check.confidence}
                 - Category: {fact_check.category}
+                - Explanation: {fact_check.explanation}
+                {sources_text}
                 
                 {lang_instructions.get(language)}:
                 1. Matches your persona's humor level and style
                 2. Is engaging and appropriate for your audience
-                3. Includes the truth in your characteristic way
-                4. Uses 1-2 emojis maximum
-                5. Is 2-3 sentences max
+                3. References specific facts from the verified sources above
+                4. Includes concrete details (not generic statements)
+                5. Uses 1-2 emojis maximum
+                6. Is 2-3 sentences max
+                7. If the claim is false, clearly state what the truth is based on the sources
 
                 {language_directive}
                 
@@ -1274,7 +1293,7 @@ class TruthShieldAI:
             
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
-                model="gpt-3.5-turbo",
+                model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7
             )
