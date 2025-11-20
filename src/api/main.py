@@ -15,9 +15,20 @@ app = FastAPI(
 )
 
 # CORS MIDDLEWARE
+origins = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://dionisiou27.github.io",
+    "https://truthshield-demo.surge.sh",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production: specific domains
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
