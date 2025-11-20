@@ -1,6 +1,6 @@
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from pathlib import Path
 from pydantic import BaseModel
 from src.api.detection import router as detection_router
@@ -104,3 +104,8 @@ async def debug_environment():
         "news_key_exists": bool(os.getenv("NEWS_API_KEY")),
         "debug_info": "Check if environment variables are loaded on Render"
     }
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Return empty favicon to prevent 404 errors"""
+    return Response(status_code=204)  # No Content

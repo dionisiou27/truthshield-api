@@ -54,6 +54,7 @@ class TruthShieldAI:
         self.openai_client = None
         self.setup_openai()
         self.last_api_usage: Dict[str, Dict[str, Any]] = {}
+        self.last_mediawiki_results: List[Dict[str, Any]] = []
         
         # Company-specific response templates
         self.company_personas = {
@@ -650,6 +651,7 @@ class TruthShieldAI:
     async def _search_sources(self, query: str, company: str = "GuardianAvatar") -> List[Source]:
         """Search for sources to verify the claim using real fact-checking APIs and scrapers"""
         try:
+            self.last_mediawiki_results = []
             # For political astroturfing claims, return minimal sources since they're not fact-checkable
             text_lower = query.lower()
             if any(politician in text_lower for politician in ["ursula", "von der leyen", "merkel", "biden", "trump", "macron"]):
@@ -683,6 +685,7 @@ class TruthShieldAI:
                 "google_fact_check": {"available": google_api_available, "called": False, "results": 0, "error": None},
                 "news_api": {"available": news_api_available, "called": False, "results": 0, "error": None},
                 "claimbuster": {"available": claimbuster_api_available, "called": False, "results": 0, "error": None},
+                "mediawiki": {"available": True, "called": False, "results": 0, "error": None},
                 "fallback_sources_added": 0
             }
             logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}")
@@ -737,6 +740,31 @@ class TruthShieldAI:
                 except Exception as e:
                     logger.error(f"❌ News API error: {e}")
                     api_usage["news_api"]["error"] = str(e)
+            
+            # 📘 MEDIAWIKI (Wikipedia + Wikidata) CONTEXT
+            try:
+                from src.services.wiki_api import search_mediawiki_sources
+                wiki_results = await search_mediawiki_sources(truncated_query, detected_lang)
+                if wiki_results:
+                    api_usage["mediawiki"]["called"] = True
+                    api_usage["mediawiki"]["results"] = len(wiki_results)
+                    self.last_mediawiki_results = wiki_results
+                    for result in wiki_results:
+                        source = Source(
+                            url=result["url"],
+                            title=result["title"],
+                            snippet=result.get("snippet", ""),
+                            credibility_score=result.get("credibility", 0.8),
+                            date_published=""
+                        )
+                        sources.append(source)
+                        logger.info(f"📚 MediaWiki: {result['project']} - {result['title']}")
+                else:
+                    self.last_mediawiki_results = []
+            except Exception as e:
+                logger.error(f"❌ MediaWiki fetch error: {e}")
+                api_usage["mediawiki"]["error"] = str(e)
+                self.last_mediawiki_results = []
             
             # 🎯 REAL CLAIMBUSTER API INTEGRATION (Claim Scoring)
             if claimbuster_api_available:
@@ -882,7 +910,10 @@ class TruthShieldAI:
                            credibility_score=0.9, date_published="2024-01-01"),
                     Source(url="https://www.transparency.org/", title="Transparency International", 
                            snippet="Global corruption perceptions and governance research...", 
-                           credibility_score=0.95, date_published="2024-01-01")
+                           credibility_score=0.95, date_published="2024-01-01"),
+                    Source(url="https://meta.wikimedia.org/wiki/Public_policy", title="Meta-Wiki • Public policy & governance", 
+                           snippet="Meta-Wiki's official hub for Wikimedia public policy, transparency, and governance initiatives.", 
+                           credibility_score=0.82, date_published="2024-01-01")
                 ],
                 "secondary": ["mimikama", "correctiv", "snopes", "wikipedia", "factcheckeu"]
             },

@@ -188,6 +188,7 @@ class TruthShieldDetector:
                     "sources_found": len(fact_check_result.sources),
                     "all_sources_checked": [s.model_dump() for s in (fact_check_result.sources or [])],  # All sources for Raw JSON
                     "verified_sources": [s.model_dump() for s in picked],  # Curated selection for UI
+                    "mediawiki_sources": getattr(self.ai_engine, "last_mediawiki_results", []),
                     "ai_response_generated": ai_response is not None,
                     "ai_responses": ai_responses if ai_responses else None,  # Include both language responses
                     "api_usage": getattr(self.ai_engine, "last_api_usage", None),
