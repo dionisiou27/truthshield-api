@@ -51,10 +51,10 @@ TruthShield integrates multi-layered, verified knowledge sources to produce **re
 
 | Bot            | Personality     | Tailored Sources                                    |
 |----------------|------------------|-----------------------------------------------------|
-| **MemeBot**     | Satirical        | Reddit, KnowYourMeme, Wikipedia                     |
-| **PolicyBot**   | Institutional    | EU Commission, WHO, EUR-Lex, EDMO                   |
-| **GuardianBot** | Protective       | Reuters, GDELT, TikTok, Hate Speech Trackers        |
-| **ScienceBot**  | Evidence-based   | PubMed, arXiv, ScienceFeedback, OpenAlex            |
+| **MemeAvatar**     | Satirical        | Reddit, KnowYourMeme, Wikipedia                     |
+| **PolicyAvatar**   | Institutional    | EU Commission, WHO, EUR-Lex, EDMO                   |
+| **GuardianAvatar** | Protective       | Reuters, GDELT, TikTok, Hate Speech Trackers        |
+| **ScienceAvatar**  | Evidence-based   | PubMed, arXiv, ScienceFeedback, OpenAlex            |
 | **EuroShield**  | Strategic Defense| NATO StratCom, EUvsDisinfo, Ukrainian Universities  |
 
 ✅ Attribution is **dynamic**, **source-labeled**, and **bot-specific**.
@@ -77,7 +77,7 @@ TruthShield integrates multi-layered, verified knowledge sources to produce **re
 | Component              | Status      | Notes                                 |
 |------------------------|-------------|----------------------------------------|
 | API Backend            | ✅ Online   | [API Docs](https://truthshield-api.onrender.com/docs) |
-| Bot Engine             | ✅ 8 Ready  | MemeBot, BMWBot, BayerBot, etc.        |
+| Bot Engine             | ✅ 8 Ready  | MemeAvatar, BMWBot, BayerBot, etc.        |
 | Attribution System     | ⚙️ In Progress | JSON-linked, visible trust trails     |
 | TikTok Comment Bot     | 🧪 Testing | First post scheduled July              |
 
@@ -88,7 +88,7 @@ TruthShield integrates multi-layered, verified knowledge sources to produce **re
 - 📩 Confirm Ukraine responses  
 - 🧠 Prepare Stanford pitch for Maty Bohacek  
 - 📤 SYNYO follow-up  
-- 🧪 Deploy MemeBot test  
+- 🧪 Deploy MemeAvatar test  
 - 🧾 Update hybrid model file
 
 ---

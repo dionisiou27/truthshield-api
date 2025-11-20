@@ -19,21 +19,19 @@
         
         /* Language Switcher */
         .language-switcher { display: flex; gap: 4px; }
-        .lang-btn { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 6px 12px; 
+        .lang-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; 
                    border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; 
                    transition: all 0.3s ease; display: flex; align-items: center; gap: 4px; }
-        .lang-btn:hover { background: #173065; border-color: #3f60ab; }
-        .lang-btn.active { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; 
-                          border-color: var(--accent); }
+        .lang-btn:hover { background: #eef2ff; border-color: var(--accent); }
+        .lang-btn.active { background: #eef2ff; color: var(--accent); border-color: var(--accent); }
         
         /* Main Navigation Tabs */
         .main-nav { display: flex; gap: 8px; margin: 20px 0; justify-content: center; }
-        .nav-tab { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 12px 20px; 
+        .nav-tab { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; 
                   border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; 
                   transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
-        .nav-tab:hover { background: #173065; border-color: #3f60ab; }
-        .nav-tab.active { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; 
-                         border-color: var(--accent); }
+        .nav-tab:hover { background: #eef2ff; border-color: var(--accent); }
+        .nav-tab.active { background: #eef2ff; color: var(--accent); border-color: var(--accent); }
         
         /* Dashboard Sections */
         .dashboard-section { display: none; }
@@ -43,46 +41,53 @@
         .hero p { margin: 0; color: var(--muted); }
         .grid { display: grid; grid-template-columns: 4fr 1fr; gap: 20px; margin-top: 16px; }
         .card { background: var(--card); border: 1px solid #243154; border-radius: 12px; padding: 18px; }
-        .card h3 { margin: 0 0 10px; font-size: 16px; color: #cfe0ff; }
+        .card h3 { margin: 0 0 10px; font-size: 16px; color: var(--text); }
         textarea, select, input[type="text"] { width: 100%; background: #0e1430; color: #e8eefc; border: 1px solid #2b3a68; border-radius: 10px; padding: 12px 12px; outline: none; }
         textarea { min-height: 120px; resize: vertical; }
         .row { display: flex; gap: 10px; margin-top: 10px; }
         .btn { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; border: none; border-radius: 10px; padding: 12px 16px; font-weight: 700; cursor: pointer; }
         .btn:disabled { opacity: .6; cursor: not-allowed; }
         .btn-outline { background: transparent; color: var(--accent); border: 1px solid #32509b; }
-        .upload-label { flex: 1; border: 1px dashed #32509b; border-radius: 10px; padding: 12px; color: #cfe0ff; cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; justify-content: center; min-width: 220px; background: rgba(14, 20, 48, 0.6); }
+        .upload-label { flex: 1; border: 1px dashed #32509b; border-radius: 10px; padding: 12px; color: var(--text); cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; justify-content: center; min-width: 220px; background: rgba(14, 20, 48, 0.6); }
         .upload-label input { display: none; }
         .kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .kpi .item { background: #0e1430; border: 1px solid #263662; border-radius: 10px; padding: 12px; }
-        .kpi h4 { margin: 0 0 6px; color: #cfe0ff; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; }
+        .kpi h4 { margin: 0 0 6px; color: var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: .8px; }
         .kpi .val { font-size: 18px; font-weight: 800; }
-        .status { background: #0e1430; border: 1px dashed #32509b; padding: 10px 12px; border-radius: 10px; color: var(--muted); font-size: 13px; }
+        .status { background: var(--panel); border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px; color: var(--muted); font-size: 13px; }
         .sources { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 10px; }
         .source { background: #0f1533; border: 1px solid #2c3b6a; border-radius: 10px; padding: 12px; }
         .source a { color: var(--accent2); text-decoration: none; }
         .tabs { display: flex; gap: 8px; margin: 10px 0; }
-        .tab { background: #0e1430; border: 1px solid #2b3a68; color: #cfe0ff; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-        .tab.active { background: #173065; border-color: #3f60ab; }
-        .json { background: #0b1128; border: 1px solid #233057; border-radius: 10px; padding: 16px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; color: #cfe0ff; max-height: 600px; overflow: auto; line-height: 1.5; }
+        .tab { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .tab.active { background: #eef2ff; border-color: var(--accent); color: var(--accent); }
+
+        .source, .source-item, .source-card, .persona-card, .bot-source-card, .threat-card, .info-card,
+        .stat-card, .tech-card, .source-category {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+        }
+        .source small, .source-item p, .source-card div, .persona-card div { color: var(--muted); }
+        .json { background: #0b1128; border: 1px solid #233057; border-radius: 10px; padding: 16px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; color: #fff; max-height: 600px; overflow: auto; line-height: 1.5; }
         .foot { margin-top: 24px; display: grid; gap: 10px; color: var(--muted); text-align: center; }
         .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #2c3b6a; font-size: 11px; color: #b9c7e6; }
         
         /* Tech Stack Section */
         .tech-section { margin: 48px 0 32px; }
-        .tech-title { font-size: 32px; font-weight: 800; text-align: center; margin: 0 0 8px; 
-                      background: linear-gradient(135deg, #e8eefc, #6aa0ff); -webkit-background-clip: text; 
-                      -webkit-text-fill-color: transparent; background-clip: text; }
+        .tech-title { font-size: 32px; font-weight: 800; text-align: center; margin: 0 0 8px; color: var(--text); }
         .tech-subtitle { text-align: center; color: var(--muted); margin: 0 0 32px; font-size: 16px; }
         .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .tech-card { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
-                     border: 1px solid #243154; border-radius: 16px; padding: 24px; 
-                     transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .tech-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; 
-                            background: linear-gradient(90deg, transparent, #6aa0ff, transparent); }
-        .tech-card:hover { transform: translateY(-4px); border-color: #3f60ab; 
-                          box-shadow: 0 12px 32px rgba(106, 160, 255, 0.15); }
-        .tech-icon { font-size: 32px; margin-bottom: 16px; display: block; }
-        .tech-card h3 { margin: 0 0 12px; font-size: 18px; font-weight: 700; color: #cfe0ff; }
+        .tech-card { background: var(--card); 
+                     border: 1px solid var(--border); border-radius: 16px; padding: 24px; 
+                     transition: all 0.3s ease; position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08); }
+        .tech-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; 
+                            background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+        .tech-card:hover { transform: translateY(-4px); border-color: var(--accent); 
+                          box-shadow: 0 18px 40px rgba(31, 78, 216, 0.18); }
+        .tech-icon { font-size: 32px; margin-bottom: 16px; display: block; color: var(--accent); }
+        .tech-card h3 { margin: 0 0 12px; font-size: 18px; font-weight: 700; color: var(--text); }
         .tech-card p { margin: 0; color: var(--muted); line-height: 1.5; font-size: 14px; }
         
         /* Detection Sources Section */
@@ -95,7 +100,7 @@
         
         .source-category { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
                           border: 1px solid #243154; border-radius: 16px; padding: 24px; }
-        .category-title { margin: 0 0 20px; font-size: 20px; font-weight: 700; color: #cfe0ff; }
+        .category-title { margin: 0 0 20px; font-size: 20px; font-weight: 700; color: var(--text); }
         
         /* Source Items */
         .source-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
@@ -103,7 +108,7 @@
                       transition: all 0.3s ease; }
         .source-item:hover { transform: translateY(-2px); border-color: #3f60ab; }
         .source-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .source-name { font-weight: 700; color: #cfe0ff; }
+        .source-name { font-weight: 700; color: var(--text); }
         .credibility-badge { background: linear-gradient(90deg, var(--accent2), #5fb85f); color: #00102a; 
                            padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; }
         .source-item p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
@@ -112,10 +117,10 @@
         .high-credibility { border-left: 3px solid var(--accent2); }
         .medium-credibility { border-left: 3px solid #ffa726; }
         
-        /* Bot Sources Grid */
+        /* Avatar Sources Grid */
         .bot-sources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
         .bot-source-card { background: #0e1430; border: 1px solid #2b3a68; border-radius: 12px; padding: 16px; }
-        .bot-source-card h4 { margin: 0 0 12px; color: #cfe0ff; font-size: 16px; }
+        .bot-source-card h4 { margin: 0 0 12px; color: var(--text); font-size: 16px; }
         .bot-sources { display: flex; flex-wrap: wrap; gap: 6px; }
         .bot-source { background: #173065; color: #b9c7e6; padding: 4px 8px; border-radius: 6px; 
                      font-size: 11px; border: 1px solid #3f60ab; }
@@ -123,9 +128,9 @@
         /* Two Column Grid */
         .sources-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .source-list { display: flex; flex-wrap: wrap; gap: 8px; }
-        .source-tag { background: #0e1430; color: #cfe0ff; padding: 6px 12px; border-radius: 8px; 
+        .source-tag { background: #1f2933; color: #fff; padding: 6px 12px; border-radius: 8px; 
                      border: 1px solid #2b3a68; font-size: 12px; transition: all 0.2s ease; }
-        .source-tag:hover { background: #173065; border-color: #3f60ab; }
+        .source-tag:hover { background: #111827; border-color: var(--accent); }
         
         /* Priority Flow */
         .priority-flow { display: flex; align-items: center; justify-content: center; gap: 16px; 
@@ -135,7 +140,7 @@
         .step-number { background: linear-gradient(90deg, var(--accent), #7aa7ff); color: #00102a; 
                       width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; 
                       justify-content: center; font-weight: 700; font-size: 14px; }
-        .step-content h4 { margin: 0 0 4px; color: #cfe0ff; font-size: 14px; }
+        .step-content h4 { margin: 0 0 4px; color: var(--text); font-size: 14px; }
         .step-content p { margin: 0; color: var(--muted); font-size: 12px; }
         .priority-arrow { color: var(--accent); font-size: 20px; font-weight: 700; }
         
@@ -165,19 +170,19 @@
         .stat-icon { font-size: 32px; margin-bottom: 12px; }
         .stat-number { font-size: 48px; font-weight: 800; color: #ffa726; line-height: 1; display: inline-block; }
         .stat-unit { font-size: 24px; color: var(--accent); margin-left: 4px; }
-        .stat-label { font-size: 16px; font-weight: 700; color: #cfe0ff; margin: 8px 0 4px; }
+        .stat-label { font-size: 16px; font-weight: 700; color: var(--text); margin: 8px 0 4px; }
         .stat-detail { font-size: 12px; color: var(--muted); }
         
         /* Capabilities Grid */
         .capabilities-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 24px; }
         .capability-card { background: linear-gradient(135deg, #11162a 0%, #0f1428 100%); 
                           border: 1px solid #243154; border-radius: 16px; padding: 24px; }
-        .capability-card h3 { margin: 0 0 20px; font-size: 18px; font-weight: 700; color: #cfe0ff; }
+        .capability-card h3 { margin: 0 0 20px; font-size: 18px; font-weight: 700; color: var(--text); }
         
         /* Capability Bars */
         .capability-list { display: flex; flex-direction: column; gap: 16px; }
         .capability-item { display: flex; flex-direction: column; gap: 6px; }
-        .capability-name { font-size: 14px; color: #cfe0ff; font-weight: 600; }
+        .capability-name { font-size: 14px; color: var(--text); font-weight: 600; }
         .capability-bar { background: #0e1430; height: 8px; border-radius: 4px; overflow: hidden; }
         .capability-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), #5fb85f); 
                           border-radius: 4px; transition: width 2s ease-in-out; width: 0%; }
@@ -189,7 +194,7 @@
                      padding: 8px 0; border-bottom: 1px solid #243154; }
         .metric-row:last-child { border-bottom: none; }
         .metric-label { font-size: 14px; color: var(--muted); }
-        .metric-value { font-size: 14px; color: #cfe0ff; font-weight: 600; }
+        .metric-value { font-size: 14px; color: var(--text); font-weight: 600; }
         
         /* Compliance Badges */
         .compliance-badges { display: flex; flex-direction: column; gap: 12px; }
@@ -199,7 +204,7 @@
         .compliance-badge.active { border-color: var(--accent2); }
         .compliance-badge:hover { background: #173065; }
         .badge-icon { font-size: 20px; }
-        .badge-title { font-size: 14px; font-weight: 700; color: #cfe0ff; margin-bottom: 2px; }
+        .badge-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
         .badge-subtitle { font-size: 12px; color: var(--muted); }
         
         /* Status Banner */
@@ -209,7 +214,7 @@
         .status-indicator { width: 12px; height: 12px; border-radius: 50%; 
                            background: var(--accent2); animation: pulse 2s infinite; }
         .status-indicator.active { background: #4caf50; }
-        .status-text { color: #cfe0ff; font-size: 14px; }
+        .status-text { color: var(--text); font-size: 14px; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -221,6 +226,137 @@
             .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
             .capabilities-grid { grid-template-columns: 1fr; }
             .stat-number { font-size: 36px; }
+        }
+
+        /* --- Professional Theme Overrides --- */
+        :root {
+            --bg: #f5f6fb;
+            --card: #ffffff;
+            --panel: #f9fafc;
+            --muted: #5f6b7c;
+            --accent: #1f4ed8;
+            --accent2: #0f9d58;
+            --danger: #e11d48;
+            --border: #e2e8f0;
+            --text: #1f2933;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Inter", system-ui, -apple-system, Segoe UI, sans-serif;
+        }
+
+        .wrap { padding: 32px 32px 64px; }
+
+        .nav { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 32px; }
+        .brand { color: var(--text); font-size: 20px; }
+        .badge { background: #eef2ff; color: #374151; border: 1px solid var(--border); }
+
+        .hero {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+            color: var(--text);
+        }
+        .hero p { color: var(--muted); }
+
+        .grid { gap: 24px; }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+        }
+
+        textarea, select, input[type="text"] {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .row { margin-top: 16px; }
+
+        .btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            transition: transform .1s ease, box-shadow .1s ease;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(31, 78, 216, 0.25); }
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover {
+            background: #eef2ff;
+            border-color: var(--accent);
+        }
+
+        .status {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        .tabs .tab, .tab {
+            background: var(--panel);
+            border-color: var(--border);
+            color: var(--muted);
+        }
+        .tab.active {
+            background: #eef2ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .source, .source-item, .source-card, .persona-card, .bot-source-card, .threat-card, .info-card,
+        .stat-card, .tech-card, .source-category {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+        }
+        .source small, .source-item p, .source-card div, .persona-card div { color: var(--muted); }
+
+        .kpi .item { background: var(--panel); border-color: var(--border); }
+        .kpi h4 { color: var(--muted); }
+        .kpi .val { color: var(--text); }
+        .pill { border-color: var(--border); color: var(--muted); }
+
+        .nav-tab {
+            background: var(--panel);
+            border-color: var(--border);
+            color: var(--muted);
+        }
+        .nav-tab.active {
+            background: #eef2ff;
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .tech-title, .sources-title, .stats-title {
+            color: var(--text);
+            background: none;
+        }
+        .tech-subtitle, .sources-subtitle, .stats-subtitle { color: var(--muted); }
+
+        .priority-step, .priority-arrow { background: transparent; color: var(--muted); }
+
+        .status-banner {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #0f172a;
+        }
+        .status-indicator { background: #10b981; }
+
+        .json {
+            background: #0f172a;
+            border-radius: 14px;
+            border: none;
         }
     </style>
 </head>
@@ -237,7 +373,7 @@
                         🇩🇪 DE
                     </button>
                 </div>
-                <div class="badge">Live API Demo</div>
+            <div class="badge">Live API Demo</div>
             </div>
         </div>
         <div class="hero">
@@ -251,30 +387,30 @@
                     <!-- Quick Test Claims -->
                     <div style="margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px;">
                         <button onclick="document.getElementById('fakeNews').value='The 2020 US election was stolen and rigged'" 
-                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #cfe0ff; font-size: 12px; cursor: pointer;">
+                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #fff; font-size: 12px; cursor: pointer;">
                             🗳️ Election (5 sources)
                         </button>
                         <button onclick="document.getElementById('fakeNews').value='COVID-19 was created in a Chinese laboratory'" 
-                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #cfe0ff; font-size: 12px; cursor: pointer;">
+                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #fff; font-size: 12px; cursor: pointer;">
                             🦠 COVID Lab (4 sources)
                         </button>
                         <button onclick="document.getElementById('fakeNews').value='Vaccines contain microchips that track your every move'" 
-                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #cfe0ff; font-size: 12px; cursor: pointer;">
+                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #fff; font-size: 12px; cursor: pointer;">
                             💉 Microchips (4 sources)
                         </button>
                         <button onclick="document.getElementById('fakeNews').value='Climate change is a hoax invented by China'" 
-                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #cfe0ff; font-size: 12px; cursor: pointer;">
+                                style="padding: 6px 12px; background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid var(--accent2); border-radius: 6px; color: #fff; font-size: 12px; cursor: pointer;">
                             🌍 Climate (3 sources)
                         </button>
                     </div>
                     
                     <div class="row">
                         <select id="company">
-                            <option value="Guardian">GuardianBot 🛡️ (Universal - Allrounder)</option>
-                            <option value="PolicyBot">PolicyBot (Policy Fighter - Serious)</option>
-                            <option value="MemeBot">MemeBot (Reddit Fluent - Max Humor)</option>
-                            <option value="EuroShieldBot">EuroShieldBot (EU Communicator - Serious)</option>
-                            <option value="ScienceBot">ScienceBot (Science Defender - Serious)</option>
+                            <option value="GuardianAvatar">Guardian Avatar 🛡️ (Universal - Allrounder)</option>
+                            <option value="PolicyAvatar">Policy Avatar (Policy Fighter - Serious)</option>
+                            <option value="MemeAvatar">Meme Avatar (Reddit Fluent - Max Humor)</option>
+                            <option value="EuroShieldAvatar">EuroShield Avatar (EU Communicator - Serious)</option>
+                            <option value="ScienceAvatar">Science Avatar (Science Defender - Serious)</option>
                         </select>
                         <select id="language">
                             <option value="en" selected>English (Recommended)</option>
@@ -288,20 +424,21 @@
                     </div>
                     <div class="row">
                         <button class="btn" id="analyzeBtn" onclick="analyzeWithRealAI()">Analyze Claim</button>
-                        <button class="btn btn-outline" onclick="fillSample('Guardian')">Guardian</button>
-                        <button class="btn btn-outline" onclick="fillSample('PolicyBot')">Policy</button>
-                        <button class="btn btn-outline" onclick="fillSample('MemeBot')">Meme</button>
-                        <button class="btn btn-outline" onclick="fillSample('EuroShieldBot')">EuroShield</button>
-                        <button class="btn btn-outline" onclick="fillSample('ScienceBot')">Science</button>
+                        <button class="btn btn-outline" onclick="fillSample('GuardianAvatar')">Guardian</button>
+                        <button class="btn btn-outline" onclick="fillSample('PolicyAvatar')">Policy</button>
+                        <button class="btn btn-outline" onclick="fillSample('MemeAvatar')">Meme</button>
+                        <button class="btn btn-outline" onclick="fillSample('EuroShieldAvatar')">EuroShield</button>
+                        <button class="btn btn-outline" onclick="fillSample('ScienceAvatar')">Science</button>
                     </div>
                     <div class="row" style="flex-wrap: wrap;">
                         <label class="upload-label">
-                            <span>📸 Upload Screenshot (TikTok, Twitter, etc.)</span>
-                            <small style="color: var(--muted);">We will extract text via OCR</small>
+                            <span style="color: #fff;">📸 Upload Screenshot (TikTok, Twitter, etc.)</span>
+                            <small style="color: #fff;">We will extract text via OCR</small>
                             <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
                         </label>
                         <button class="btn btn-outline" style="min-width: 220px;" onclick="factCheckImage()">OCR + Analyze Image</button>
                     </div>
+                    <div id="ocrResult" class="status" style="display:none; margin-top:8px;"></div>
                     <div id="status" class="status" style="margin-top:10px; display:none;"></div>
                 </div>
                 <div class="card">
@@ -360,13 +497,13 @@
                 <div id="error" class="status" style="display:none; color:#ffb4b4; border-color:#733;">Error: <span id="errorMessage"></span></div>
             </div>
             <div class="card">
-                <h3>Personas</h3>
+                    <h3>Avatars</h3>
                 <div class="sources">
-                    <div class="source"><strong>GuardianBot 🛡️</strong><br><small>Universal fact-checker with humor (Allrounder)</small></div>
-                    <div class="source"><strong>PolicyBot</strong><br><small>Policy fighter with official sources (Serious)</small></div>
-                    <div class="source"><strong>MemeBot</strong><br><small>Speaks fluent Reddit (Maximum Humor)</small></div>
-                    <div class="source"><strong>EuroShieldBot</strong><br><small>Gentle EU communicator (Serious)</small></div>
-                    <div class="source"><strong>ScienceBot</strong><br><small>Science innovation defender (Serious)</small></div>
+                        <div class="source"><strong>Guardian Avatar 🛡️</strong><br><small>Universal fact-checker with humor (Allrounder)</small></div>
+                        <div class="source"><strong>Policy Avatar</strong><br><small>Policy fighter with official sources (Serious)</small></div>
+                        <div class="source"><strong>Meme Avatar</strong><br><small>Speaks fluent Reddit (Maximum Humor)</small></div>
+                        <div class="source"><strong>EuroShield Avatar</strong><br><small>Gentle EU communicator (Serious)</small></div>
+                        <div class="source"><strong>Science Avatar</strong><br><small>Science innovation defender (Serious)</small></div>
                 </div>
             </div>
         </div>
@@ -430,7 +567,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
                     <div>
                         <h5 style="margin: 0 0 8px; color: #e74c3c;">🔄 DETECTION (Backend)</h5>
-                        <ul style="margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.6;">
+                        <ul style="margin: 0; padding-left: 20px; color: #fff; font-size: 14px; line-height: 1.6;">
                             <li>ALL bots use ALL 4 APIs</li>
                             <li>Google Fact Check + News + ClaimBuster + OpenAI</li>
                             <li>Complete source analysis for every claim</li>
@@ -439,23 +576,23 @@
                     </div>
                     <div>
                         <h5 style="margin: 0 0 8px; color: #27ae60;">💬 OUTPUT (Comment)</h5>
-                        <ul style="margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.6;">
-                            <li>Bot-specific source citations only</li>
-                            <li>ScienceBot → Nature, WHO, peer-reviewed</li>
-                            <li>EuroShieldBot → Europa.eu, EU Parliament</li>
-                            <li>PolicyBot → EU Regulations, DSA</li>
+                        <ul style="margin: 0; padding-left: 20px; color: #fff; font-size: 14px; line-height: 1.6;">
+                            <li>Avatar-specific source citations only</li>
+                            <li>Science Avatar → Nature, WHO, peer-reviewed</li>
+                            <li>EuroShield Avatar → Europa.eu, EU Parliament</li>
+                            <li>Policy Avatar → EU Regulations, DSA</li>
                         </ul>
                     </div>
                 </div>
                 <div style="background: rgba(52, 152, 219, 0.1); border-radius: 8px; padding: 12px;">
-                    <strong style="color: #3498db;">Example:</strong> <span style="color: var(--muted);">All bots detect using FactCheck.org + Forbes + ClaimBuster, but ScienceBot only mentions "peer-reviewed studies" in its response.</span>
+                    <strong style="color: #3498db;">Example:</strong> <span style="color: #fff;">All avatars detect using FactCheck.org + Forbes + ClaimBuster, but Science Avatar only mentions "peer-reviewed studies" in its response.</span>
                 </div>
             </div>
 
             <div class="sources-categories">
                 <!-- Real-Time APIs -->
                 <div class="source-category">
-                    <h3 class="category-title">🌐 Real-Time APIs (Used by ALL Bots)</h3>
+                    <h3 class="category-title">🌐 Real-Time APIs (Used by ALL Avatars)</h3>
                     <div class="source-items">
                         <div class="source-item high-credibility">
                             <div class="source-header">
@@ -481,12 +618,12 @@
                     </div>
                 </div>
 
-                <!-- Bot-Specific Sources -->
+                <!-- Avatar-Specific Sources -->
                 <div class="source-category">
-                    <h3 class="category-title">🤖 Bot Output Preferences (Detection uses ALL)</h3>
+                    <h3 class="category-title">🤖 Avatar Output Preferences (Detection uses ALL)</h3>
                     <div class="bot-sources-grid">
                         <div class="bot-source-card">
-                            <h4>🇪🇺 EuroShieldBot</h4>
+                            <h4>🇪🇺 EuroShield Avatar</h4>
                             <div class="bot-sources">
                                 <span class="bot-source">europa.eu</span>
                                 <span class="bot-source">europarl.europa.eu</span>
@@ -496,7 +633,7 @@
                             </div>
                         </div>
                         <div class="bot-source-card">
-                            <h4>📋 PolicyBot</h4>
+                            <h4>📋 Policy Avatar</h4>
                             <div class="bot-sources">
                                 <span class="bot-source">FactCheck.org</span>
                                 <span class="bot-source">PolitiFact</span>
@@ -506,7 +643,7 @@
                             </div>
                         </div>
                         <div class="bot-source-card">
-                            <h4>🔬 ScienceBot</h4>
+                            <h4>🔬 Science Avatar</h4>
                             <div class="bot-sources">
                                 <span class="bot-source">Nature</span>
                                 <span class="bot-source">Science Magazine</span>
@@ -516,7 +653,7 @@
                             </div>
                         </div>
                         <div class="bot-source-card">
-                            <h4>🛡️ GuardianBot</h4>
+                            <h4>🛡️ Guardian Avatar</h4>
                             <div class="bot-sources">
                                 <span class="bot-source">FactCheck.org</span>
                                 <span class="bot-source">Snopes</span>
@@ -526,7 +663,7 @@
                             </div>
                         </div>
                         <div class="bot-source-card">
-                            <h4>😄 MemeBot</h4>
+                            <h4>😄 Meme Avatar</h4>
                             <div class="bot-sources">
                                 <span class="bot-source">Reddit</span>
                                 <span class="bot-source">KnowYourMeme</span>
@@ -612,7 +749,7 @@
                             <div class="step-number">1</div>
                             <div class="step-content">
                                 <h4>Primary Sources</h4>
-                                <p>Bot-specific sources</p>
+                                <p>Avatar-specific sources</p>
                             </div>
                         </div>
                         <div class="priority-arrow">→</div>
@@ -802,8 +939,8 @@
                 <div class="card">
                     <h3>👥 Client Management</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                        <input type="text" id="clientName" placeholder="Client Name (e.g., BMW)" style="padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff;">
-                        <input type="text" id="tiktokUsername" placeholder="TikTok Username" style="padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff;">
+                        <input type="text" id="clientName" placeholder="Client Name (e.g., BMW)" style="padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: var(--text);">
+                        <input type="text" id="tiktokUsername" placeholder="TikTok Username" style="padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: var(--text);">
                     </div>
                     <button class="btn" onclick="addClient()" style="width: 100%;">Add Client</button>
                     
@@ -811,7 +948,7 @@
                         <div class="client-item" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <h4 style="margin: 0; color: #cfe0ff;">BMW</h4>
+                                    <h4 style="margin: 0; color: var(--text);">BMW</h4>
                                     <p style="margin: 4px 0 0; color: var(--muted); font-size: 14px;">@bmw_official</p>
                                 </div>
                                 <div style="text-align: right;">
@@ -827,10 +964,10 @@
                 <div class="card">
                     <h3>💬 Comment Management</h3>
                     <div style="margin-bottom: 16px;">
-                        <select id="selectedClient" style="width: 100%; padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff; margin-bottom: 12px;">
+                        <select id="selectedClient" style="width: 100%; padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: var(--text); margin-bottom: 12px;">
                             <option value="BMW">BMW (@bmw_official)</option>
                         </select>
-                        <textarea id="commentText" placeholder="Enter comment text..." style="width: 100%; height: 100px; padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: #cfe0ff; resize: vertical;"></textarea>
+                        <textarea id="commentText" placeholder="Enter comment text..." style="width: 100%; height: 100px; padding: 12px; border: 1px solid #243154; border-radius: 8px; background: var(--bg); color: var(--text); resize: vertical;"></textarea>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <button class="btn" onclick="submitComment()" style="background: linear-gradient(90deg, #4CAF50, #45a049);">Submit for Review</button>
@@ -846,7 +983,7 @@
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="flex: 1;">
                                     <div style="color: var(--muted); font-size: 12px; margin-bottom: 8px;">BMW • @bmw_official</div>
-                                    <p style="margin: 0; color: #cfe0ff; line-height: 1.4;">"This claim about BMW's electric vehicles is misleading. According to our official sustainability report..."</p>
+                                    <p style="margin: 0; color: var(--text); line-height: 1.4;">"This claim about BMW's electric vehicles is misleading. According to our official sustainability report..."</p>
                                     <div style="color: var(--muted); font-size: 12px; margin-top: 8px;">Submitted: 2 minutes ago</div>
                                 </div>
                                 <div style="display: flex; gap: 8px; margin-left: 16px;">
@@ -897,7 +1034,7 @@
                             <div style="font-size: 14px; opacity: 0.9;">Active Campaigns: 3</div>
                         </div>
                         <div class="info-card" style="background: var(--card); border: 1px solid #243154; border-radius: 12px; padding: 20px;">
-                            <h4 style="margin: 0 0 12px; color: #cfe0ff;">Latest Detection</h4>
+                            <h4 style="margin: 0 0 12px; color: var(--text);">Latest Detection</h4>
                             <p style="margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4;">
                                 Coordinated anti-EV campaign targeting BMW detected across TikTok, Twitter, and Facebook. 
                                 <span style="color: #ff4757;">247 accounts involved</span>
@@ -916,7 +1053,7 @@
                                 <div style="flex: 1;">
                                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
                                         <span style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 12px;">HIGH RISK</span>
-                                        <h4 style="margin: 0; color: #cfe0ff;">Anti-EV Disinformation Campaign</h4>
+                                        <h4 style="margin: 0; color: var(--text);">Anti-EV Disinformation Campaign</h4>
                                     </div>
                                     <p style="margin: 8px 0; color: var(--muted); line-height: 1.4;">
                                         Coordinated effort spreading false claims about electric vehicle safety and environmental impact. 
@@ -924,13 +1061,13 @@
                                     </p>
                                     <div style="display: flex; gap: 16px; margin-top: 12px;">
                                         <div style="font-size: 12px; color: var(--muted);">
-                                            <strong style="color: #cfe0ff;">247</strong> accounts
+                                            <strong style="color: var(--text);">247</strong> accounts
                                         </div>
                                         <div style="font-size: 12px; color: var(--muted);">
-                                            <strong style="color: #cfe0ff;">1,234</strong> posts
+                                            <strong style="color: var(--text);">1,234</strong> posts
                                         </div>
                                         <div style="font-size: 12px; color: var(--muted);">
-                                            <strong style="color: #cfe0ff;">89%</strong> confidence
+                                            <strong style="color: var(--text);">89%</strong> confidence
                                         </div>
                                     </div>
                                 </div>
@@ -943,20 +1080,20 @@
                                 <div style="flex: 1;">
                                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
                                         <span style="background: #ffa502; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 12px;">MEDIUM</span>
-                                        <h4 style="margin: 0; color: #cfe0ff;">EU Policy Misinformation</h4>
+                                        <h4 style="margin: 0; color: var(--text);">EU Policy Misinformation</h4>
                                     </div>
                                     <p style="margin: 8px 0; color: var(--muted); line-height: 1.4;">
                                         Misleading information about EU digital services act and AI regulations being spread through coordinated bot network.
                                     </p>
                                     <div style="display: flex; gap: 16px; margin-top: 12px;">
                                         <div style="font-size: 12px; color: var(--muted);">
-                                            <strong style="color: #cfe0ff;">89</strong> accounts
+                                            <strong style="color: var(--text);">89</strong> accounts
                                         </div>
                                         <div style="font-size: 12px; color: var(--muted);">
-                                            <strong style="color: #cfe0ff;">456</strong> posts
+                                            <strong style="color: var(--text);">456</strong> posts
                                         </div>
                                         <div style="font-size: 12px; color: var(--muted);">
-                                            <strong style="color: #cfe0ff;">76%</strong> confidence
+                                            <strong style="color: var(--text);">76%</strong> confidence
                                         </div>
                                     </div>
                                 </div>
@@ -972,22 +1109,22 @@
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
                         <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
                             <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
-                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">Google Fact Check</div>
+                            <div style="color: var(--text); font-weight: bold; margin-bottom: 4px;">Google Fact Check</div>
                             <div style="color: var(--muted); font-size: 12px;">Active</div>
                         </div>
                         <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
                             <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
-                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">News API</div>
+                            <div style="color: var(--text); font-weight: bold; margin-bottom: 4px;">News API</div>
                             <div style="color: var(--muted); font-size: 12px;">Active</div>
                         </div>
                         <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
                             <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
-                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">ClaimBuster</div>
+                            <div style="color: var(--text); font-weight: bold; margin-bottom: 4px;">ClaimBuster</div>
                             <div style="color: var(--muted); font-size: 12px;">Active</div>
                         </div>
                         <div class="source-card" style="background: var(--card); border: 1px solid #243154; border-radius: 8px; padding: 16px; text-align: center;">
                             <div style="color: #4CAF50; font-size: 20px; margin-bottom: 8px;">✅</div>
-                            <div style="color: #cfe0ff; font-weight: bold; margin-bottom: 4px;">OpenAI GPT-4</div>
+                            <div style="color: var(--text); font-weight: bold; margin-bottom: 4px;">OpenAI GPT-4</div>
                             <div style="color: var(--muted); font-size: 12px;">Active</div>
                         </div>
                     </div>
@@ -1089,7 +1226,7 @@
                         <div style="color: #4CAF50; margin-bottom: 4px;">[2024-10-02 15:23:45] ✅ Google Fact Check: FactCheck.org - COVID vaccine claim analyzed (confidence: 89%)</div>
                         <div style="color: #74b9ff; margin-bottom: 4px;">[2024-10-02 15:23:42] 📰 News API: Forbes - 9 articles found for context analysis</div>
                         <div style="color: #ffa502; margin-bottom: 4px;">[2024-10-02 15:23:38] 🎯 ClaimBuster: Claim-worthiness score 0.633 - BMW vehicles claim</div>
-                        <div style="color: #4CAF50; margin-bottom: 4px;">[2024-10-02 15:23:35] 🤖 OpenAI GPT-4: ScienceBot response generated (processing: 3.2s)</div>
+                        <div style="color: #4CAF50; margin-bottom: 4px;">[2024-10-02 15:23:35] 🤖 OpenAI GPT-4: Science Avatar response generated (processing: 3.2s)</div>
                         <div style="color: #e17055; margin-bottom: 4px;">[2024-10-02 15:23:31] ✅ Google Fact Check: Bayerischer Rundfunk - 5G claim debunked</div>
                         <div style="color: #74b9ff; margin-bottom: 4px;">[2024-10-02 15:23:28] 🎯 ClaimBuster: Climate change claim scored 0.500 (claim-worthy)</div>
                         <div style="color: #fd79a8; margin-bottom: 4px;">[2024-10-02 15:23:25] 📰 News API: Science Based Medicine - Vaccine misinformation article</div>
@@ -1108,7 +1245,7 @@
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
                                 <div style="font-size: 20px; margin-right: 8px;">🔬</div>
                                 <div>
-                                    <div style="color: #cfe0ff; font-weight: bold;">ScienceBot</div>
+                                    <div style="color: var(--text); font-weight: bold;">Science Avatar</div>
                                     <div style="color: var(--muted); font-size: 12px;">Academic Sources</div>
                                 </div>
                             </div>
@@ -1121,7 +1258,7 @@
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
                                 <div style="font-size: 20px; margin-right: 8px;">🇪🇺</div>
                                 <div>
-                                    <div style="color: #cfe0ff; font-weight: bold;">EuroShieldBot</div>
+                                    <div style="color: var(--text); font-weight: bold;">EuroShield Avatar</div>
                                     <div style="color: var(--muted); font-size: 12px;">EU Official Sources</div>
                                 </div>
                             </div>
@@ -1134,7 +1271,7 @@
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
                                 <div style="font-size: 20px; margin-right: 8px;">🏛️</div>
                                 <div>
-                                    <div style="color: #cfe0ff; font-weight: bold;">PolicyBot</div>
+                                    <div style="color: var(--text); font-weight: bold;">Policy Avatar</div>
                                     <div style="color: var(--muted); font-size: 12px;">Policy Enforcement</div>
                                 </div>
                             </div>
@@ -1147,7 +1284,7 @@
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
                                 <div style="font-size: 20px; margin-right: 8px;">😂</div>
                                 <div>
-                                    <div style="color: #cfe0ff; font-weight: bold;">MemeBot</div>
+                                    <div style="color: var(--text); font-weight: bold;">Meme Avatar</div>
                                     <div style="color: var(--muted); font-size: 12px;">Community Driven</div>
                                 </div>
                             </div>
@@ -1160,7 +1297,7 @@
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
                                 <div style="font-size: 20px; margin-right: 8px;">🛡️</div>
                                 <div>
-                                    <div style="color: #cfe0ff; font-weight: bold;">Guardian</div>
+                                    <div style="color: var(--text); font-weight: bold;">Guardian Avatar</div>
                                     <div style="color: var(--muted); font-size: 12px;">All-Rounder</div>
                                 </div>
                             </div>
@@ -1212,6 +1349,18 @@
         let API_BASE = 'https://truthshield-api.onrender.com';
         const statusBanner = () => document.getElementById('status');
         const fileInputEl = () => document.getElementById('imageUpload');
+        const ocrResultBox = () => document.getElementById('ocrResult');
+        const showOcrResult = (text, lang) => {
+            const box = ocrResultBox();
+            if (!text) {
+                box.style.display = 'none';
+                box.textContent = '';
+                return;
+            }
+            const langLabel = lang ? lang.toUpperCase() : 'auto';
+            box.style.display = 'block';
+            box.innerHTML = `<strong>Extracted (${langLabel}):</strong> ${escapeHtml(text)}`;
+        };
 
         async function handleImageUpload(event) {
             const file = event.target.files?.[0];
@@ -1244,8 +1393,10 @@
                     if (data.language_hint) {
                         document.getElementById('language').value = data.language_hint;
                     }
+                    showOcrResult(data.extracted_text, data.language_hint);
                     statusEl.textContent = '✅ Text extrahiert. Sie können jetzt analysieren.';
                 } else {
+                    showOcrResult(null);
                     statusEl.textContent = '⚠️ Kein Text erkannt – bitte anderes Bild versuchen.';
                 }
             } catch (error) {
@@ -1254,6 +1405,7 @@
                 const statusEl = statusBanner();
                 statusEl.style.display = 'block';
                 statusEl.textContent = `❌ OCR fehlgeschlagen: ${error.message}`;
+                showOcrResult(null);
             } finally {
                 setTimeout(() => {
                     const statusEl = statusBanner();
@@ -1280,6 +1432,10 @@
             setVisible('loading', true);
             analyzeBtn.disabled = true;
             analyzeBtn.textContent = 'Processing image…';
+            const ocrPreview = document.getElementById('fakeNews').value;
+            if (ocrPreview) {
+                showOcrResult(ocrPreview, langSel === 'auto' ? null : langSel);
+            }
 
             try {
                 const formData = new FormData();
@@ -1300,6 +1456,8 @@
                 const result = await response.json();
                 setVisible('loading', false);
                 displayResults(result, company);
+                const langHint = result?.details?.ocr?.language_hint || langSel;
+                showOcrResult(document.getElementById('fakeNews').value, langHint);
             } catch (error) {
                 console.error(error);
                 setVisible('loading', false);
@@ -1441,11 +1599,11 @@
         }
         function fillSample(kind) {
             const m = {
-                'Guardian': 'As a concerned citizen, I think all politicians are corrupt',
-                'PolicyBot': 'The EU is implementing mandatory mind control through 5G towers',
-                'MemeBot': 'The moon landing was faked and aliens are controlling the government',
-                'EuroShieldBot': 'The European Union is secretly planning to abolish all national governments',
-                'ScienceBot': 'Vaccines contain microchips that track your every move and control your brain'
+                'GuardianAvatar': 'As a concerned citizen, I think all politicians are corrupt',
+                'PolicyAvatar': 'The EU is implementing mandatory mind control through 5G towers',
+                'MemeAvatar': 'The moon landing was faked and aliens are controlling the government',
+                'EuroShieldAvatar': 'The European Union is secretly planning to abolish all national governments',
+                'ScienceAvatar': 'Vaccines contain microchips that track your every move and control your brain'
             };
             document.getElementById('fakeNews').value = m[kind] || '';
             document.getElementById('company').value = kind;
@@ -1505,7 +1663,7 @@
                 subtitle: "Analyze a claim, aggregate sources (Fact-checkers, News, Wikipedia/Wikidata), and get a shareable response.",
                 claim: "Claim",
                 results: "Results",
-                personas: "Personas",
+                personas: "Avatars",
                 techTitle: "Built with Modern Technology",
                 techSubtitle: "Powered by cutting-edge AI and robust infrastructure",
                 sourcesTitle: "🔍 Detection Sources & Verification Network",
@@ -1520,7 +1678,7 @@
                 subtitle: "Analysiere eine Behauptung, sammle Quellen (Faktenchecker, News, Wikipedia/Wikidata) und erhalte eine teilbare Antwort.",
                 claim: "Behauptung",
                 results: "Ergebnisse",
-                personas: "Personas",
+                personas: "Avatare",
                 techTitle: "Gebaut mit Moderner Technologie",
                 techSubtitle: "Angetrieben von modernster KI und robuster Infrastruktur",
                 sourcesTitle: "🔍 Erkennungsquellen & Verifikationsnetzwerk",

@@ -190,6 +190,7 @@ class TruthShieldDetector:
                     "verified_sources": [s.model_dump() for s in picked],  # Curated selection for UI
                     "ai_response_generated": ai_response is not None,
                     "ai_responses": ai_responses if ai_responses else None,  # Include both language responses
+                    "api_usage": getattr(self.ai_engine, "last_api_usage", None),
                     "astroturfing_analysis": {
                         "astro_score": astro.score_0_10,
                         "category_scores": astro.category_scores,
@@ -231,38 +232,38 @@ class TruthShieldDetector:
             )
     
     async def universal_fact_check(self, request: CompanyFactCheckRequest) -> DetectionResult:
-        """Universal Guardian Bot - fact-checks any misinformation"""
+        """Universal Guardian Avatar - fact-checks any misinformation"""
         start_time = datetime.now()
         request_id = str(uuid.uuid4())
         
-        # Override company for universal bot
+        # Override company for universal avatar
         original_company = request.company
-        request.company = "Guardian"  # This will use Guardian persona
+        request.company = "GuardianAvatar"  # This will use Guardian Avatar persona
         
-        logger.info(f"🛡️ Universal Guardian Bot fact-check: {request.text[:50]}...")
+        logger.info(f"🛡️ Universal Guardian Avatar fact-check: {request.text[:50]}...")
         
         try:
             # Use the existing fact-checking logic
             result = await self.fact_check_company_claim(request)
             
-            # Customize the response for Guardian Bot
+            # Customize the response for Guardian Avatar
             if result.ai_response:
-                result.ai_response.bot_name = "Guardian Bot 🛡️"
-                result.ai_response.bot_type = "universal"
+                result.ai_response.bot_name = "Guardian Avatar 🛡️"
+                result.ai_response.bot_type = "universal_avatar"
                 
-            # Update details to show it's from Guardian Bot
+            # Update details to show it's from Guardian Avatar
             result.details.update({
-                "bot_type": "universal",
+                "bot_type": "universal_avatar",
                 "original_company": original_company,
-                "guardian_mode": True
+                "guardian_avatar_mode": True
             })
             
-            logger.info(f"✅ Guardian Bot check complete [{request_id}]")
+            logger.info(f"✅ Guardian Avatar check complete [{request_id}]")
             
             return result
             
         except Exception as e:
-            logger.error(f"❌ Guardian Bot failed [{request_id}]: {e}")
+            logger.error(f"❌ Guardian Avatar failed [{request_id}]: {e}")
             
             # Fallback response
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -271,10 +272,10 @@ class TruthShieldDetector:
                 content_type="text",
                 is_synthetic=False,
                 confidence=0.3,
-                detection_method="guardian_bot_error",
+                detection_method="guardian_avatar_error",
                 details={
                     "error": str(e),
-                    "bot_type": "universal",
+                    "bot_type": "universal_avatar",
                     "fallback_mode": True
                 },
                 timestamp=datetime.now().isoformat(),
@@ -292,7 +293,7 @@ class TruthShieldDetector:
                 "ai_fact_checking": self.ai_engine.openai_client is not None,
                 "company_responses": True,
                 "source_verification": True,
-                "universal_guardian_bot": True  # NEW
+                "universal_guardian_avatar": True  # NEW
             },
             "supported_companies": list(self.ai_engine.company_personas.keys()),
             "supported_languages": ["de", "en"],

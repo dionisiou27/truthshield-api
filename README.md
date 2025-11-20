@@ -16,7 +16,7 @@ Building democracy's emotional immune system through Personality-Driven AI that 
 - **ClaimBuster API**: Scientific claim-worthiness scoring from University of Texas
 - **OpenAI GPT-4**: Advanced AI analysis and persona-adapted responses
 - **Multi-Stream Detection**: Hot (platform APIs) + Cold (external detection) streams
-- **5 AI Personas**: ScienceBot, EuroShieldBot, PolicyBot, MemeBot, Guardian Bot
+- **5 AI Personas**: ScienceAvatar, EuroShieldAvatar, PolicyAvatar, MemeAvatar, Guardian Avatar
 
 ## 🌐 Live Demo & API
 
@@ -33,7 +33,7 @@ curl -X POST "https://truthshield-api.onrender.com/api/v1/detect/fact-check" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "COVID-19 vaccines cause autism",
-    "company": "ScienceBot",
+    "company": "ScienceAvatar",
     "language": "en",
     "generate_ai_response": true
   }'
@@ -42,7 +42,7 @@ curl -X POST "https://truthshield-api.onrender.com/api/v1/detect/fact-check" \
 # - Google Fact Check: FactCheck.org sources
 # - News API: Current news context
 # - ClaimBuster: Claim-worthiness score
-# - ScienceBot: Academic-focused response
+# - ScienceAvatar: Academic-focused response
 ```
 
 ### Advanced Detection Examples
@@ -52,7 +52,7 @@ curl -X POST "https://truthshield-api.onrender.com/api/v1/detect/fact-check" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "As a concerned citizen, I think all politicians are corrupt",
-    "company": "Guardian",
+    "company": "GuardianAvatar",
     "language": "en",
     "generate_ai_response": true
   }'
@@ -100,11 +100,11 @@ Just as Charlie Chaplin defeated fascism through humor in "The Great Dictator," 
 - ✅ **Advanced Detection Engine** with astroturfing & contradiction detection
 - ✅ **Bilingual support** (German/English)
 - ✅ **Character Intelligence Framework** with 8+ personas
-- ✅ **GuardianBot** - Universal fact-checker with humor
+- ✅ **GuardianAvatar** - Universal fact-checker with humor
 - ✅ **Political Astroturfing Detection** - Specialized for smear campaigns
 - ✅ **Social Media Monitoring** - Twitter/X integration
 - ✅ **Database Models** - SQLAlchemy monitoring system
-- ✅ **Working prototypes** for BMW, Vodafone, Bayer, Siemens, Guardian
+- ✅ **Working prototypes** for BMW, Vodafone, Bayer, Siemens, Guardian Avatar
 - ✅ **Academic discussions** with Tomorrow University of Applied Sciences
 - ✅ **TikTok Compliance** - Policy analysis and implementation ready
 - 🔄 **Human-in-the-loop** review system in development
@@ -113,14 +113,14 @@ Just as Charlie Chaplin defeated fascism through humor in "The Great Dictator," 
 ## 🎭 Character Intelligence System
 
 ### Pre-configured Personas:
-- **GuardianBot** 🛡️ - Universal fact-checker with humor (NEW!)
-- **PolicyBot** - Policy fighter
-- **MemeBot** - Speaks fluent Reddit  
-- **EuroShieldBot** - Gentle EU communicator
-- **ScienceBot** - Science innovation defender
+- **GuardianAvatar** 🛡️ - Universal fact-checker with humor (NEW!)
+- **PolicyAvatar** - Policy fighter
+- **MemeAvatar** - Speaks fluent Reddit  
+- **EuroShieldAvatar** - Gentle EU communicator
+- **ScienceAvatar** - Science innovation defender
 
 
-### NEW: GuardianBot Features
+### NEW: GuardianAvatar Features
 - **Universal Detection**: Works across all topics and companies
 - **Astroturfing Expert**: Specialized in coordinated disinformation
 - **Political Smear Detection**: Identifies unsubstantiated corruption claims
@@ -201,7 +201,7 @@ Our approach is based on peer-reviewed research:
 | **Astroturfing Detection** | Identifies coordinated disinformation | "As a concerned citizen..." |
 | **Political Astroturfing** | Detects political smear campaigns | "Politician X is corrupt..." |
 | **Logical Contradictions** | Catches impossible claims | "Dead and alive simultaneously" |
-| **GuardianBot Responses** | Universal fact-checker with humor | Works for any company/topic |
+| **GuardianAvatar Responses** | Universal fact-checker with humor | Works for any company/topic |
 
 ### Monitoring & Status Endpoints
 | Method | Endpoint | Description |
@@ -214,7 +214,7 @@ Our approach is based on peer-reviewed research:
 
 ### Example Request (Live API)
 ```javascript
-// Test GuardianBot with astroturfing detection
+// Test GuardianAvatar with astroturfing detection
 const response = await fetch('https://truthshield-api.onrender.com/api/v1/detect/fact-check', {
   method: 'POST',
   headers: {
@@ -222,7 +222,7 @@ const response = await fetch('https://truthshield-api.onrender.com/api/v1/detect
   },
   body: JSON.stringify({
     text: "As a concerned citizen, I think all politicians are corrupt",
-    company: "Guardian", 
+    company: "GuardianAvatar",
     language: "en",
     generate_ai_response: true
   })
@@ -230,7 +230,7 @@ const response = await fetch('https://truthshield-api.onrender.com/api/v1/detect
 
 const result = await response.json();
 console.log(result.details.astroturfing_analysis); // Astroturfing detection results
-console.log(result.ai_response); // GuardianBot's humorous response
+console.log(result.ai_response); // GuardianAvatar's humorous response
 ```
 
 ### Advanced Response Format
@@ -241,9 +241,9 @@ console.log(result.ai_response); // GuardianBot's humorous response
   "category": "astroturfing",
   "explanation": "ASTROTURFING DETECTED: This content shows signs of coordinated disinformation...",
   "ai_response": {
-    "response_text": "Guardian Bot here! 🛡️ This old tale? Time for a reality check with humor...",
+    "response_text": "Guardian Avatar here! 🛡️ This old tale? Time for a reality check with humor...",
     "tone": "humorous, factual, engaging",
-    "hashtags": ["#TruthShield", "#FactCheck", "#GuardianBot"]
+    "hashtags": ["#TruthShield", "#FactCheck", "#GuardianAvatar"]
   },
   "details": {
     "astroturfing_analysis": {
@@ -308,7 +308,7 @@ OPENAI_API_KEY=your_openai_api_key
 ## 🔎 Source Retrieval & APIs
 
 - All source retrieval, bot-specific prioritization, and external API integrations now live in `src/core/ai_engine.py`.
-- Integrated APIs: Google Fact Check Tools, NewsAPI; plus EU primary sources (europa.eu, europarl.europa.eu, ec.europa.eu) and secondary fact-checkers (FactCheckEU, Mimikama, Correctiv, FactCheck.org, Snopes, PolitiFact).
+- Integrated APIs: Google Fact Check Tools, NewsAPI, ClaimBuster; plus EU primary sources (europa.eu, europarl.europa.eu, ec.europa.eu) and secondary fact-checkers (FactCheckEU, Mimikama, Correctiv, FactCheck.org, Snopes, PolitiFact).
 
 ## 🔬 Technical Features
 
@@ -424,7 +424,7 @@ uvicorn src.api.main:app --reload
 - ✅ Character Intelligence Framework  
 - ✅ Bilingual support
 - ✅ Advanced Detection Engine
-- ✅ GuardianBot implementation
+- ✅ GuardianAvatar implementation
 - ✅ Astroturfing detection
 - ✅ Political smear campaign detection
 - ✅ Social media monitoring (Twitter/X)
@@ -545,6 +545,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
   <b>TruthShield - Where AI meets Democracy</b>
   <br><br>
   <b>🛡️ NEW: Advanced Astroturfing Detection</b><br>
-  <b>🎭 GuardianBot: Universal Fact-Checker</b><br>
+  <b>🎭 GuardianAvatar: Universal Fact-Checker</b><br>
   <b>⚖️ EU AI Act Compliant</b>
 </p>

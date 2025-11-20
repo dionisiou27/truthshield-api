@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 def claim_vs_proof_script(
     claim: str,
     proofs: List[Dict[str, str]],
-    persona: str = "GuardianBot",
+    persona: str = "GuardianAvatar",
     language: str = "en",
     brand_name: Optional[str] = None,
     co_brand: bool = False,
@@ -61,7 +61,7 @@ def investigative_thread(
     key_findings: List[str],
     sources: List[Dict[str, str]],
     astro_score: Optional[float] = None,
-    persona: str = "GuardianBot",
+    persona: str = "GuardianAvatar",
     language: str = "en",
     brand_name: Optional[str] = None,
     co_brand: bool = False,

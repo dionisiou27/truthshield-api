@@ -40,7 +40,7 @@ async def test_political_astroturfing():
         
         # Test full fact-check
         print("\nFull Fact-Check Analysis:")
-        result = await ai.fact_check_claim(claim, "Guardian")
+        result = await ai.fact_check_claim(claim, "GuardianAvatar")
         print(f"Is Fake: {result.is_fake}")
         print(f"Confidence: {result.confidence:.2f}")
         print(f"Category: {result.category}")

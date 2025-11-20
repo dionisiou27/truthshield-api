@@ -30,7 +30,7 @@ async def test_ursula_election_claim():
     
     # Test full fact-check
     print(f"\nFull Fact-Check Analysis:")
-    result = await ai.fact_check_claim(claim, "Guardian")
+    result = await ai.fact_check_claim(claim, "GuardianAvatar")
     print(f"Is Fake: {result.is_fake}")
     print(f"Confidence: {result.confidence:.2f}")
     print(f"Category: {result.category}")
@@ -39,8 +39,8 @@ async def test_ursula_election_claim():
     # Test AI response
     print(f"\nAI Response:")
     try:
-        ai_response = await ai.generate_brand_response(claim, result, "Guardian", "en")
-        print(f"Guardian Bot: {ai_response['en'].response_text}")
+        ai_response = await ai.generate_brand_response(claim, result, "GuardianAvatar", "en")
+        print(f"Guardian Avatar: {ai_response['en'].response_text}")
     except Exception as e:
         print(f"AI Response Error: {e}")
 

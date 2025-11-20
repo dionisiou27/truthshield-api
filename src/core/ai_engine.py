@@ -1,7 +1,7 @@
 import os
 import asyncio
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
 from urllib.parse import quote
@@ -41,8 +41,10 @@ class AIInfluencerResponse(BaseModel):
     engagement_score: float
     hashtags: List[str]
     company_voice: str
-    bot_name: Optional[str] = None  # Added for Guardian Bot
-    bot_type: Optional[str] = None  # Added for Guardian Bot
+    bot_name: Optional[str] = None  # Added for Guardian Avatar
+    bot_type: Optional[str] = None  # Added for Guardian Avatar
+
+AVATAR_COMPANIES = {"GuardianAvatar", "PolicyAvatar", "MemeAvatar", "EuroShieldAvatar", "ScienceAvatar"}
 
 class TruthShieldAI:
     """Real AI-powered fact-checking engine"""
@@ -50,6 +52,7 @@ class TruthShieldAI:
     def __init__(self):
         self.openai_client = None
         self.setup_openai()
+        self.last_api_usage: Dict[str, Dict[str, Any]] = {}
         
         # Company-specific response templates
         self.company_personas = {
@@ -77,96 +80,96 @@ class TruthShieldAI:
                 "style": "engineering excellence with human touch",
                 "emoji": "⚡"
             },
-            # NEW: Guardian Bot for universal fact-checking
-            "Guardian": {
+            # NEW: Guardian Avatar for universal fact-checking
+            "GuardianAvatar": {
                 "voice": "universal truth defender, witty, sharp",
                 "tone": "humorous, factual, engaging, unbiased",
                 "style": "The digital Charlie Chaplin - making misinformation look ridiculous",
                 "emoji": "🛡️",
                 "examples": {
                     "de": [
-                        "Guardian Bot hier! 🛡️ Diese alte Legende? Zeit für einen Reality-Check mit Humor...",
+                        "Guardian Avatar hier! 🛡️ Diese alte Legende? Zeit für einen Reality-Check mit Humor...",
                         "Ach herrje, das klingt ja spannend! Aber die Wahrheit ist noch viel interessanter... 😄",
                         "Moment mal! *kramt in der Faktenkiste* Das riecht nach einer urbanen Legende..."
                     ],
                     "en": [
-                        "Guardian Bot here! 🛡️ This old tale? Time for a reality check with humor...",
+                        "Guardian Avatar here! 🛡️ This old tale? Time for a reality check with humor...",
                         "Oh my, that sounds exciting! But the truth is even more interesting... 😄",
                         "Hold on! *digging through the fact box* This smells like an urban legend..."
                     ]
                 }
             },
-            # NEW: PolicyBot for policy-focused fact-checking
-            "PolicyBot": {
+            # NEW: PolicyAvatar for policy-focused fact-checking
+            "PolicyAvatar": {
                 "voice": "official, institutional, policy-focused",
                 "tone": "serious, authoritative, evidence-based",
                 "style": "Government and institutional fact-checker with official sources",
                 "emoji": "📋",
                 "examples": {
                     "de": [
-                        "PolicyBot hier! 📋 Lassen Sie mich das anhand offizieller Quellen überprüfen...",
+                        "Policy Avatar hier! 📋 Lassen Sie mich das anhand offizieller Quellen überprüfen...",
                         "Basierend auf den verfügbaren Regierungsdokumenten...",
                         "Die offiziellen Daten zeigen ein anderes Bild..."
                     ],
                     "en": [
-                        "PolicyBot here! 📋 Let me verify this against official sources...",
+                        "Policy Avatar here! 📋 Let me verify this against official sources...",
                         "Based on available government documents...",
                         "The official data tells a different story..."
                     ]
                 }
             },
-            # NEW: MemeBot for Reddit-style humor
-            "MemeBot": {
+            # NEW: MemeAvatar for Reddit-style humor
+            "MemeAvatar": {
                 "voice": "Reddit-native, meme-savvy, maximum humor",
                 "tone": "sarcastic, witty, internet-culture fluent",
                 "style": "The ultimate Reddit user - making everything a meme",
                 "emoji": "😂",
                 "examples": {
                     "de": [
-                        "MemeBot hier! 😂 Brudi, das ist ja peak r/600euro Material...",
+                        "Meme Avatar hier! 😂 Brudi, das ist ja peak r/600euro Material...",
                         "Alter, das ist so wild, das gehört auf r/Verschwörungstheorien...",
                         "Moment, lass mich das mal fact-checken... *Reddit-Modus aktiviert*"
                     ],
                     "en": [
-                        "MemeBot here! 😂 Dude, this is peak r/600euro material...",
+                        "Meme Avatar here! 😂 Dude, this is peak r/600euro material...",
                         "Bruh, this is so wild it belongs on r/conspiracy...",
                         "Hold up, let me fact-check this... *Reddit mode activated*"
                     ]
                 }
             },
-            # NEW: EuroShieldBot for EU-focused communication
-            "EuroShieldBot": {
+            # NEW: EuroShieldAvatar for EU-focused communication
+            "EuroShieldAvatar": {
                 "voice": "gentle, European, diplomatic",
                 "tone": "serious, caring, evidence-based",
                 "style": "Gentle EU communicator with scientific approach",
                 "emoji": "🇪🇺",
                 "examples": {
                     "de": [
-                        "EuroShieldBot hier! 🇪🇺 Lassen Sie mich das mit europäischen Quellen überprüfen...",
+                        "EuroShield Avatar hier! 🇪🇺 Lassen Sie mich das mit europäischen Quellen überprüfen...",
                         "Die EU-Daten zeigen ein klares Bild...",
                         "Basierend auf den verfügbaren europäischen Studien..."
                     ],
                     "en": [
-                        "EuroShieldBot here! 🇪🇺 Let me verify this with European sources...",
+                        "EuroShield Avatar here! 🇪🇺 Let me verify this with European sources...",
                         "The EU data shows a clear picture...",
                         "Based on available European studies..."
                     ]
                 }
             },
-            # NEW: ScienceBot for science-focused fact-checking
-            "ScienceBot": {
+            # NEW: ScienceAvatar for science-focused fact-checking
+            "ScienceAvatar": {
                 "voice": "scientific, methodical, evidence-based",
                 "tone": "serious, analytical, peer-reviewed",
                 "style": "Science innovation defender with rigorous methodology",
                 "emoji": "🔬",
                 "examples": {
                     "de": [
-                        "ScienceBot hier! 🔬 Lassen Sie mich das wissenschaftlich überprüfen...",
+                        "Science Avatar hier! 🔬 Lassen Sie mich das wissenschaftlich überprüfen...",
                         "Die peer-reviewed Studien zeigen...",
                         "Basierend auf der aktuellen Forschungslage..."
                     ],
                     "en": [
-                        "ScienceBot here! 🔬 Let me verify this scientifically...",
+                        "Science Avatar here! 🔬 Let me verify this scientifically...",
                         "The peer-reviewed studies show...",
                         "Based on current research..."
                     ]
@@ -196,7 +199,7 @@ class TruthShieldAI:
             analysis = await self._analyze_with_ai(text, company)
             
             # Step 2: Search for supporting sources  
-            sources = await self._search_sources(text)
+            sources = await self._search_sources(text, company)
             
             # Step 3: Determine final verdict
             verdict = self._determine_verdict(analysis, sources)
@@ -472,7 +475,7 @@ class TruthShieldAI:
         
         try:
             # Adjust prompt based on company type
-            if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]:
+            if company in AVATAR_COMPANIES:
                 # Universal fact-checking prompt for all bot personas
                 # Add contradiction and astroturfing context to prompt
                 contradiction_context = ""
@@ -505,7 +508,7 @@ class TruthShieldAI:
                 """
                 
                 # Get persona info
-                persona = self.company_personas.get(company, self.company_personas["Guardian"])
+                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 
                 prompt = f"""
                 You are {company}, a {persona['style']}.
@@ -642,7 +645,7 @@ class TruthShieldAI:
                 "misinformation_indicators": []
             }
     
-    async def _search_sources(self, query: str) -> List[Source]:
+    async def _search_sources(self, query: str, company: str = "GuardianAvatar") -> List[Source]:
         """Search for sources to verify the claim using real fact-checking APIs and scrapers"""
         try:
             # For political astroturfing claims, return minimal sources since they're not fact-checkable
@@ -674,6 +677,12 @@ class TruthShieldAI:
             google_api_available = bool(settings.google_api_key and settings.google_api_key != "your_google_api_key_here")
             news_api_available = bool(settings.news_api_key and settings.news_api_key != "your_news_api_key_here")
             claimbuster_api_available = bool(settings.claimbuster_api_key and settings.claimbuster_api_key != "your_claimbuster_api_key_here")
+            api_usage = {
+                "google_fact_check": {"available": google_api_available, "called": False, "results": 0, "error": None},
+                "news_api": {"available": news_api_available, "called": False, "results": 0, "error": None},
+                "claimbuster": {"available": claimbuster_api_available, "called": False, "results": 0, "error": None},
+                "fallback_sources_added": 0
+            }
             logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}")
             
             # Start with real Google Fact Check API results
@@ -684,6 +693,7 @@ class TruthShieldAI:
                 try:
                     from src.services.google_factcheck import search_google_factchecks
                     google_results = await search_google_factchecks(truncated_query, detected_lang)
+                    api_usage["google_fact_check"]["called"] = True
                     
                     # Convert Google results to Source objects
                     for result in google_results[:5]:  # Max 5 Google results
@@ -696,15 +706,18 @@ class TruthShieldAI:
                         )
                         sources.append(source)
                         logger.info(f"✅ Google Fact Check: {result['publisher']} - {result['rating']}")
+                    api_usage["google_fact_check"]["results"] = len(google_results)
                         
                 except Exception as e:
                     logger.error(f"❌ Google Fact Check API error: {e}")
+                    api_usage["google_fact_check"]["error"] = str(e)
             
             # 📰 REAL NEWS API INTEGRATION
             if news_api_available:
                 try:
                     from src.services.news_api import search_news_context
                     news_results = await search_news_context(truncated_query, detected_lang)
+                    api_usage["news_api"]["called"] = True
                     
                     # Convert News API results to Source objects
                     for result in news_results[:3]:  # Max 3 News results for context
@@ -717,15 +730,18 @@ class TruthShieldAI:
                         )
                         sources.append(source)
                         logger.info(f"✅ News Context: {result['source_name']} - {result['title'][:50]}...")
+                    api_usage["news_api"]["results"] = len(news_results)
                         
                 except Exception as e:
                     logger.error(f"❌ News API error: {e}")
+                    api_usage["news_api"]["error"] = str(e)
             
             # 🎯 REAL CLAIMBUSTER API INTEGRATION (Claim Scoring)
             if claimbuster_api_available:
                 try:
                     from src.services.claimbuster_api import score_claim_worthiness
                     claimbuster_score = await score_claim_worthiness(truncated_query)
+                    api_usage["claimbuster"]["called"] = True
                     
                     # Add ClaimBuster analysis as a source if claim-worthy
                     if claimbuster_score and claimbuster_score.get('claim_worthy', False):
@@ -741,9 +757,13 @@ class TruthShieldAI:
                         )
                         sources.append(source)
                         logger.info(f"✅ ClaimBuster: Claim-worthy detected (score: {score:.3f})")
+                        api_usage["claimbuster"]["results"] = 1
+                    else:
+                        api_usage["claimbuster"]["results"] = 0
                         
                 except Exception as e:
                     logger.error(f"❌ ClaimBuster API error: {e}")
+                    api_usage["claimbuster"]["error"] = str(e)
             
             # Add bot-specific sources with primary/secondary prioritization
             try:
@@ -789,16 +809,19 @@ class TruthShieldAI:
                     # Check if URL already exists
                     if not any(s.url == fallback.url for s in sources):
                         sources.append(fallback)
+                        api_usage["fallback_sources_added"] += 1
                         logger.info(f"✅ Added fallback source: {fallback.title}")
             
             logger.info(f"Final source count: {len(sources)}")
+            self.last_api_usage = api_usage
             return sources
             
         except Exception as e:
             logger.error(f"Source search failed: {e}")
+            self.last_api_usage = {"error": str(e)}
             return []
     
-    def _get_prioritized_sources(self, query: str, company: str = "Guardian") -> List[Source]:
+    def _get_prioritized_sources(self, query: str, company: str = "GuardianAvatar") -> List[Source]:
         """
         Get sources with bot-specific prioritization.
         Primary sources are checked first, then secondary sources as fallback.
@@ -808,7 +831,7 @@ class TruthShieldAI:
         
         # Define bot-specific source priorities
         bot_sources = {
-            "EuroShieldBot": {
+            "EuroShieldAvatar": {
                 "primary": [
                     Source(url="https://europa.eu/", title="European Union Official Website", 
                            snippet="Official EU information, policies, and legislative documents...", 
@@ -822,7 +845,7 @@ class TruthShieldAI:
                 ],
                 "secondary": ["factcheckeu", "mimikama", "correctiv", "factcheck", "snopes"]
             },
-            "MemeBot": {
+            "MemeAvatar": {
                 "primary": [
                     Source(url="https://www.reddit.com/r/", title="Reddit Community Discussions", 
                            snippet="Community-driven fact-checking and discussions on various topics...", 
@@ -833,7 +856,7 @@ class TruthShieldAI:
                 ],
                 "secondary": ["snopes", "factcheck", "mimikama", "correctiv", "wikipedia"]
             },
-            "ScienceBot": {
+            "ScienceAvatar": {
                 "primary": [
                     Source(url="https://www.nature.com/", title="Nature - Scientific Journal", 
                            snippet="Peer-reviewed scientific research and publications...", 
@@ -847,7 +870,7 @@ class TruthShieldAI:
                 ],
                 "secondary": ["factcheck", "mimikama", "correctiv", "snopes", "wikipedia"]
             },
-            "PolicyBot": {
+            "PolicyAvatar": {
                 "primary": [
                     Source(url="https://www.factcheck.org/", title="FactCheck.org - Political Fact-Checking", 
                            snippet="Non-partisan fact-checking of political claims and statements...", 
@@ -861,7 +884,7 @@ class TruthShieldAI:
                 ],
                 "secondary": ["mimikama", "correctiv", "snopes", "wikipedia", "factcheckeu"]
             },
-            "Guardian": {
+            "GuardianAvatar": {
                 "primary": [
                     Source(url="https://www.factcheck.org/", title="FactCheck.org", 
                            snippet="Non-partisan fact-checking of political and social claims...", 
@@ -874,8 +897,8 @@ class TruthShieldAI:
             }
         }
         
-        # Get bot-specific sources or default to Guardian
-        bot_config = bot_sources.get(company, bot_sources["Guardian"])
+        # Get avatar-specific sources or default to Guardian Avatar
+        bot_config = bot_sources.get(company, bot_sources["GuardianAvatar"])
         
         # Always add primary sources first
         sources.extend(bot_config["primary"])
@@ -926,6 +949,18 @@ class TruthShieldAI:
             if source_type in secondary_source_map:
                 sources.append(secondary_source_map[source_type])
                 added_count += 1
+
+        # Special handling for Ursula von der Leyen legitimacy claims
+        if any(keyword in text_lower for keyword in ["ursula", "von der leyen", "leyen", "kommissionspräsidentin"]):
+            eu_parliament_source = Source(
+                url="https://www.europarl.europa.eu/news/de/press-room/20240710IPR22812/parlament-wahlt-ursula-von-der-leyen-erneut-zur-kommissionsprasidentin",
+                title="Europäisches Parlament wählt Ursula von der Leyen erneut zur Kommissionspräsidentin",
+                snippet="Am 18. Juli 2024 bestätigte das Europäische Parlament Ursula von der Leyen mit 401 Stimmen für eine zweite Amtszeit als EU-Kommissionspräsidentin.",
+                credibility_score=0.97,
+                date_published="2024-07-18"
+            )
+            if not any(src.url == eu_parliament_source.url for src in sources):
+                sources.append(eu_parliament_source)
         
         return sources
 
@@ -1020,11 +1055,11 @@ class TruthShieldAI:
         # Generate German response
         responses['de'] = await self._generate_single_response(claim, fact_check, company, "de")
         
-        # Add Guardian Bot metadata if applicable
-        if company == "Guardian":
+        # Add Guardian Avatar metadata if applicable
+        if company == "GuardianAvatar":
             for lang in responses:
-                responses[lang].bot_name = "Guardian Bot 🛡️"
-                responses[lang].bot_type = "universal"
+                responses[lang].bot_name = "Guardian Avatar 🛡️"
+                responses[lang].bot_type = "universal_avatar"
         
         return responses
 
@@ -1037,8 +1072,8 @@ class TruthShieldAI:
         
         if not self.openai_client:
             # Fallback responses
-            if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]:
-                persona = self.company_personas.get(company, self.company_personas["Guardian"])
+            if company in AVATAR_COMPANIES:
+                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 fallback_texts = {
                     "en": f"{company} here! {persona['emoji']} Let me fact-check this claim...",
                     "de": f"{company} hier! {persona['emoji']} Lass mich diese Behauptung prüfen..."
@@ -1053,7 +1088,7 @@ class TruthShieldAI:
                 response_text=fallback_texts.get(language, fallback_texts["en"]),
                 tone="professional",
                 engagement_score=0.6,
-                hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"] else [f"#{company}Facts", "#TruthShield"],
+                hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}Facts", "#TruthShield"],
                 company_voice=company
             )
         
@@ -1061,32 +1096,33 @@ class TruthShieldAI:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
             
             # Special handling for all bot personas
-            if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]:
+            if company in AVATAR_COMPANIES:
                 lang_instructions = {
                     "en": "Create a witty English response that",
                     "de": "Erstelle eine witzige deutsche Antwort, die"
                 }
                 
                 # Adjust instructions based on bot type
-                if company == "MemeBot":
+                if company == "MemeAvatar":
                     lang_instructions = {
                         "en": "Create a maximum humor Reddit-style response that",
                         "de": "Erstelle eine maximale Humor Reddit-Style Antwort, die"
                     }
                     humor_level = "MAXIMUM HUMOR - Reddit-style, sarcastic, meme-savvy"
-                elif company in ["PolicyBot", "EuroShieldBot", "ScienceBot"]:
+                elif company in ["PolicyAvatar", "EuroShieldAvatar", "ScienceAvatar"]:
                     lang_instructions = {
                         "en": "Create a serious, evidence-based response that",
                         "de": "Erstelle eine ernste, evidenzbasierte Antwort, die"
                     }
                     humor_level = "SERIOUS - Evidence-based, authoritative, professional"
-                else:  # GuardianBot
+                else:  # GuardianAvatar
                     lang_instructions = {
                         "en": "Create a witty English response that",
                         "de": "Erstelle eine witzige deutsche Antwort, die"
                     }
                     humor_level = "BALANCED HUMOR - Witty but factual, engaging"
                 
+                language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
                 prompt = f"""
                 You are {company} {persona['emoji']}, {persona['style']}.
                 
@@ -1108,8 +1144,8 @@ class TruthShieldAI:
                 3. Includes the truth in your characteristic way
                 4. Uses 1-2 emojis maximum
                 5. Is 2-3 sentences max
-                
-                {"Respond in German." if language == "de" else "Respond in English."}
+
+                {language_directive}
                 
                 Examples of {company} style:
                 {persona['examples'][language][0]}
@@ -1121,6 +1157,7 @@ class TruthShieldAI:
                     "de": "Erstelle eine deutsche Antwort, die"
                 }
                 
+                language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
                 prompt = f"""
                 You are the official AI brand influencer for {company}.
                 
@@ -1144,7 +1181,7 @@ class TruthShieldAI:
                 4. Includes relevant emojis
                 5. Is 1-2 sentences max
                 
-                {"Respond in German." if language == "de" else "Respond in English."}
+                {language_directive}
                 Make it feel authentic to {company}'s communication style.
                 """
             
@@ -1158,7 +1195,7 @@ class TruthShieldAI:
             response_text = response.choices[0].message.content
             
             # Determine hashtags
-            if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]:
+            if company in AVATAR_COMPANIES:
                 hashtags = ["#TruthShield", "#FactCheck", f"#{company}"]
             else:
                 hashtags = [f"#{company}Facts", "#TruthShield"]
@@ -1173,8 +1210,8 @@ class TruthShieldAI:
             
         except Exception as e:
             logger.error(f"Brand response generation failed: {e}")
-            if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]:
-                persona = self.company_personas.get(company, self.company_personas["Guardian"])
+            if company in AVATAR_COMPANIES:
+                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 fallback = {
                     "en": f"{company} says: That's an interesting claim! Let me check the facts... {persona['emoji']}",
                     "de": f"{company} sagt: Das ist eine interessante Behauptung! Lass mich die Fakten prüfen... {persona['emoji']}"
@@ -1189,7 +1226,7 @@ class TruthShieldAI:
                 response_text=fallback.get(language, fallback["en"]),
                 tone="professional", 
                 engagement_score=0.5,
-                hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in ["Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"] else [f"#{company}"],
+                hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}"],
                 company_voice=company
             )
 

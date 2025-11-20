@@ -58,7 +58,7 @@
                     <textarea id="fakeNews" placeholder="e.g., BMW EVs explode in winter"></textarea>
                     <div class="row">
                         <select id="company">
-                            <option value="Guardian">Guardian Bot (Universal)</option>
+                            <option value="GuardianAvatar">Guardian Avatar (Universal)</option>
                             <option value="BMW">BMW</option>
                             <option value="Vodafone">Vodafone</option>
                             <option value="Bayer">Bayer</option>
@@ -76,7 +76,7 @@
                     </div>
                     <div class="row">
                         <button class="btn" id="analyzeBtn" onclick="analyzeWithRealAI()">Analyze Claim</button>
-                        <button class="btn btn-outline" onclick="fillSample('Guardian')">Guardian Sample</button>
+                        <button class="btn btn-outline" onclick="fillSample('GuardianAvatar')">Guardian Sample</button>
                         <button class="btn btn-outline" onclick="fillSample('BMW')">BMW Sample</button>
                     </div>
                     <div id="status" class="status" style="margin-top:10px; display:none;"></div>
@@ -116,11 +116,11 @@
                 <div id="error" class="status" style="display:none; color:#ffb4b4; border-color:#733;">Error: <span id="errorMessage"></span></div>
             </div>
             <div class="card">
-                <h3>Personas</h3>
+                <h3>Avatars</h3>
                 <div class="sources">
-                    <div class="source"><strong>Guardian</strong><br><small>Universal, witty, debunks broadly</small></div>
-                    <div class="source"><strong>PolicyBot</strong><br><small>Official sources and citations</small></div>
-                    <div class="source"><strong>ScienceBot</strong><br><small>Scientific evidence and methodology</small></div>
+                    <div class="source"><strong>Guardian Avatar</strong><br><small>Universal, witty, debunks broadly</small></div>
+                    <div class="source"><strong>Policy Avatar</strong><br><small>Official sources and citations</small></div>
+                    <div class="source"><strong>Science Avatar</strong><br><small>Scientific evidence and methodology</small></div>
                     <div class="source"><strong>Brand</strong><br><small>Company-aligned communications</small></div>
                 </div>
             </div>
@@ -253,7 +253,7 @@
         }
         function fillSample(kind) {
             const m = {
-                'Guardian': 'The moon landing was faked in a Hollywood studio',
+                'GuardianAvatar': 'The moon landing was faked in a Hollywood studio',
                 'BMW': 'BMW electric vehicles explode in freezing temperatures'
             };
             document.getElementById('fakeNews').value = m[kind] || '';

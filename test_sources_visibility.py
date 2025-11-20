@@ -10,7 +10,7 @@ def test_sources():
     url = "http://localhost:8000/api/v1/detect/fact-check"
     payload = {
         "text": "COVID-19 vaccines cause autism",
-        "company": "ScienceBot", 
+        "company": "ScienceAvatar", 
         "language": "en"
     }
     

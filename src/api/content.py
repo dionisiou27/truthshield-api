@@ -19,7 +19,7 @@ class Proof(BaseModel):
 class ClaimVsProofRequest(BaseModel):
     claim: str
     proofs: List[Proof]
-    persona: str = "GuardianBot"
+    persona: str = "GuardianAvatar"
     language: str = Field(default="en", pattern="^(en|de)$")
     brand_name: Optional[str] = None
     co_brand: bool = False
@@ -55,7 +55,7 @@ class InvestigativeThreadRequest(BaseModel):
     key_findings: List[str]
     sources: List[Source]
     astro_score: Optional[float] = None
-    persona: str = "GuardianBot"
+    persona: str = "GuardianAvatar"
     language: str = Field(default="en", pattern="^(en|de)$")
     brand_name: Optional[str] = None
     co_brand: bool = False
@@ -91,11 +91,11 @@ async def list_formats():
             "investigative_thread",
         ],
         "personas": [
-            "GuardianBot",
-            "PolicyBot",
-            "MemeBot",
-            "EuroShieldBot",
-            "ScienceBot",
+            "GuardianAvatar",
+            "PolicyAvatar",
+            "MemeAvatar",
+            "EuroShieldAvatar",
+            "ScienceAvatar",
         ],
         "languages": ["en", "de"],
     }

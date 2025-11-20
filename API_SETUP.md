@@ -16,12 +16,18 @@
 - **Funktion**: Aktuelle Nachrichtenartikel
 - **Credibility**: 0.75
 
+#### **3. ClaimBuster API**
+- **URL**: `https://idir.uta.edu/claimbuster/docs/`
+- **Key**: `CLAIMBUSTER_API_KEY` in `.env`
+- **Funktion**: Claim-worthiness score (Welche Sätze brauchen Fact-Check)
+- **Credibility**: 0.85
+
 #### **3. Bot-spezifische Primary-Quellen:**
-- **EuroShieldBot**: europa.eu, europarl.europa.eu, ec.europa.eu
-- **MemeBot**: Reddit Community Discussions
-- **ScienceBot**: Nature, Science Magazine, WHO
-- **PolicyBot**: FactCheck.org, PolitiFact, Transparency International
-- **GuardianBot**: FactCheck.org, Snopes
+- **EuroShieldAvatar**: europa.eu, europarl.europa.eu, ec.europa.eu
+- **MemeAvatar**: Reddit Community Discussions
+- **ScienceAvatar**: Nature, Science Magazine, WHO
+- **PolicyAvatar**: FactCheck.org, PolitiFact, Transparency International
+- **GuardianAvatar**: FactCheck.org, Snopes
 
 ### 🔧 **Setup-Anweisungen:**
 
@@ -31,12 +37,14 @@
 OPENAI_API_KEY=your_openai_api_key_here
 GOOGLE_API_KEY=your_google_api_key_here
 NEWS_API_KEY=your_news_api_key_here
+CLAIMBUSTER_API_KEY=your_claimbuster_api_key_here
 ```
 
 #### **2. API-Keys besorgen:**
 - **OpenAI**: https://platform.openai.com/api-keys
 - **Google Fact Check**: https://developers.google.com/fact-check/tools/api
 - **News API**: https://newsapi.org/register
+- **ClaimBuster**: https://idir.uta.edu/claimbuster/docs/
 
 #### **3. Server starten:**
 ```bash

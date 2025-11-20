@@ -6,7 +6,7 @@ async def test_ursula_claim():
     print("Testing Ursula von der Leyen corruption claim...")
     detector = TruthShieldDetector()
     claim = "Ursula von der Leyen is a corrupt german politician"
-    company = "Guardian"  # Use Guardian for universal fact-checking
+    company = "GuardianAvatar"  # Use Guardian Avatar for universal fact-checking
 
     print(f"Claim: {claim}")
 

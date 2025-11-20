@@ -1,10 +1,3 @@
-# Simple heuristic language hint
-def detect_language(text: str) -> str:
-    text_lower = (text or "").lower()
-    german_markers = [" der ", " die ", " das ", " nicht ", " ist ", " und ", " mit ", "für", "oder", "kein", "hallo", "ß", "ä", "ö", "ü"]
-    if any(marker in text_lower for marker in german_markers):
-        return "de"
-    return "en"
 from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel, validator
 from typing import Dict, List, Optional
@@ -19,7 +12,37 @@ router = APIRouter(prefix="/api/v1/detect", tags=["Detection"])
 
 # Global detector instance
 detector = TruthShieldDetector()
-SUPPORTED_COMPANIES = ["BMW", "Vodafone", "Bayer", "Siemens", "Mercedes", "SAP", "Guardian", "PolicyBot", "MemeBot", "EuroShieldBot", "ScienceBot"]
+
+AVATAR_ALIAS_MAP = {
+    "Guardian": "GuardianAvatar",
+    "GuardianBot": "GuardianAvatar",
+    "GuardianAvatar": "GuardianAvatar",
+    "PolicyBot": "PolicyAvatar",
+    "PolicyAvatar": "PolicyAvatar",
+    "MemeBot": "MemeAvatar",
+    "MemeAvatar": "MemeAvatar",
+    "EuroShieldBot": "EuroShieldAvatar",
+    "EuroShieldAvatar": "EuroShieldAvatar",
+    "ScienceBot": "ScienceAvatar",
+    "ScienceAvatar": "ScienceAvatar",
+}
+
+BASE_COMPANIES = ["BMW", "Vodafone", "Bayer", "Siemens", "Mercedes", "SAP"]
+AVATAR_COMPANIES = ["GuardianAvatar", "PolicyAvatar", "MemeAvatar", "EuroShieldAvatar", "ScienceAvatar"]
+SUPPORTED_COMPANIES = BASE_COMPANIES + AVATAR_COMPANIES
+
+
+def normalize_company(value: str) -> str:
+    return AVATAR_ALIAS_MAP.get(value, value)
+
+
+# Simple heuristic language hint
+def detect_language(text: str) -> str:
+    text_lower = (text or "").lower()
+    german_markers = [" der ", " die ", " das ", " nicht ", " ist ", " und ", " mit ", "für", "oder", "kein", "hallo", "ß", "ä", "ö", "ü"]
+    if any(marker in text_lower for marker in german_markers):
+        return "de"
+    return "en"
 
 # Legacy request models (backward compatibility)
 class TextDetectionRequest(BaseModel):
@@ -39,9 +62,10 @@ class FactCheckRequest(BaseModel):
     
     @validator('company')
     def validate_company(cls, v):
-        if v not in SUPPORTED_COMPANIES:
+        normalized = normalize_company(v)
+        if normalized not in SUPPORTED_COMPANIES:
             raise ValueError(f'Company must be one of: {SUPPORTED_COMPANIES}')
-        return v
+        return normalized
     
     @validator('text')
     def validate_text(cls, v):
@@ -56,8 +80,15 @@ class QuickFactCheckRequest(BaseModel):
     text: str
     company: str = "BMW"
 
+    @validator('company')
+    def validate_company(cls, v):
+        normalized = normalize_company(v)
+        if normalized not in SUPPORTED_COMPANIES:
+            raise ValueError(f'Company must be one of: {SUPPORTED_COMPANIES}')
+        return normalized
+
 class UniversalFactCheckRequest(BaseModel):
-    """Universal Guardian Bot request"""
+    """Universal Guardian Avatar request"""
     text: str
     language: str = "de"
     
@@ -98,12 +129,13 @@ async def ocr_extract_text(file: UploadFile = File(...)):
 @router.post("/fact-check/image", response_model=DetectionResult)
 async def fact_check_image_upload(
     file: UploadFile = File(...),
-    company: str = "Guardian",
+    company: str = "GuardianAvatar",
     language: Optional[str] = None,
     generate_ai_response: bool = True
 ):
     """🧠 Upload an image, run OCR, then fact-check the extracted text"""
     try:
+        company = normalize_company(company)
         if company not in SUPPORTED_COMPANIES:
             raise HTTPException(status_code=400, detail=f"Company must be one of: {SUPPORTED_COMPANIES}")
 
@@ -205,37 +237,37 @@ async def quick_fact_check(request: QuickFactCheckRequest):
         logger.error(f"Quick fact-check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Quick check failed: {str(e)}")
 
-# === NEW: UNIVERSAL GUARDIAN BOT ENDPOINT ===
+# === NEW: UNIVERSAL GUARDIAN AVATAR ENDPOINT ===
 
 @router.post("/universal", response_model=DetectionResult)
 async def universal_fact_check(request: UniversalFactCheckRequest):
-    """🛡️ Universal Guardian Bot - fact-checks any misinformation"""
+    """🛡️ Universal Guardian Avatar - fact-checks any misinformation"""
     try:
-        logger.info(f"🛡️ Guardian Bot fact-checking: {request.text[:50]}...")
+        logger.info(f"🛡️ Guardian Avatar fact-checking: {request.text[:50]}...")
         
-        # Create request with Guardian as company
+        # Create request with Guardian Avatar as company
         company_request = CompanyFactCheckRequest(
             text=request.text,
-            company="Guardian",  # This triggers Guardian Bot persona
+            company="GuardianAvatar",  # This triggers Guardian Avatar persona
             language=request.language,
-            generate_ai_response=True  # Always generate response for Guardian
+            generate_ai_response=True  # Always generate response for Guardian Avatar
         )
         
         # Use the universal fact check method if it exists, otherwise use regular
         if hasattr(detector, 'universal_fact_check'):
             result = await detector.universal_fact_check(company_request)
         else:
-            # Fallback: use regular fact-check with Guardian company
+            # Fallback: use regular fact-check with Guardian Avatar company
             result = await detector.fact_check_company_claim(company_request)
         
-        logger.info(f"✅ Guardian Bot check completed: {result.request_id}")
+        logger.info(f"✅ Guardian Avatar check completed: {result.request_id}")
         return result
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Guardian Bot failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Guardian Bot check failed: {str(e)}")
+        logger.error(f"❌ Guardian Avatar failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Guardian Avatar check failed: {str(e)}")
 
 @router.get("/status")
 async def detection_status():
@@ -278,13 +310,13 @@ async def health_check():
         
         # Determine overall health
         ai_available = stats["capabilities"]["ai_fact_checking"]
-        guardian_available = stats["capabilities"].get("universal_guardian_bot", False)
+        guardian_available = stats["capabilities"].get("universal_guardian_avatar", False)
         health_status = "healthy" if ai_available else "degraded"
         
         return {
             "status": health_status,
             "ai_available": ai_available,
-            "guardian_bot_available": guardian_available,
+            "guardian_avatar_available": guardian_available,
             "timestamp": datetime.now().isoformat(),
             "message": "TruthShield Detection API operational" if ai_available 
                       else "TruthShield running in limited mode (no OpenAI)",
@@ -307,13 +339,13 @@ async def get_supported_companies():
         stats = await detector.get_detection_stats()
         companies = stats["supported_companies"]
         
-        # Separate Guardian Bot from regular companies
-        regular_companies = [c for c in companies if c != "Guardian"]
-        has_guardian = "Guardian" in companies
+        # Separate Guardian Avatar from regular companies
+        regular_companies = [c for c in companies if c != "GuardianAvatar"]
+        has_guardian = "GuardianAvatar" in companies
         
         return {
             "supported_companies": regular_companies,
-            "universal_bot": "Guardian" if has_guardian else None,
+            "universal_avatar": "GuardianAvatar" if has_guardian else None,
             "total_count": len(regular_companies),
             "default": "BMW",
             "note": "Use /universal endpoint for general misinformation checking"
@@ -340,12 +372,12 @@ async def demo_endpoint(background_tasks: BackgroundTasks):
         {
             "endpoint": "/universal",
             "text": "The Earth is flat and NASA is hiding the truth",
-            "expected": "Guardian Bot will debunk this conspiracy theory"
+            "expected": "Guardian Avatar will debunk this conspiracy theory"
         },
         {
             "endpoint": "/universal", 
             "text": "Drinking water with lemon cures all diseases",
-            "expected": "Guardian Bot will fact-check this health misinformation"
+            "expected": "Guardian Avatar will fact-check this health misinformation"
         }
     ]
     
@@ -354,16 +386,16 @@ async def demo_endpoint(background_tasks: BackgroundTasks):
         "available_demos": demo_requests,
         "usage": "Use the specified endpoint with the demo text",
         "note": "Responses may take 10-30 seconds due to AI processing",
-        "guardian_bot": "Try /universal for general misinformation!"
+        "guardian_avatar": "Try /universal for general misinformation!"
     }
 
-# === GUARDIAN BOT SPECIAL ENDPOINTS ===
+# === GUARDIAN AVATAR SPECIAL ENDPOINTS ===
 
 @router.get("/guardian/examples")
 async def guardian_examples():
-    """🛡️ Get Guardian Bot example queries"""
+    """🛡️ Get Guardian Avatar example queries"""
     return {
-        "guardian_bot": {
+        "guardian_avatar": {
             "description": "Universal fact-checker for any type of misinformation",
             "endpoint": "/api/v1/detect/universal",
             "examples": {

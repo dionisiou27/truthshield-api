@@ -132,7 +132,7 @@
 
 ## 👤 INFLUENCER PROTECTION CHARACTERS
 
-### **GuardianBot** - Universal Influencer Protector
+### **GuardianAvatar** - Universal Influencer Protector
 *"Your personal digital bodyguard! 🛡️✨"*
 
 ```json
@@ -337,10 +337,10 @@
 
 | Platform | Best Characters | Optimization Focus |
 |----------|----------------|-------------------|
-| **TikTok** | MemeMaster, GuardianBot | Short-form, visual, trending |
+| **TikTok** | MemeMaster, GuardianAvatar | Short-form, visual, trending |
 | **LinkedIn** | AcademicAlly, BMWBot | Professional, credible, detailed |
 | **Twitter/X** | VodaBot, DemocracyDefender | Quick wit, real-time, conversational |
-| **Instagram** | GuardianBot, MemeMaster | Visual storytelling, community |
+| **Instagram** | GuardianAvatar, MemeMaster | Visual storytelling, community |
 | **Facebook** | BayerBot, EuropeBot | Longer form, family-friendly |
 
 ### **Audience Targeting Guide:**

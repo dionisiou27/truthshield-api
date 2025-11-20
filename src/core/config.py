@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     google_api_key: Optional[str] = None  # NEU
     news_api_key: Optional[str] = None    # NEU
+    claimbuster_api_key: Optional[str] = None  # NEW
     claimbuster_api_key: Optional[str] = None  # NEU
     
     # Social Media APIs
