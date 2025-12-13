@@ -10,3 +10,6 @@ node_modules/
 .idea/
 .vscode/
 *.log
+# Generated files
+demo_data/
+truthshield_ml.db
