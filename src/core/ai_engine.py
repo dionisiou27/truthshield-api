@@ -16,6 +16,9 @@ import openai
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
+# ML Learning System
+from .ml_learning import ml_system, FeatureExtractor
+
 logger = logging.getLogger(__name__)
 
 class Source(BaseModel):
@@ -44,6 +47,7 @@ class AIInfluencerResponse(BaseModel):
     company_voice: str
     bot_name: Optional[str] = None  # Added for Guardian Avatar
     bot_type: Optional[str] = None  # Added for Guardian Avatar
+    interaction_id: Optional[str] = None  # ML tracking ID for engagement updates
 
 AVATAR_COMPANIES = {"GuardianAvatar", "PolicyAvatar", "MemeAvatar", "EuroShieldAvatar", "ScienceAvatar"}
 
@@ -203,8 +207,8 @@ class TruthShieldAI:
             # Step 2: Search for supporting sources  
             sources = await self._search_sources(text, company)
             
-            # Step 3: Determine final verdict
-            verdict = self._determine_verdict(analysis, sources)
+            # Step 3: Determine final verdict (with ML pattern boost)
+            verdict = self._determine_verdict(analysis, sources, claim_text=text)
             verdict = self._apply_special_case_overrides(text, sources, verdict)
             
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -1086,24 +1090,45 @@ class TruthShieldAI:
         
         return sources
 
-    def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
-        """Enhanced verdict logic with clearer thresholds for better misinformation detection"""
-        
+    def _determine_verdict(self, ai_analysis: Dict, sources: List[Source], claim_text: str = "") -> Dict:
+        """Enhanced verdict logic with ML pattern boost for better misinformation detection"""
+
         # Default to uncertain
         verdict = {
             "is_fake": False,
             "confidence": 0.5,
             "explanation": "Insufficient information to make determination",
-            "category": "uncertain"
+            "category": "uncertain",
+            "ml_pattern_match": None
         }
-        
+
         try:
             plausibility = ai_analysis.get("plausibility_score", 50)
             red_flags = ai_analysis.get("red_flags", [])
             misinformation_indicators = ai_analysis.get("misinformation_indicators", [])
             reasoning = ai_analysis.get("reasoning", "")
             factual_basis = ai_analysis.get("factual_basis", "")
-            
+
+            # 🧠 ML Pattern Boost: Check if we've seen similar claims before
+            ml_confidence_boost = 0.0
+            ml_pattern_type = None
+            if claim_text:
+                try:
+                    similar_patterns = ml_system.pattern_learner.find_similar_patterns(claim_text)
+                    if similar_patterns:
+                        best_pattern = similar_patterns[0]
+                        # Boost based on pattern occurrence and confidence
+                        ml_confidence_boost = min(0.15, best_pattern.avg_detection_confidence * 0.05 * min(best_pattern.occurrence_count, 10))
+                        ml_pattern_type = best_pattern.pattern_type
+                        logger.info(f"🧠 ML Pattern Match: {ml_pattern_type} (boost: +{ml_confidence_boost:.2f}, seen {best_pattern.occurrence_count}x)")
+                        verdict["ml_pattern_match"] = {
+                            "type": ml_pattern_type,
+                            "boost": ml_confidence_boost,
+                            "occurrences": best_pattern.occurrence_count
+                        }
+                except Exception as e:
+                    logger.warning(f"ML pattern lookup failed: {e}")
+
             logger.info(f"Verdict analysis: plausibility={plausibility}, red_flags={len(red_flags)}, indicators={len(misinformation_indicators)}")
             
             # Very strong indicators of misinformation
@@ -1154,7 +1179,16 @@ class TruthShieldAI:
                     "explanation": f"Mixed indicators: plausibility {plausibility}%, {len(red_flags)} concerns, needs more verification",
                     "category": "needs_verification"
                 })
-            
+
+            # 🧠 Apply ML confidence boost
+            if ml_confidence_boost > 0 and ml_pattern_type:
+                original_confidence = verdict["confidence"]
+                # If ML pattern type matches verdict direction, boost confidence
+                if (ml_pattern_type == "misinformation" and verdict["is_fake"]) or \
+                   (ml_pattern_type == "true" and not verdict["is_fake"]):
+                    verdict["confidence"] = min(0.98, original_confidence + ml_confidence_boost)
+                    logger.info(f"🧠 ML boosted confidence: {original_confidence:.2f} → {verdict['confidence']:.2f}")
+
             logger.info(f"Final verdict: is_fake={verdict['is_fake']}, confidence={verdict['confidence']}, category={verdict['category']}")
             
         except Exception as e:
@@ -1237,6 +1271,31 @@ class TruthShieldAI:
             for lang in responses:
                 responses[lang].bot_name = f"{company} 🛡️"
                 responses[lang].bot_type = "universal_avatar"
+
+        # 🧠 ML Recording: Log this interaction for learning
+        try:
+            source_urls = [src.url for src in fact_check.sources[:5]]
+            # Use primary language response for ML recording
+            primary_response = responses.get(language, responses.get('en', responses.get('de')))
+
+            interaction_id = await ml_system.record_fact_check(
+                claim=claim,
+                language=language,
+                avatar=company,
+                platform=platform,
+                is_fake=fact_check.is_fake,
+                confidence=fact_check.confidence,
+                astroturfing_score=0.0,  # Will be set if astroturfing detection runs
+                sources=source_urls,
+                response=primary_response.response_text if primary_response else "",
+                category=fact_check.category
+            )
+            # Store interaction_id for later engagement updates
+            if primary_response:
+                primary_response.interaction_id = interaction_id
+            logger.info(f"🧠 ML recorded interaction: {interaction_id}")
+        except Exception as e:
+            logger.warning(f"ML recording failed (non-critical): {e}")
 
         return responses
 
