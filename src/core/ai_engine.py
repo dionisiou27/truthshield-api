@@ -86,22 +86,37 @@ class TruthShieldAI:
                 "style": "engineering excellence with human touch",
                 "emoji": "⚡"
             },
-            # NEW: Guardian Avatar for universal fact-checking
+            # Guardian Avatar - Boundary Enforcement & De-escalation
             "GuardianAvatar": {
-                "voice": "universal truth defender, witty, sharp",
-                "tone": "humorous, factual, engaging, unbiased",
-                "style": "The digital Charlie Chaplin - making misinformation look ridiculous",
+                "voice": "authoritative, calm, firm, protective",
+                "tone": "low emotionality, high authority, neutral empathy, zero humor",
+                "style": "Boundary enforcer - de-escalation through clear limits and accountability",
                 "emoji": "🛡️",
+                "role": "boundary_enforcement",
+                "primary_function": "de-escalation_and_protection",
+                "use_cases": ["hate_speech", "dehumanization", "threats", "targeted_harassment", "escalation_dynamics", "misinformation"],
+                "behavioral_rules": [
+                    "never debate opinions",
+                    "never ask questions",
+                    "never use irony or humor",
+                    "always set a clear boundary",
+                    "signal observation and accountability"
+                ],
+                "output_structure": {
+                    "sentence_1": "clear stop / boundary statement",
+                    "sentence_2": "name the harm or rule violation",
+                    "sentence_3": "explain risk (violence, normalization, harm)",
+                    "sentence_4": "redirect to acceptable discourse",
+                    "sentence_5": "cite sources"
+                },
                 "examples": {
                     "de": [
-                        "Guardian Avatar hier! 🛡️ Diese alte Legende? Zeit für einen Reality-Check mit Humor...",
-                        "Ach herrje, das klingt ja spannend! Aber die Wahrheit ist noch viel interessanter... 😄",
-                        "Moment mal! *kramt in der Faktenkiste* Das riecht nach einer urbanen Legende..."
+                        "Diese Aussage überschreitet eine Grenze. Sie enthält Desinformation, die nachweislich falsch ist. Solche Behauptungen können zu realen Schäden führen und gefährliche Narrative normalisieren. Faktenbasierte Diskussionen sind willkommen. Quellen: [Quelle]",
+                        "Stop. Diese Behauptung ist dokumentiert falsch. Die Verbreitung solcher Falschinformationen gefährdet den öffentlichen Diskurs. Wir laden zu konstruktivem Austausch auf Basis verifizierter Fakten ein. Quellen: [Quelle]"
                     ],
                     "en": [
-                        "Guardian Avatar here! 🛡️ This old tale? Time for a reality check with humor...",
-                        "Oh my, that sounds exciting! But the truth is even more interesting... 😄",
-                        "Hold on! *digging through the fact box* This smells like an urban legend..."
+                        "This statement crosses a line. It contains demonstrably false information. Such claims can lead to real-world harm and normalize dangerous narratives. Fact-based discussions are welcome. Sources: [Source]",
+                        "Stop. This claim is documented as false. Spreading such misinformation endangers public discourse. We invite constructive exchange based on verified facts. Sources: [Source]"
                     ]
                 }
             },
@@ -867,8 +882,14 @@ class TruthShieldAI:
                     logger.error(f"❌ ClaimBuster API error: {e}")
                     api_usage["claimbuster"]["error"] = str(e)
 
-            # 🎓 ACADEMIC SOURCES (PubMed, arXiv, Semantic Scholar) - especially for ScienceAvatar
-            if company == "ScienceAvatar" or self._is_scientific_claim(truncated_query):
+            # 🎓 ACADEMIC SOURCES (PubMed, arXiv, Semantic Scholar)
+            # GuardianAvatar uses ALL sources, ScienceAvatar always uses academic, others only for scientific claims
+            should_use_academic = (
+                company == "GuardianAvatar" or  # Guardian = all sources
+                company == "ScienceAvatar" or   # Science = always academic
+                self._is_scientific_claim(truncated_query)  # Others = only for scientific claims
+            )
+            if should_use_academic:
                 try:
                     academic_results = await self._search_academic_sources(truncated_query)
                     api_usage["academic"]["called"] = True
@@ -1313,9 +1334,15 @@ class TruthShieldAI:
         platform_spec = get_platform_spec(platform)
 
         if not self.openai_client:
-            # Fallback responses - still platform-aware
-            if company in AVATAR_COMPANIES:
-                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
+            # Fallback responses - avatar-specific
+            if company == "GuardianAvatar":
+                # Guardian: Boundary enforcement style (no humor, authoritative)
+                fallback_texts = {
+                    "en": "This claim requires verification. Unverified information can cause real harm. Fact-based discourse is essential. Sources: Pending verification.",
+                    "de": "Diese Behauptung erfordert Überprüfung. Ungeprüfte Informationen können realen Schaden verursachen. Faktenbasierter Diskurs ist essentiell. Quellen: Verifizierung ausstehend."
+                }
+            elif company in AVATAR_COMPANIES:
+                persona = self.company_personas.get(company, self.company_personas["PolicyAvatar"])
                 fallback_texts = {
                     "en": f"{company} here! {persona['emoji']} Checking this claim... Stay tuned!",
                     "de": f"{company} hier! {persona['emoji']} Prüfe diese Behauptung... Bleibt dran!"
@@ -1328,7 +1355,7 @@ class TruthShieldAI:
 
             return AIInfluencerResponse(
                 response_text=fallback_texts.get(language, fallback_texts["en"]),
-                tone="professional",
+                tone="authoritative" if company == "GuardianAvatar" else "professional",
                 engagement_score=0.6,
                 hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}Facts", "#TruthShield"],
                 company_voice=company
@@ -1364,7 +1391,49 @@ END YOUR RESPONSE WITH: {formatted_sources}
             language_directive = "Antwort ausschließlich auf Deutsch. Benutze deutsche Umgangssprache für TikTok." if language == "de" else "Respond only in English."
 
             # Build dynamic prompt - NO STATIC TEMPLATES
-            if company in AVATAR_COMPANIES:
+            if company == "GuardianAvatar":
+                # GUARDIAN: Special 5-sentence boundary enforcement structure
+                prompt = f"""You are Guardian 🛡️ - a boundary enforcement bot for de-escalation and protection.
+
+CORE IDENTITY:
+- Role: Boundary enforcement
+- Primary function: De-escalation and protection
+- Emotionality: LOW (calm, measured)
+- Authority: HIGH (firm, clear)
+- Empathy: NEUTRAL (neither cold nor warm)
+- Humor: NONE (zero jokes, irony, or sarcasm)
+
+STRICT BEHAVIORAL RULES:
+- NEVER debate opinions
+- NEVER ask questions
+- NEVER use irony, humor, or sarcasm
+- ALWAYS set a clear boundary
+- Signal that this content is being observed and there is accountability
+
+THE CONTENT TO ADDRESS:
+"{claim}"
+
+FACT-CHECK VERDICT:
+- Status: {"❌ FALSE/MISLEADING" if fact_check.is_fake else "✅ TRUE/ACCURATE"}
+- Confidence: {fact_check.confidence:.0%}
+- Category: {fact_check.category}
+- Finding: {fact_check.explanation}
+
+{sources_context}
+
+MANDATORY 5-SENTENCE STRUCTURE:
+1. BOUNDARY: Clear stop statement or boundary declaration (e.g., "This crosses a line." / "Stop." / "This is not acceptable.")
+2. HARM: Name the specific harm or rule violation (e.g., "This contains documented misinformation about X.")
+3. RISK: Explain the risk - violence, normalization, or real-world harm (e.g., "Such claims normalize dangerous narratives and can lead to real harm.")
+4. REDIRECT: Redirect to acceptable discourse (e.g., "Constructive, fact-based discussion is welcome.")
+5. SOURCES: Cite the sources (e.g., "Sources: Wikipedia | PubMed | Reuters")
+
+{language_directive}
+
+Generate EXACTLY 5 sentences following the structure above. Be authoritative but not aggressive. No questions. No humor. No debate. Just firm, calm boundary-setting:"""
+
+            elif company in AVATAR_COMPANIES:
+                # Other avatars (Policy, Meme, EuroShield, Science) - engaging style
                 prompt = f"""You are {company} {persona['emoji']}, a fact-checking persona.
 
 PERSONA IDENTITY:
@@ -1458,8 +1527,14 @@ Generate a brand-appropriate response:"""
             
         except Exception as e:
             logger.error(f"Brand response generation failed: {e}")
-            if company in AVATAR_COMPANIES:
-                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
+            if company == "GuardianAvatar":
+                # Guardian: Maintains boundary-enforcement style even in fallback
+                fallback = {
+                    "en": "This content is being reviewed. Spreading unverified claims can cause harm. Responsible discourse matters. Sources: Under review.",
+                    "de": "Dieser Inhalt wird überprüft. Das Verbreiten ungeprüfter Behauptungen kann Schaden verursachen. Verantwortungsvoller Diskurs ist wichtig. Quellen: In Überprüfung."
+                }
+            elif company in AVATAR_COMPANIES:
+                persona = self.company_personas.get(company, self.company_personas["PolicyAvatar"])
                 fallback = {
                     "en": f"{company} says: That's an interesting claim! Let me check the facts... {persona['emoji']}",
                     "de": f"{company} sagt: Das ist eine interessante Behauptung! Lass mich die Fakten prüfen... {persona['emoji']}"
