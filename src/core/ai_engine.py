@@ -804,10 +804,11 @@ class TruthShieldAI:
                 logger.warning("Company parameter not available, skipping prioritized sources")
                 pass
             
-            # Ensure minimum of 3 sources - add fallback sources if needed
-            if len(sources) < 3:
-                logger.info(f"Only {len(sources)} sources found, adding fallback sources...")
-                
+            # IMPROVED FALLBACK LOGIC: Only add fallbacks if we have 0 sources
+            # This ensures we only use static fallbacks as last resort
+            if len(sources) == 0:
+                logger.warning(f"⚠️ No dynamic sources found for query, using static fallback sources as last resort")
+
                 fallback_sources = [
                     Source(
                         url="https://www.factcheck.org",
@@ -831,16 +832,14 @@ class TruthShieldAI:
                         date_published=""
                     )
                 ]
-                
-                # Add fallback sources until we have at least 3
-                for fallback in fallback_sources:
-                    if len(sources) >= 3:
-                        break
-                    # Check if URL already exists
-                    if not any(s.url == fallback.url for s in sources):
-                        sources.append(fallback)
-                        api_usage["fallback_sources_added"] += 1
-                        logger.info(f"✅ Added fallback source: {fallback.title}")
+
+                # Add up to 3 fallback sources
+                for fallback in fallback_sources[:3]:
+                    sources.append(fallback)
+                    api_usage["fallback_sources_added"] += 1
+                    logger.info(f"✅ Added static fallback: {fallback.title}")
+            else:
+                logger.info(f"✅ Found {len(sources)} dynamic sources - no fallbacks needed")
             
             logger.info(f"Final source count: {len(sources)}")
             self.last_api_usage = api_usage
@@ -1295,7 +1294,7 @@ class TruthShieldAI:
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.7
+                temperature=0.85  # Increased from 0.7 to 0.85 for more diverse, creative responses
             )
             
             response_text = response.choices[0].message.content
