@@ -641,13 +641,79 @@ class TruthShieldAI:
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
             return {
-                "assessment": "error", 
+                "assessment": "error",
                 "reasoning": str(e),
                 "plausibility_score": 50,
                 "red_flags": [],
                 "misinformation_indicators": []
             }
-    
+
+    def _is_scientific_claim(self, text: str) -> bool:
+        """Detect if a claim is scientific/medical in nature"""
+        text_lower = text.lower()
+
+        scientific_keywords = [
+            # Medical/Health
+            "vaccine", "impfung", "impfstoff", "covid", "corona", "virus", "disease", "krankheit",
+            "treatment", "behandlung", "medication", "medikament", "symptom", "diagnosis",
+            "cancer", "krebs", "diabetes", "heart", "herz", "infection", "infektion",
+            "antibiotics", "antibiotika", "therapy", "therapie", "clinical", "klinisch",
+
+            # Science
+            "study", "studie", "research", "forschung", "scientist", "wissenschaftler",
+            "experiment", "laboratory", "labor", "peer-reviewed", "published", "veröffentlicht",
+            "evidence", "beweis", "data", "daten", "statistics", "statistik",
+
+            # Environment/Climate
+            "climate", "klima", "environment", "umwelt", "pollution", "co2", "emission",
+            "global warming", "erderwärmung", "renewable", "erneuerbar",
+
+            # Technology/Physics
+            "radiation", "strahlung", "5g", "electromagnetic", "quantum", "nuclear", "nuklear",
+            "genetic", "genetisch", "dna", "rna", "mrna", "cell", "zelle",
+
+            # Biology
+            "evolution", "species", "organism", "protein", "gene", "genom", "mutation"
+        ]
+
+        return any(keyword in text_lower for keyword in scientific_keywords)
+
+    async def _search_academic_sources(self, query: str) -> List[Dict]:
+        """Search academic databases: PubMed, arXiv, Semantic Scholar"""
+        all_results = []
+
+        # PubMed - Medical/Life Sciences (FREE, no key needed)
+        try:
+            from src.services.pubmed_api import search_pubmed
+            pubmed_results = await search_pubmed(query, max_results=3)
+            all_results.extend(pubmed_results)
+            logger.info(f"📚 PubMed: {len(pubmed_results)} results")
+        except Exception as e:
+            logger.error(f"PubMed search failed: {e}")
+
+        # arXiv - Preprints (FREE, no key needed)
+        try:
+            from src.services.arxiv_api import search_arxiv
+            arxiv_results = await search_arxiv(query, max_results=2)
+            all_results.extend(arxiv_results)
+            logger.info(f"📄 arXiv: {len(arxiv_results)} results")
+        except Exception as e:
+            logger.error(f"arXiv search failed: {e}")
+
+        # Semantic Scholar - Citations & Influence (FREE, no key needed)
+        try:
+            from src.services.semantic_scholar_api import search_semantic_scholar
+            ss_results = await search_semantic_scholar(query, max_results=2)
+            all_results.extend(ss_results)
+            logger.info(f"🎓 Semantic Scholar: {len(ss_results)} results")
+        except Exception as e:
+            logger.error(f"Semantic Scholar search failed: {e}")
+
+        # Sort by credibility score
+        all_results.sort(key=lambda x: x.get('credibility_score', 0), reverse=True)
+
+        return all_results
+
     async def _search_sources(self, query: str, company: str = "GuardianAvatar") -> List[Source]:
         """Search for sources to verify the claim using real fact-checking APIs and scrapers"""
         try:
@@ -681,14 +747,16 @@ class TruthShieldAI:
             google_api_available = bool(settings.google_api_key and settings.google_api_key != "your_google_api_key_here")
             news_api_available = bool(settings.news_api_key and settings.news_api_key != "your_news_api_key_here")
             claimbuster_api_available = bool(settings.claimbuster_api_key and settings.claimbuster_api_key != "your_claimbuster_api_key_here")
+            core_api_available = bool(getattr(settings, 'core_api_key', None))
             api_usage = {
                 "google_fact_check": {"available": google_api_available, "called": False, "results": 0, "error": None},
                 "news_api": {"available": news_api_available, "called": False, "results": 0, "error": None},
                 "claimbuster": {"available": claimbuster_api_available, "called": False, "results": 0, "error": None},
                 "mediawiki": {"available": True, "called": False, "results": 0, "error": None},
+                "academic": {"available": True, "called": False, "results": 0, "error": None},  # PubMed, arXiv, Semantic Scholar are free
                 "fallback_sources_added": 0
             }
-            logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}")
+            logger.info(f"API Status - Google: {'✅' if google_api_available else '❌'}, News: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}, Academic: ✅")
             
             # Start with real Google Fact Check API results
             sources = []
@@ -794,7 +862,29 @@ class TruthShieldAI:
                 except Exception as e:
                     logger.error(f"❌ ClaimBuster API error: {e}")
                     api_usage["claimbuster"]["error"] = str(e)
-            
+
+            # 🎓 ACADEMIC SOURCES (PubMed, arXiv, Semantic Scholar) - especially for ScienceAvatar
+            if company == "ScienceAvatar" or self._is_scientific_claim(truncated_query):
+                try:
+                    academic_results = await self._search_academic_sources(truncated_query)
+                    api_usage["academic"]["called"] = True
+                    api_usage["academic"]["results"] = len(academic_results)
+
+                    for result in academic_results[:5]:  # Max 5 academic sources
+                        source = Source(
+                            url=result['url'],
+                            title=result['title'],
+                            snippet=result['snippet'],
+                            credibility_score=result['credibility_score'],
+                            date_published=result.get('pub_date', '')
+                        )
+                        sources.append(source)
+                        logger.info(f"🎓 Academic: {result['source']} - {result['title'][:50]}...")
+
+                except Exception as e:
+                    logger.error(f"❌ Academic sources error: {e}")
+                    api_usage["academic"]["error"] = str(e)
+
             # Add bot-specific sources with primary/secondary prioritization
             try:
                 prioritized_sources = self._get_prioritized_sources(query, company)
