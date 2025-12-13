@@ -951,6 +951,27 @@ class TruthShieldAI:
                     logger.error(f"❌ Academic sources error: {e}")
                     api_usage["academic"]["error"] = str(e)
 
+            # 📰 RSS NEWS (Live news from trusted sources - FREE, no key needed)
+            # GuardianAvatar always uses RSS news for current events context
+            if company == "GuardianAvatar" or not news_api_available:
+                try:
+                    from src.services.rss_news import search_rss_news
+                    rss_results = await search_rss_news(truncated_query, detected_lang, max_results=3)
+
+                    for result in rss_results[:3]:  # Max 3 RSS news articles
+                        source = Source(
+                            url=result['url'],
+                            title=result['title'],
+                            snippet=result['snippet'],
+                            credibility_score=result['credibility_score'],
+                            date_published=result.get('pub_date', '')
+                        )
+                        sources.append(source)
+                        logger.info(f"📰 RSS News: {result['source']} - {result['title'][:50]}...")
+
+                except Exception as e:
+                    logger.warning(f"⚠️ RSS News error (non-critical): {e}")
+
             # Add bot-specific sources with primary/secondary prioritization
             try:
                 prioritized_sources = self._get_prioritized_sources(query, company)
