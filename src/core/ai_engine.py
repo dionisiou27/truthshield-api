@@ -697,6 +697,37 @@ class TruthShieldAI:
 
         return any(keyword in text_lower for keyword in scientific_keywords)
 
+    def _is_health_claim(self, text: str) -> bool:
+        """Detect if a claim is health-related (for WHO sources)"""
+        text_lower = text.lower()
+
+        health_keywords = [
+            # Diseases
+            "covid", "corona", "virus", "disease", "krankheit", "pandemic", "pandemie",
+            "cancer", "krebs", "diabetes", "heart disease", "herzkrankheit", "stroke", "schlaganfall",
+            "hiv", "aids", "malaria", "tuberculosis", "tb", "ebola", "influenza", "grippe",
+            "measles", "masern", "polio", "hepatitis", "cholera", "dengue",
+
+            # Vaccines & Treatment
+            "vaccine", "impfung", "impfstoff", "vaccination", "immunization", "immunisierung",
+            "treatment", "behandlung", "therapy", "therapie", "medication", "medikament",
+            "antibiotics", "antibiotika", "antiviral",
+
+            # Health conditions
+            "obesity", "übergewicht", "fettleibigkeit", "depression", "mental health", "psychische gesundheit",
+            "addiction", "sucht", "alcohol", "alkohol", "tobacco", "tabak", "smoking", "rauchen",
+            "drug", "drogen",
+
+            # Health systems
+            "who", "world health", "weltgesundheit", "public health", "öffentliche gesundheit",
+            "healthcare", "gesundheitswesen", "hospital", "krankenhaus", "doctor", "arzt",
+
+            # Nutrition & Lifestyle
+            "nutrition", "ernährung", "diet", "diät", "exercise", "bewegung", "sleep", "schlaf"
+        ]
+
+        return any(keyword in text_lower for keyword in health_keywords)
+
     async def _search_academic_sources(self, query: str) -> List[Dict]:
         """Search academic databases: PubMed, arXiv, Semantic Scholar"""
         all_results = []
@@ -727,6 +758,16 @@ class TruthShieldAI:
             logger.info(f"🎓 Semantic Scholar: {len(ss_results)} results")
         except Exception as e:
             logger.error(f"Semantic Scholar search failed: {e}")
+
+        # WHO - Health Information (FREE, no key needed)
+        if self._is_health_claim(query):
+            try:
+                from src.services.who_api import search_who
+                who_results = await search_who(query, max_results=3)
+                all_results.extend(who_results)
+                logger.info(f"🏥 WHO: {len(who_results)} results")
+            except Exception as e:
+                logger.error(f"WHO search failed: {e}")
 
         # Sort by credibility score
         all_results.sort(key=lambda x: x.get('credibility_score', 0), reverse=True)

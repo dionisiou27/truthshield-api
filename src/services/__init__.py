@@ -14,6 +14,9 @@ from .arxiv_api import search_arxiv, ArXivAPI
 from .core_api import search_core, CoreAPI
 from .semantic_scholar_api import search_semantic_scholar, SemanticScholarAPI
 
+# Health APIs
+from .who_api import search_who, get_who_stats, WHOAPI
+
 # Utility Services
 from .ocr_service import OCRService
 from .web_scraper import WebScraper
@@ -43,6 +46,11 @@ __all__ = [
     "CoreAPI",
     "search_semantic_scholar",
     "SemanticScholarAPI",
+
+    # Health
+    "search_who",
+    "get_who_stats",
+    "WHOAPI",
 
     # Utilities
     "OCRService",
