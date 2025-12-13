@@ -1215,51 +1215,58 @@ class TruthShieldAI:
             })
         
         return verdict
-    
-    async def generate_brand_response(self, 
-                                    claim: str, 
+
+    async def generate_brand_response(self,
+                                    claim: str,
                                     fact_check: FactCheckResult,
                                     company: str = "BMW",
-                                    language: str = "en") -> Dict[str, AIInfluencerResponse]:
-        """Generate company-branded response in both languages"""
-        
+                                    language: str = "en",
+                                    platform: str = "tiktok") -> Dict[str, AIInfluencerResponse]:
+        """Generate company-branded response in both languages, optimized for platform"""
+
         responses = {}
-        
+
         # Generate English response
-        responses['en'] = await self._generate_single_response(claim, fact_check, company, "en")
-        
+        responses['en'] = await self._generate_single_response(claim, fact_check, company, "en", platform)
+
         # Generate German response
-        responses['de'] = await self._generate_single_response(claim, fact_check, company, "de")
-        
+        responses['de'] = await self._generate_single_response(claim, fact_check, company, "de", platform)
+
         # Add Guardian Avatar metadata if applicable
-        if company == "GuardianAvatar":
+        if company in AVATAR_COMPANIES:
             for lang in responses:
-                responses[lang].bot_name = "Guardian Avatar 🛡️"
+                responses[lang].bot_name = f"{company} 🛡️"
                 responses[lang].bot_type = "universal_avatar"
-        
+
         return responses
 
     async def _generate_single_response(self,
                                       claim: str,
                                       fact_check: FactCheckResult,
                                       company: str,
-                                      language: str) -> AIInfluencerResponse:
-        """Generate response in specific language"""
-        
+                                      language: str,
+                                      platform: str = "tiktok") -> AIInfluencerResponse:
+        """Generate response in specific language, optimized for platform"""
+
+        # Import platform config
+        from .platform_config import get_platform_spec, get_platform_prompt_modifier, get_avatar_platform_style, format_sources_for_platform
+
+        platform_spec = get_platform_spec(platform)
+
         if not self.openai_client:
-            # Fallback responses
+            # Fallback responses - still platform-aware
             if company in AVATAR_COMPANIES:
                 persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 fallback_texts = {
-                    "en": f"{company} here! {persona['emoji']} Let me fact-check this claim...",
-                    "de": f"{company} hier! {persona['emoji']} Lass mich diese Behauptung prüfen..."
+                    "en": f"{company} here! {persona['emoji']} Checking this claim... Stay tuned!",
+                    "de": f"{company} hier! {persona['emoji']} Prüfe diese Behauptung... Bleibt dran!"
                 }
             else:
                 fallback_texts = {
                     "en": f"As {company}, we take this claim seriously and verify all facts.",
                     "de": f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten."
                 }
-            
+
             return AIInfluencerResponse(
                 response_text=fallback_texts.get(language, fallback_texts["en"]),
                 tone="professional",
@@ -1267,119 +1274,96 @@ class TruthShieldAI:
                 hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}Facts", "#TruthShield"],
                 company_voice=company
             )
-        
+
         try:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
-            
-            # Special handling for all bot personas
-            if company in AVATAR_COMPANIES:
-                lang_instructions = {
-                    "en": "Create a witty English response that",
-                    "de": "Erstelle eine witzige deutsche Antwort, die"
-                }
-                
-                # Adjust instructions based on bot type
-                if company == "MemeAvatar":
-                    lang_instructions = {
-                        "en": "Create a maximum humor Reddit-style response that",
-                        "de": "Erstelle eine maximale Humor Reddit-Style Antwort, die"
-                    }
-                    humor_level = "MAXIMUM HUMOR - Reddit-style, sarcastic, meme-savvy"
-                elif company in ["PolicyAvatar", "EuroShieldAvatar", "ScienceAvatar"]:
-                    lang_instructions = {
-                        "en": "Create a serious, evidence-based response that",
-                        "de": "Erstelle eine ernste, evidenzbasierte Antwort, die"
-                    }
-                    humor_level = "SERIOUS - Evidence-based, authoritative, professional"
-                else:  # GuardianAvatar
-                    lang_instructions = {
-                        "en": "Create a witty English response that",
-                        "de": "Erstelle eine witzige deutsche Antwort, die"
-                    }
-                    humor_level = "BALANCED HUMOR - Witty but factual, engaging"
-                
-                language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
-                
-                # Build sources context with snippets
-                sources_text = ""
-                if fact_check.sources:
-                    top_sources = fact_check.sources[:3]  # Top 3 sources
-                    sources_list = []
-                    for i, src in enumerate(top_sources, 1):
-                        snippet = src.snippet[:150] + "..." if len(src.snippet) > 150 else src.snippet
-                        sources_list.append(f"{i}. {src.title}\n   URL: {src.url}\n   Info: {snippet}")
-                    sources_text = f"""
-                
-                VERIFIED SOURCES (use these facts in your response):
-                {chr(10).join(sources_list)}
-                """
-                
-                prompt = f"""
-                You are {company} {persona['emoji']}, {persona['style']}.
-                
-                Voice: {persona['voice']}
-                Tone: {persona['tone']}
-                Humor Level: {humor_level}
-                
-                A claim is circulating:
-                "{claim}"
-                
-                Fact-check result:
-                - Is fake: {fact_check.is_fake}
-                - Confidence: {fact_check.confidence}
-                - Category: {fact_check.category}
-                - Explanation: {fact_check.explanation}
-                {sources_text}
-                
-                {lang_instructions.get(language)}:
-                1. Matches your persona's humor level and style
-                2. Is engaging and appropriate for your audience
-                3. References specific facts from the verified sources above
-                4. Includes concrete details (not generic statements)
-                5. Uses 1-2 emojis maximum
-                6. Is 2-3 sentences max
-                7. If the claim is false, clearly state what the truth is based on the sources
 
-                {language_directive}
-                
-                Examples of {company} style:
-                {persona['examples'][language][0]}
-                """
+            # Get platform-specific modifiers
+            platform_instructions = get_platform_prompt_modifier(platform, company)
+            avatar_platform_style = get_avatar_platform_style(company, platform) if company in AVATAR_COMPANIES else ""
+
+            # Build sources for platform format
+            source_names = [src.title.split(" - ")[0][:30] for src in fact_check.sources[:3]]
+            formatted_sources = format_sources_for_platform(source_names, platform)
+
+            # Build detailed sources context
+            sources_context = ""
+            if fact_check.sources:
+                top_sources = fact_check.sources[:platform_spec.required_sources]
+                sources_list = []
+                for i, src in enumerate(top_sources, 1):
+                    snippet = src.snippet[:120] + "..." if len(src.snippet) > 120 else src.snippet
+                    sources_list.append(f"{i}. {src.title}\n   Key info: {snippet}")
+                sources_context = f"""
+VERIFIED SOURCES (incorporate these facts naturally):
+{chr(10).join(sources_list)}
+
+END YOUR RESPONSE WITH: {formatted_sources}
+"""
+
+            # Language directive
+            language_directive = "Antwort ausschließlich auf Deutsch. Benutze deutsche Umgangssprache für TikTok." if language == "de" else "Respond only in English."
+
+            # Build dynamic prompt - NO STATIC TEMPLATES
+            if company in AVATAR_COMPANIES:
+                prompt = f"""You are {company} {persona['emoji']}, a fact-checking persona.
+
+PERSONA IDENTITY:
+- Voice: {persona['voice']}
+- Tone: {persona['tone']}
+- Style: {persona['style']}
+- Platform personality: {avatar_platform_style}
+
+{platform_instructions}
+
+THE CLAIM TO ADDRESS:
+"{claim}"
+
+FACT-CHECK VERDICT:
+- Status: {"❌ FALSE/MISLEADING" if fact_check.is_fake else "✅ TRUE/ACCURATE"}
+- Confidence: {fact_check.confidence:.0%}
+- Category: {fact_check.category}
+- Key finding: {fact_check.explanation}
+
+{sources_context}
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT use generic phrases like "Let me fact-check this" or "Here's what I found"
+2. START with a HOOK - surprising fact, rhetorical question, or bold statement
+3. Be SPECIFIC - use actual data/facts from sources
+4. Match the platform tone exactly ({platform_spec.tone_style})
+5. {"Sei witzig und sarkastisch aber faktenbasiert" if language == "de" else "Be witty and engaging but fact-based"}
+6. End with source attribution in the specified format
+
+{language_directive}
+
+Generate a single, scroll-stopping response. No preamble, no meta-commentary, just the response:"""
+
             else:
-                # Existing company-specific prompt
-                lang_instructions = {
-                    "en": "Create an English response that",
-                    "de": "Erstelle eine deutsche Antwort, die"
-                }
-                
-                language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
-                prompt = f"""
-                You are the official AI brand influencer for {company}.
-                
-                Company Voice: {persona['voice']}
-                Tone: {persona['tone']}
-                Style: {persona['style']}
-                
-                A claim about {company} is circulating:
-                "{claim}"
-                
-                Fact-check result:
-                - Is fake: {fact_check.is_fake}
-                - Confidence: {fact_check.confidence}
-                - Category: {fact_check.category}
-                - Explanation: {fact_check.explanation}
-                
-                {lang_instructions.get(language, lang_instructions["en"])}:
-                1. Addresses the claim directly
-                2. Uses {company}'s brand voice
-                3. Is engaging and shareable
-                4. Includes relevant emojis
-                5. Is 1-2 sentences max
-                
-                {language_directive}
-                Make it feel authentic to {company}'s communication style.
-                """
-            
+                # Company-branded response
+                prompt = f"""You are the official AI voice for {company}.
+
+Company Voice: {persona['voice']}
+Tone: {persona['tone']}
+Style: {persona['style']}
+
+{platform_instructions}
+
+A claim about {company} is circulating:
+"{claim}"
+
+Fact-check result:
+- Is fake: {fact_check.is_fake}
+- Confidence: {fact_check.confidence}
+- Category: {fact_check.category}
+- Explanation: {fact_check.explanation}
+
+{sources_context}
+
+{language_directive}
+
+Generate a brand-appropriate response:"""
+
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
@@ -1388,18 +1372,28 @@ class TruthShieldAI:
             )
             
             response_text = response.choices[0].message.content
-            
-            # Determine hashtags
-            if company in AVATAR_COMPANIES:
-                hashtags = ["#TruthShield", "#FactCheck", f"#{company}"]
-            else:
-                hashtags = [f"#{company}Facts", "#TruthShield"]
-            
+
+            # Platform-specific hashtag generation
+            hashtag_min, hashtag_max = platform_spec.hashtag_count
+            base_hashtags = ["#TruthShield", "#FactCheck"] if company in AVATAR_COMPANIES else [f"#{company}Facts"]
+
+            # Add platform-specific hashtags
+            platform_hashtags = {
+                "tiktok": ["#fyp", "#viral", "#learnontiktok", "#faktencheck"],
+                "twitter": ["#thread", "#factsmatter"],
+                "instagram": ["#factcheck", "#truth", "#viral", "#explore"],
+                "reddit": [],  # Reddit doesn't use hashtags
+                "linkedin": ["#factchecking", "#misinformation", "#media"],
+            }
+
+            extra_hashtags = platform_hashtags.get(platform.lower(), [])
+            hashtags = base_hashtags + [f"#{company}"] + extra_hashtags[:hashtag_max - len(base_hashtags) - 1]
+
             return AIInfluencerResponse(
                 response_text=response_text,
                 tone=persona["tone"],
                 engagement_score=0.85,
-                hashtags=hashtags,
+                hashtags=hashtags[:hashtag_max] if hashtag_max > 0 else [],
                 company_voice=company
             )
             
