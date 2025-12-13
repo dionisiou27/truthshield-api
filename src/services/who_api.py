@@ -12,9 +12,15 @@ Alle APIs sind KOSTENLOS und brauchen keinen API-Key!
 
 import asyncio
 import logging
+import os
+import certifi
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import httpx
+
+# Check if SSL verification should be disabled (for dev environments with proxies)
+DISABLE_SSL = os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
+SSL_VERIFY = False if DISABLE_SSL else certifi.where()
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +67,7 @@ class WHOAPI:
         results = []
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, verify=SSL_VERIFY) as client:
                 # Search indicators
                 response = await client.get(
                     f"{self.gho_base_url}/Indicator",
@@ -242,7 +248,7 @@ class WHOAPI:
         country: ISO 3-letter code (DEU, USA, etc.)
         """
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, verify=SSL_VERIFY) as client:
                 response = await client.get(
                     f"{self.gho_base_url}/{indicator_code}",
                     params={

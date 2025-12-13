@@ -16,12 +16,18 @@ Alle RSS-Feeds sind KOSTENLOS und brauchen keinen API-Key!
 import asyncio
 import logging
 import re
+import os
+import certifi
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 import xml.etree.ElementTree as ET
 import httpx
 from html import unescape
+
+# Check if SSL verification should be disabled (for dev environments with proxies)
+DISABLE_SSL = os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
+SSL_VERIFY = False if DISABLE_SSL else certifi.where()
 
 logger = logging.getLogger(__name__)
 
@@ -165,8 +171,8 @@ class RSSNewsAggregator:
                 if datetime.now() - cached["timestamp"] < self.cache_duration:
                     return self._search_articles(cached["articles"], query, feed)
 
-            # Fetch fresh feed
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            # Fetch fresh feed with SSL configuration
+            async with httpx.AsyncClient(timeout=self.timeout, verify=SSL_VERIFY) as client:
                 response = await client.get(feed.url, follow_redirects=True)
 
                 if response.status_code != 200:
@@ -312,7 +318,7 @@ class RSSNewsAggregator:
     async def _fetch_feed_articles(self, feed: RSSFeed) -> List[Dict[str, Any]]:
         """Fetch all articles from a feed"""
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, verify=SSL_VERIFY) as client:
                 response = await client.get(feed.url, follow_redirects=True)
                 if response.status_code == 200:
                     articles = self._parse_rss(response.text, feed)

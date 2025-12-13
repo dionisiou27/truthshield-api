@@ -1,6 +1,8 @@
 import os
 import asyncio
 import logging
+import ssl
+import certifi
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
@@ -10,6 +12,10 @@ import unicodedata
 # ADD THESE LINES:
 from dotenv import load_dotenv
 load_dotenv()  # Force load .env file
+
+# Configure SSL certificates globally
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
 
 import httpx
 import openai
@@ -199,17 +205,37 @@ class TruthShieldAI:
         }
     
     def setup_openai(self):
-        """Initialize OpenAI client"""
+        """Initialize OpenAI client with proper SSL configuration"""
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             logger.warning("⚠️ OPENAI_API_KEY not found - fact-checking will be limited")
             return
-        
+
+        # Check if we should disable SSL verification (for development environments with proxies)
+        disable_ssl = os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
+
         try:
-            self.openai_client = openai.OpenAI(api_key=api_key)
-            logger.info("✅ OpenAI client initialized")
+            # Create custom httpx client
+            # Note: verify=False is for development environments with self-signed proxy certs
+            http_client = httpx.Client(
+                verify=False if disable_ssl else certifi.where(),
+                timeout=httpx.Timeout(60.0, connect=10.0)
+            )
+
+            self.openai_client = openai.OpenAI(
+                api_key=api_key,
+                http_client=http_client
+            )
+            ssl_mode = "disabled (dev mode)" if disable_ssl else "enabled"
+            logger.info(f"✅ OpenAI client initialized (SSL verification: {ssl_mode})")
         except Exception as e:
             logger.error(f"❌ OpenAI setup failed: {e}")
+            # Fallback: try without custom http_client
+            try:
+                self.openai_client = openai.OpenAI(api_key=api_key)
+                logger.info("✅ OpenAI client initialized (fallback mode)")
+            except Exception as e2:
+                logger.error(f"❌ OpenAI fallback also failed: {e2}")
     
     async def fact_check_claim(self, text: str, company: str = "BMW") -> FactCheckResult:
         """Main fact-checking pipeline"""
