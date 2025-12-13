@@ -1,3 +1,17 @@
+# Load environment variables FIRST, before any other imports
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Force disable SSL warnings for development environments with proxies
+if os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true":
+    import ssl
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    # Set environment variables that some libraries respect
+    os.environ['CURL_CA_BUNDLE'] = ''
+    os.environ['REQUESTS_CA_BUNDLE'] = ''
+
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
