@@ -1,9 +1,38 @@
 """
 Guardian Bandit Controller
 Thompson Sampling for tone and source-mix optimization.
+
+=============================================================================
+LEARNING SAFEGUARDS - Critical for Defence/EU Review
+=============================================================================
+Guardian learning is constrained to stylistic and structural parameters.
+Factual assertions, source classes, and boundary definitions are IMMUTABLE
+and excluded from optimization to prevent engagement-driven drift.
+
+LEARNABLE PARAMETERS (stylistic only):
+- Tone variant (strict/firm/educational) - HOW the message is framed
+- Source mix strategy - WHICH source class priority, not WHICH sources
+- Response length within constraints
+- Sentence structure order
+
+IMMUTABLE PARAMETERS (never optimized):
+- Factual content and claims
+- Source class authority weights
+- Boundary definitions and rules
+- Guardian behavioral constraints
+- Source whitelist membership
+- Risk level assessments
+- Claim type classifications
+
+This separation ensures Guardian cannot drift toward:
+- Engagement > factual integrity
+- Provocation or polarization
+- Weakened source authority
+- Compromised boundary enforcement
+=============================================================================
 """
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 from pydantic import BaseModel
 from datetime import datetime
 import random
@@ -13,6 +42,79 @@ import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# IMMUTABLE CONSTRAINTS - Never subject to learning/optimization
+# =============================================================================
+
+class ImmutableConstraints:
+    """
+    Parameters that are NEVER subject to bandit optimization.
+    These represent epistemic and safety boundaries.
+    """
+    # Source authority weights are fixed
+    SOURCE_CLASS_WEIGHTS_FROZEN: bool = True
+
+    # Guardian behavioral rules are immutable
+    GUARDIAN_RULES_FROZEN: bool = True
+
+    # Claim classifications come from deterministic rules
+    CLAIM_CLASSIFICATION_FROZEN: bool = True
+
+    # Risk levels are policy-defined, not learned
+    RISK_LEVELS_FROZEN: bool = True
+
+    # Boundary definitions cannot be weakened
+    BOUNDARY_DEFINITIONS_FROZEN: bool = True
+
+    # Minimum source authority thresholds
+    MIN_SOURCE_AUTHORITY: float = 0.70  # No source below REPUTABLE_MEDIA
+
+    # Maximum engagement weight (prevents engagement > accuracy drift)
+    MAX_ENGAGEMENT_WEIGHT: float = 0.50
+
+    @classmethod
+    def validate_reward_weights(cls, weights: Dict[str, float]) -> bool:
+        """Ensure reward weights don't over-prioritize engagement."""
+        engagement_weights = weights.get("likes", 0) + weights.get("shares", 0)
+        return engagement_weights <= cls.MAX_ENGAGEMENT_WEIGHT
+
+
+# =============================================================================
+# NEGATIVE OPTIMIZATION SIGNALS - Anti-gaming measures
+# =============================================================================
+
+class NegativeSignals:
+    """
+    Signals that REDUCE reward, preventing gaming and drift.
+    These are explicitly documented for audit purposes.
+    """
+    # Platform moderation signals
+    REPORT_RATE_WEIGHT: float = -0.30        # Heavy penalty for reports
+    CONTENT_REMOVAL_PENALTY: float = -1.0    # Complete reward nullification
+    PLATFORM_FLAG_PENALTY: float = -0.50     # Moderation flags
+
+    # Toxicity amplification
+    TOXICITY_IN_REPLIES_WEIGHT: float = -0.15
+    REPLY_CHAIN_ESCALATION: float = -0.20    # Prevents provocation optimization
+
+    # Engagement gaming
+    BOT_ENGAGEMENT_PENALTY: float = -0.40    # Suspected inauthentic engagement
+    SPAM_PATTERN_PENALTY: float = -0.30      # Repetitive/spam patterns
+
+    @classmethod
+    def get_all_negative_weights(cls) -> Dict[str, float]:
+        """Return all negative signal weights for documentation."""
+        return {
+            "report_rate": cls.REPORT_RATE_WEIGHT,
+            "content_removal": cls.CONTENT_REMOVAL_PENALTY,
+            "platform_flag": cls.PLATFORM_FLAG_PENALTY,
+            "toxicity_in_replies": cls.TOXICITY_IN_REPLIES_WEIGHT,
+            "reply_chain_escalation": cls.REPLY_CHAIN_ESCALATION,
+            "bot_engagement": cls.BOT_ENGAGEMENT_PENALTY,
+            "spam_pattern": cls.SPAM_PATTERN_PENALTY,
+        }
 
 
 class ToneVariant(str, Enum):
@@ -231,15 +333,23 @@ class GuardianBandit:
 
     def calculate_reward(self, metrics: Dict) -> float:
         """
-        Calculate reward from engagement metrics.
+        Calculate reward from engagement metrics with anti-gaming safeguards.
 
         Reward formula (from Blueprint):
         reward = 0.35*top_comment_proxy
                + 0.20*reply_quality
                + 0.15*like_reply_ratio
                + 0.10*shares_proxy
-               - 0.30*reports_rate
-               - 0.15*toxicity_in_replies
+               + NegativeSignals (anti-gaming penalties)
+
+        Anti-Gaming Penalties (from NegativeSignals):
+        - reports_rate: -0.30 (heavy penalty for reports)
+        - content_removal: -1.0 (complete nullification)
+        - platform_flag: -0.50 (moderation flags)
+        - toxicity_in_replies: -0.15 (toxic reactions)
+        - reply_chain_escalation: -0.20 (provocation prevention)
+        - bot_engagement: -0.40 (inauthentic engagement)
+        - spam_pattern: -0.30 (repetitive patterns)
 
         Args:
             metrics: Dict with engagement metrics
@@ -247,28 +357,51 @@ class GuardianBandit:
         Returns:
             Reward value 0-1 (clamped)
         """
-        # Extract metrics with defaults
+        # Check for content removal - complete reward nullification
+        if metrics.get("content_removed", False) or metrics.get("deleted", False):
+            logger.warning("Content removed - reward nullified")
+            return 0.0
+
+        # Extract positive metrics with defaults
         top_comment = metrics.get("top_comment_proxy", 0.5)
         reply_quality = metrics.get("reply_quality", 0.5)
         like_ratio = metrics.get("like_reply_ratio", 0.5)
         shares = metrics.get("shares_proxy", 0.0)
+
+        # Extract negative signals
         reports = metrics.get("reports_rate", 0.0)
         toxicity = metrics.get("toxicity_in_replies", 0.0)
+        platform_flag = 1.0 if metrics.get("platform_flagged", False) else 0.0
+        reply_escalation = metrics.get("reply_chain_escalation", 0.0)
+        bot_engagement = metrics.get("bot_engagement_ratio", 0.0)
+        spam_pattern = metrics.get("spam_pattern_detected", 0.0)
 
-        # Calculate weighted reward
-        reward = (
+        # Calculate positive reward component
+        positive_reward = (
             0.35 * top_comment +
             0.20 * reply_quality +
             0.15 * like_ratio +
-            0.10 * shares -
-            0.30 * reports -
-            0.15 * toxicity
+            0.10 * shares
         )
+
+        # Calculate negative penalty component using NegativeSignals weights
+        negative_penalty = (
+            abs(NegativeSignals.REPORT_RATE_WEIGHT) * reports +
+            abs(NegativeSignals.TOXICITY_IN_REPLIES_WEIGHT) * toxicity +
+            abs(NegativeSignals.PLATFORM_FLAG_PENALTY) * platform_flag +
+            abs(NegativeSignals.REPLY_CHAIN_ESCALATION) * reply_escalation +
+            abs(NegativeSignals.BOT_ENGAGEMENT_PENALTY) * bot_engagement +
+            abs(NegativeSignals.SPAM_PATTERN_PENALTY) * spam_pattern
+        )
+
+        # Final reward = positive - negative
+        reward = positive_reward - negative_penalty
 
         # Clamp to [0, 1]
         reward = max(0.0, min(1.0, reward))
 
-        logger.debug("Calculated reward: %.3f (metrics: %s)", reward, metrics)
+        logger.debug("Calculated reward: %.3f (positive=%.3f, penalty=%.3f, metrics: %s)",
+                    reward, positive_reward, negative_penalty, metrics)
         return reward
 
     def update(self, decision_id: str, metrics: Dict) -> float:

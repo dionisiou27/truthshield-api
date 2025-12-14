@@ -125,6 +125,35 @@ POST /api/v1/ml/feedback           # Engagement feedback
 GET  /api/v1/ml/bandit/stats       # Bandit arm statistics
 ```
 
+## Bench Infrastructure
+
+Offline batch testing for Guardian responses before production deployment:
+
+```bash
+# Run batch test
+python bench/run_batch.py --input bench/batches/euronews_v1.json --output demo_data/ml
+
+# Available batches
+bench/batches/euronews_v1.json  # EU delegitimization (10 claims)
+bench/batches/euronews_v2.json  # NATO/war framing (8 claims)
+
+# Bandit replay testing
+python bench/replay.py run demo_data/ml/guardian_responses.jsonl
+```
+
+### Quality Metrics
+| Metric | Target | Description |
+|--------|--------|-------------|
+| Violation Rate | < 5% | Rule violations |
+| Genericness | < 5% | Vague responses |
+| Escalation Risk | < 2% | Escalatory language |
+| Boundary Detection | > 85% | Clear boundary statements |
+
+### Risk-Aware Boundary Detection
+- **HIGH/CRITICAL:** Requires hard boundary (stop, false, misinformation)
+- **MEDIUM:** Requires hard OR soft boundary (misleading, distorts, omits)
+- **LOW:** Boundary optional
+
 ## Tech Roadmap (In Development)
 * **C2PA Signing:** Cryptographic provenance standards for asset authentication
 * **Resilience Mesh:** Decentralized distribution layer for crisis resilience

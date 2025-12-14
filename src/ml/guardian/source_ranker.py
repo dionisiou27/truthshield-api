@@ -37,6 +37,133 @@ SOURCE_CLASS_WEIGHTS: Dict[SourceClass, float] = {
 }
 
 
+# =============================================================================
+# GUARDIAN SOURCE PROFILES - Context-sensitive source selection per claim type
+# =============================================================================
+# Guardian bleibt Guardian – aber kontextsensitiv.
+# Jeder ClaimType hat bevorzugte Authority Sources.
+
+GUARDIAN_SOURCE_PROFILES: Dict[str, List[str]] = {
+    # Hate Speech, Dehumanization, Threats
+    "hate_or_dehumanization": [
+        "fra.europa.eu",        # EU Fundamental Rights Agency
+        "ohchr.org",            # UN Human Rights
+        "bpb.de",               # Bundeszentrale politische Bildung
+        "amnesty.org",
+        "hrw.org",
+    ],
+    "threat_or_incitement": [
+        "fra.europa.eu",
+        "ohchr.org",
+        "bpb.de",
+        "amnesty.org",
+    ],
+
+    # Delegitimization & Policy Framing
+    "delegitimization_frame": [
+        "transparency.org",     # Transparency International
+        "worldbank.org",        # World Bank (oversight, conditionality)
+        "ec.europa.eu",         # European Commission
+        "oecd.org",
+        "freedomhouse.org",
+    ],
+    "policy_aid_oversight": [
+        "ec.europa.eu",
+        "worldbank.org",
+        "imf.org",
+        "oecd.org",
+        "transparency.org",
+    ],
+
+    # Health & Science
+    "health_misinformation": [
+        "who.int",
+        "cdc.gov",
+        "nih.gov",
+        "pubmed.ncbi.nlm.nih.gov",
+        "thelancet.com",
+        "nature.com",
+    ],
+    "science_denial": [
+        "nature.com",
+        "science.org",
+        "pubmed.ncbi.nlm.nih.gov",
+        "who.int",
+        "nasa.gov",
+    ],
+
+    # Conspiracy & Foreign Influence
+    "conspiracy_theory": [
+        "euvsdisinfo.eu",       # EU vs Disinfo
+        "correctiv.org",
+        "snopes.com",
+        "factcheck.org",
+        "bpb.de",
+    ],
+    "foreign_influence": [
+        "euvsdisinfo.eu",
+        "eeas.europa.eu",       # EU External Action Service
+        "state.gov",
+        "nato.int",
+        "osce.org",
+    ],
+
+    # Blanket Generalizations & Opinion with Factual Premise
+    "blanket_generalization": [
+        "bpb.de",
+        "fra.europa.eu",
+        "correctiv.org",
+        "snopes.com",
+    ],
+    "opinion_with_factual_premise": [
+        "correctiv.org",
+        "snopes.com",
+        "politifact.com",
+        "reuters.com",
+        "apnews.com",
+    ],
+}
+
+
+# =============================================================================
+# SOURCE USAGE DISTINCTION - Critical for Defence/EU Review
+# =============================================================================
+# MediaWiki and commercial APIs are used for signal discovery and claim context
+# only, not as authoritative evidence sources.
+
+class SourceUsageType(str, Enum):
+    """Distinguishes retrieval sources from authority sources."""
+    RETRIEVAL = "RETRIEVAL"      # Discovery, context, signal finding
+    AUTHORITY = "AUTHORITY"       # May be cited as evidence
+
+
+# Sources that may only be used for retrieval/discovery, NOT citation
+RETRIEVAL_ONLY_SOURCES: Set[str] = {
+    "wikipedia.org",
+    "en.wikipedia.org",
+    "de.wikipedia.org",
+    "wikidata.org",
+    # Commercial discovery APIs (results, not the API itself)
+    # Google Fact Check API results need verification
+    # News API results need classification
+}
+
+# Sources that may be cited as authoritative evidence
+AUTHORITY_SOURCES: Set[str] = {
+    # PRIMARY_INSTITUTION
+    "europa.eu", "ec.europa.eu", "fra.europa.eu", "un.org", "ohchr.org",
+    "who.int", "bundesregierung.de", "bpb.de", "cdc.gov", "nih.gov",
+    # MULTILATERAL
+    "worldbank.org", "oecd.org", "imf.org", "nato.int", "osce.org",
+    # REPUTABLE_NGO
+    "transparency.org", "hrw.org", "amnesty.org", "rsf.org",
+    # PEER_REVIEWED
+    "pubmed.ncbi.nlm.nih.gov", "nature.com", "science.org", "thelancet.com",
+    # IFCN_FACTCHECK
+    "correctiv.org", "snopes.com", "factcheck.org", "politifact.com",
+}
+
+
 # Domain to SourceClass mapping (whitelist)
 DOMAIN_WHITELIST: Dict[str, SourceClass] = {
     # PRIMARY_INSTITUTION (EU, UN, Government)

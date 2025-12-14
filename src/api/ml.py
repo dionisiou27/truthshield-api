@@ -370,3 +370,177 @@ async def get_training_data(limit: int = 100):
     except Exception as e:
         logger.error(f"Failed to get training data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# SCOREBOARD ENDPOINTS - LLM Quality Metrics
+# =============================================================================
+
+class ScoreResponseRequest(BaseModel):
+    """Request to score a Guardian response."""
+    response_id: str
+    response_text: str
+    sources: List[str]
+    max_chars: int = 450
+
+
+class SourceQARequest(BaseModel):
+    """Request to add source QA labels."""
+    response_id: str
+    source_labels: Dict[str, str]  # URL -> SUPPORTED/REFUTED/UNRELATED
+
+
+@router.post("/scoreboard/score")
+async def score_response(request: ScoreResponseRequest):
+    """
+    Score a Guardian response for quality metrics.
+
+    Checks:
+    - Rule violations (no questions, no irony, etc.)
+    - Format compliance (length, sources)
+    - Genericness detection
+    - Escalation risk
+    """
+    try:
+        from src.ml.learning.scoreboard import get_scoreboard
+
+        scoreboard = get_scoreboard()
+        score = scoreboard.score_response(
+            response_id=request.response_id,
+            response_text=request.response_text,
+            sources=request.sources,
+            max_chars=request.max_chars
+        )
+
+        return {
+            "response_id": score.response_id,
+            "char_count": score.char_count,
+            "sentence_count": score.sentence_count,
+            "source_count": score.source_count,
+            "violations": [v.value for v in score.violations],
+            "violation_count": score.violation_count,
+            "genericness_score": round(score.genericness_score, 3),
+            "escalation_risk": round(score.escalation_risk, 3),
+            "passed": score.violation_count == 0
+        }
+
+    except Exception as e:
+        logger.error(f"Response scoring failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/scoreboard/source-qa")
+async def submit_source_qa(request: SourceQARequest):
+    """
+    Submit source relevance QA labels.
+
+    Labels: SUPPORTED, REFUTED, UNRELATED
+
+    This is the "ehrlichste KPI" - if UNRELATED > 10-15%,
+    the ranker/query expansion needs improvement.
+    """
+    try:
+        from src.ml.learning.scoreboard import get_scoreboard, SourceRelevanceLabel
+
+        scoreboard = get_scoreboard()
+
+        # Convert string labels to enum
+        labels = {}
+        for url, label_str in request.source_labels.items():
+            try:
+                labels[url] = SourceRelevanceLabel(label_str.upper())
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid label '{label_str}'. Use: SUPPORTED, REFUTED, UNRELATED"
+                )
+
+        relevance_rate = scoreboard.add_source_qa(request.response_id, labels)
+
+        if relevance_rate is None:
+            raise HTTPException(status_code=404, detail="Response not found")
+
+        return {
+            "response_id": request.response_id,
+            "source_relevance_rate": round(relevance_rate, 3),
+            "labels_added": len(labels),
+            "quality_warning": relevance_rate < 0.85
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Source QA submission failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/scoreboard/summary")
+async def get_scoreboard_summary(last_n: Optional[int] = None):
+    """
+    Get aggregate scoreboard metrics.
+
+    Key metrics:
+    - avg_chars: Average response length
+    - violation_rate: % responses with any violation
+    - genericness_rate: % responses flagged as generic
+    - source_relevance_rate: % sources that are relevant (from QA)
+    """
+    try:
+        from src.ml.learning.scoreboard import get_scoreboard
+
+        scoreboard = get_scoreboard()
+        summary = scoreboard.get_summary(last_n=last_n)
+
+        return {
+            "total_responses": summary.total_responses,
+            "averages": {
+                "chars": summary.avg_chars,
+                "sentences": summary.avg_sentences,
+                "sources": summary.avg_sources,
+                "violations": summary.avg_violations
+            },
+            "rates": {
+                "violation_rate": summary.violation_rate,
+                "genericness_rate": summary.genericness_rate,
+                "escalation_rate": summary.escalation_rate,
+                "source_relevance_rate": summary.source_relevance_rate
+            },
+            "violation_breakdown": summary.violation_counts,
+            "quality_status": "GOOD" if summary.violation_rate < 0.1 else "NEEDS_REVIEW"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get scoreboard summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/scoreboard/problems")
+async def get_problem_responses(min_violations: int = 2):
+    """
+    Get responses with multiple violations for review.
+
+    Useful for identifying systematic issues.
+    """
+    try:
+        from src.ml.learning.scoreboard import get_scoreboard
+
+        scoreboard = get_scoreboard()
+        problems = scoreboard.get_problem_responses(min_violations=min_violations)
+
+        return {
+            "count": len(problems),
+            "responses": [
+                {
+                    "response_id": p.response_id,
+                    "violations": [v.value for v in p.violations],
+                    "violation_count": p.violation_count,
+                    "genericness_score": round(p.genericness_score, 3),
+                    "escalation_risk": round(p.escalation_risk, 3)
+                }
+                for p in problems
+            ]
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get problem responses: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

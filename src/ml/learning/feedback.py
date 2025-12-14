@@ -1,6 +1,9 @@
 """
 Feedback Collector for Guardian Learning Loop
 Collects engagement metrics and stores for learning.
+
+Implements outcome snapshots at 1h/6h/24h as recommended for
+proper learning signal development.
 """
 from typing import Dict, List, Optional
 from pydantic import BaseModel
@@ -12,13 +15,51 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+class OutcomeSnapshot(BaseModel):
+    """
+    Snapshot of engagement at a point in time.
+
+    Captured at 1h, 6h, 24h after posting to track
+    engagement trajectory over time.
+    """
+    snapshot_time: datetime
+    hours_after_post: float
+
+    # Core metrics at this snapshot
+    likes: int = 0
+    replies: int = 0
+    shares: int = 0
+    views: int = 0
+
+    # Quality signals
+    top_comment_position: Optional[int] = None
+    reply_sentiment_avg: float = 0.0
+    constructive_reply_ratio: float = 0.0
+
+    # Negative signals
+    reports: int = 0
+    hidden: bool = False
+    deleted: bool = False
+    toxicity_in_replies: float = 0.0
+    escalation_detected: bool = False
+
+
 class EngagementMetrics(BaseModel):
-    """Engagement metrics from platform."""
+    """
+    Engagement metrics from platform with outcome snapshots.
+
+    Log structure per intervention (JSONL):
+    - claim_text, language, claim_type, risk_level
+    - sources_selected (incl. scores + source_class + domain)
+    - variant_id (tone + source_mix + template_id)
+    - response_text + char_count + sentence_count
+    - outcome snapshots at 1h / 6h / 24h
+    """
     response_id: str
     avatar: str
     platform: str = "tiktok"
 
-    # Core metrics
+    # Core metrics (current/latest)
     likes: int = 0
     replies: int = 0
     shares: int = 0
@@ -39,8 +80,16 @@ class EngagementMetrics(BaseModel):
 
     # Timestamps
     collected_at: datetime
-    delta_1h: Optional[Dict] = None  # Change since 1h ago
-    delta_24h: Optional[Dict] = None  # Change since 24h ago
+    posted_at: Optional[datetime] = None  # When response was posted
+
+    # Outcome Snapshots (1h / 6h / 24h)
+    snapshot_1h: Optional[OutcomeSnapshot] = None
+    snapshot_6h: Optional[OutcomeSnapshot] = None
+    snapshot_24h: Optional[OutcomeSnapshot] = None
+
+    # Legacy fields for backwards compat
+    delta_1h: Optional[Dict] = None
+    delta_24h: Optional[Dict] = None
 
 
 class ResponseLog(BaseModel):

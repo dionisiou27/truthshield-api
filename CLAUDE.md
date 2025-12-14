@@ -199,14 +199,62 @@ final_score = 0.45×relevance + 0.25×authority + 0.15×recency + 0.10×specific
 - `balanced` - Even mix across source classes
 - `factcheck_heavy` - Prioritize IFCN_FACTCHECK
 
+### Learning Safeguards (Defence/EU Review Compliance)
+
+**LEARNABLE PARAMETERS (stylistic only):**
+- Tone variant (strict/firm/educational) - HOW the message is framed
+- Source mix strategy - WHICH source class priority, not WHICH sources
+- Response length within constraints
+- Sentence structure order
+
+**IMMUTABLE PARAMETERS (never optimized):**
+- Factual content and claims
+- Source class authority weights
+- Boundary definitions and rules
+- Guardian behavioral constraints
+- Source whitelist membership
+- Risk level assessments
+- Claim type classifications
+
+This separation prevents drift toward:
+- Engagement > factual integrity
+- Provocation or polarization
+- Weakened source authority
+
 ### Reward Function (Anti-Gaming)
 ```python
+# Positive signals
 reward = 0.35 * top_comment_proxy      # Position in comments
        + 0.20 * reply_quality          # Constructive replies
        + 0.15 * like_reply_ratio       # Engagement balance
        + 0.10 * shares_proxy           # Share velocity
-       - 0.30 * reports_rate           # Report penalty (anti-gaming)
+
+# Negative signals (NegativeSignals class)
+       - 0.30 * reports_rate           # Report penalty
        - 0.15 * toxicity_in_replies    # Toxicity penalty
+       - 0.50 * platform_flag          # Moderation flags
+       - 0.20 * reply_chain_escalation # Provocation prevention
+       - 0.40 * bot_engagement         # Inauthentic engagement
+       - 0.30 * spam_pattern           # Repetitive patterns
+
+# Content removal = complete reward nullification (-1.0)
+```
+
+### Source Usage Types (Retrieval vs Authority)
+```python
+RETRIEVAL_ONLY_SOURCES  # Discovery, context, signal finding (Wikipedia)
+AUTHORITY_SOURCES       # May be cited as evidence (Government, UN, Factcheck)
+```
+
+### Guardian Source Profiles (Context-Sensitive)
+```python
+GUARDIAN_SOURCE_PROFILES = {
+    "hate_or_dehumanization": ["fra.europa.eu", "ohchr.org", "bpb.de", "amnesty.org"],
+    "health_misinformation": ["who.int", "cdc.gov", "nih.gov", "pubmed.ncbi.nlm.nih.gov"],
+    "delegitimization_frame": ["transparency.org", "worldbank.org", "ec.europa.eu"],
+    "foreign_influence": ["eeas.europa.eu", "nato.int", "euvsdisinfo.eu"],
+    # ... per-claim-type source profiles
+}
 ```
 
 ### Key Files
@@ -215,8 +263,73 @@ reward = 0.35 * top_comment_proxy      # Position in comments
 - `src/ml/guardian/response_generator.py` - Pipeline orchestration
 - `src/ml/learning/bandit.py` - Thompson Sampling implementation
 - `src/ml/learning/feedback.py` - Engagement metrics collection
+- `src/ml/learning/scoreboard.py` - Quality metrics and boundary detection
 - `src/ml/learning/logging.py` - ML event logging (JSONL)
 - `src/api/ml.py` - ML API endpoints
+
+## Bench Infrastructure
+
+### Overview
+Offline batch testing for Guardian responses before production deployment.
+
+### Run Batch Tests
+```bash
+# Run with batch definition file
+python bench/run_batch.py --input bench/batches/euronews_v1.json --output demo_data/ml
+
+# Available batches
+bench/batches/euronews_v1.json  # EU delegitimization claims (10 claims)
+bench/batches/euronews_v2.json  # NATO/war framing claims (8 claims)
+```
+
+### Batch Definition Format
+```json
+{
+  "batch_id": "guardian_euronews_anti_eu_v1",
+  "source_platform": "tiktok",
+  "mode": "shadow",
+  "avatar": "guardian",
+  "common_params": {
+    "language": "en",
+    "risk_level": "MEDIUM"
+  },
+  "claims": [
+    {"claim_id": "001", "text": "...", "cluster": "delegitimization_frame"}
+  ]
+}
+```
+
+### Quality Targets
+| Metric | Target | Description |
+|--------|--------|-------------|
+| `violation_rate` | < 5% | Any rule violation |
+| `genericness_rate` | < 5% | Vague/hedging responses |
+| `escalation_rate` | < 2% | Potentially escalatory language |
+| `missing_boundary` | < 15% | No clear boundary statement |
+
+### Risk-Aware Boundary Detection
+The scoreboard uses risk-aware boundary checking:
+
+| Risk Level | Boundary Required |
+|------------|------------------|
+| HIGH/CRITICAL | **Hard** boundary (stop, false, misinformation) |
+| MEDIUM | Hard OR **Soft** boundary (misleading, distorts, omits) |
+| LOW | Optional |
+
+**Hard Boundary Patterns:** stop, halt, false, wrong, misinformation, factually wrong
+**Soft Boundary Patterns:** misleading, misconception, distorts, framing, inverts, omits, misrepresents, erases, reverses
+
+### Bandit Replay Testing
+```bash
+# Run offline bandit simulation
+python bench/replay.py run demo_data/ml/guardian_responses.jsonl
+
+# Generate report
+python bench/replay.py report demo_data/ml/replay_results.json
+
+# Verify sanity checks
+python bench/replay.py verify demo_data/ml/replay_results.json
+```
 
 ## Development Notes
 - CORS is configured for localhost and production domains
