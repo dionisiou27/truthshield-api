@@ -91,6 +91,40 @@ NEWS_API_KEY=          # News API integration
 HUGGINGFACE_API_KEY=   # Optional: HuggingFace models
 ```
 
+## ML Pipeline (Guardian Learning Loop)
+
+The Guardian Avatar uses online learning for response optimization:
+
+### Pipeline Flow
+```
+Claim → Typing → Source Retrieval → Source Ranking → Response Generation → Learning Loop
+```
+
+### Source Authority Hierarchy
+| Class | Weight | Examples |
+|-------|--------|----------|
+| PRIMARY_INSTITUTION | 1.00 | EU, UN, Government agencies |
+| MULTILATERAL | 0.95 | WHO, UNESCO, OSCE |
+| REPUTABLE_NGO | 0.90 | Amnesty, HRW |
+| PEER_REVIEWED | 0.88 | PubMed, Nature |
+| IFCN_FACTCHECK | 0.85 | Correctiv, Snopes |
+| REPUTABLE_MEDIA | 0.70 | Reuters, AP, DW |
+
+### Thompson Sampling Bandit
+Optimizes tone variant and source mix selection based on engagement feedback:
+- **Tone:** Strict / Firm / Educational
+- **Source Mix:** Institution-Heavy / Balanced / Factcheck-Heavy
+- **Reward:** Engagement metrics with anti-gaming penalties (reports, toxicity)
+
+### ML API Endpoints
+```
+POST /api/v1/ml/analyze-claim      # Claim typing
+POST /api/v1/ml/rank-sources       # Source ranking
+POST /api/v1/ml/prepare-guardian   # Full ML pipeline
+POST /api/v1/ml/feedback           # Engagement feedback
+GET  /api/v1/ml/bandit/stats       # Bandit arm statistics
+```
+
 ## Tech Roadmap (In Development)
 * **C2PA Signing:** Cryptographic provenance standards for asset authentication
 * **Resilience Mesh:** Decentralized distribution layer for crisis resilience
@@ -98,7 +132,7 @@ HUGGINGFACE_API_KEY=   # Optional: HuggingFace models
 
 ## Tech Stack
 * **Core:** Python 3.11, FastAPI (Async)
-* **AI/ML:** OpenAI GPT-4-Turbo (JSON mode), Custom Fine-Tuned Models
+* **AI/ML:** OpenAI GPT-4-Turbo (JSON mode), Thompson Sampling Bandit
 * **External APIs:** Google Fact Check, News API, ClaimBuster, MediaWiki
 * **Infrastructure:** Dockerized, Cloud-Agnostic, Redis caching
 

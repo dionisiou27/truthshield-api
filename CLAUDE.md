@@ -14,13 +14,16 @@ TruthShield is a FastAPI-based cognitive security platform for detecting disinfo
 ## Project Structure
 ```
 src/
-├── api/           # FastAPI routes (detection, monitoring, content, compliance)
+├── api/           # FastAPI routes (detection, monitoring, content, compliance, ml)
 ├── core/          # Business logic (ai_engine, detection, threat_scoring, etc.)
 ├── models/        # Pydantic models
-└── services/      # External integrations (Google, ClaimBuster, Wiki, News APIs)
+├── services/      # External integrations (Google, ClaimBuster, Wiki, News APIs)
+└── ml/            # Machine Learning Pipeline
+    ├── guardian/  # Claim Router, Source Ranker, Response Generator
+    └── learning/  # Thompson Sampling Bandit, Feedback Collector, ML Logging
 tests/             # pytest test files
 configs/           # Configuration files
-demo_data/         # Demo/test data
+demo_data/         # Demo/test data + ML logs
 docs/              # Documentation and HTML demo
 ```
 
@@ -107,6 +110,16 @@ mypy src/                # type check
 - `GET /companies` - List supported companies/avatars
 - `GET /guardian/examples` - Guardian Avatar example queries
 
+### ML Pipeline Endpoints (`/api/v1/ml/`)
+- `POST /analyze-claim` - Claim typing and risk assessment
+- `POST /rank-sources` - Source ranking with authority scoring
+- `POST /prepare-guardian` - Full ML pipeline for response preparation
+- `POST /feedback` - Submit engagement metrics for bandit learning
+- `GET /bandit/stats` - Thompson Sampling arm statistics
+- `GET /learning/summary` - ML pipeline summary statistics
+- `GET /source-whitelist` - Domain whitelist by source class
+- `GET /training-data` - Export training data for offline analysis
+
 ### Other Endpoints
 - `GET /` - API info and available endpoints
 - `GET /health` - Health check
@@ -144,6 +157,67 @@ Fact-check responses include:
 - `details.all_sources_checked` - Complete source list (Raw JSON)
 - `details.api_usage` - Token usage statistics
 
+## ML Pipeline (Guardian Learning Loop)
+
+### Overview
+The ML pipeline implements online learning for Guardian Avatar response optimization using Thompson Sampling.
+
+### Pipeline Steps
+1. **Claim Intake** → Raw text input
+2. **Claim Typing** → Classification: hate, threat, health misinformation, policy, etc.
+3. **Source Retrieval** → External API calls (Google, News, Wiki)
+4. **Source Ranking** → Authority-weighted scoring with diversity constraints
+5. **Response Generation** → Tone variant selection via bandit
+6. **Learning Loop** → Engagement feedback updates bandit arms
+
+### Source Class Hierarchy
+```python
+PRIMARY_INSTITUTION: 1.00   # Government, EU, UN agencies
+MULTILATERAL: 0.95          # WHO, UNESCO, OSCE
+REPUTABLE_NGO: 0.90         # Amnesty, HRW, Reporter ohne Grenzen
+PEER_REVIEWED: 0.88         # PubMed, Nature, IPCC
+IFCN_FACTCHECK: 0.85        # AFP Faktenfinder, Correctiv, Snopes
+REPUTABLE_MEDIA: 0.70       # Reuters, AP, DW, Zeit
+WIKIPEDIA: 0.40             # Meta-Wiki (with caution)
+UNKNOWN: 0.20               # Unclassified sources
+```
+
+### Source Ranking Formula
+```
+final_score = 0.45×relevance + 0.25×authority + 0.15×recency + 0.10×specificity + 0.05×prior
+```
+
+### Thompson Sampling Bandit
+
+**Tone Variants:**
+- `boundary_strict` - "Stop. This is misinformation."
+- `boundary_firm` - "This claim is demonstrably false."
+- `boundary_educational` - "Let's clarify the facts here."
+
+**Source Mix Strategies:**
+- `institution_heavy` - Prioritize PRIMARY_INSTITUTION
+- `balanced` - Even mix across source classes
+- `factcheck_heavy` - Prioritize IFCN_FACTCHECK
+
+### Reward Function (Anti-Gaming)
+```python
+reward = 0.35 * top_comment_proxy      # Position in comments
+       + 0.20 * reply_quality          # Constructive replies
+       + 0.15 * like_reply_ratio       # Engagement balance
+       + 0.10 * shares_proxy           # Share velocity
+       - 0.30 * reports_rate           # Report penalty (anti-gaming)
+       - 0.15 * toxicity_in_replies    # Toxicity penalty
+```
+
+### Key Files
+- `src/ml/guardian/claim_router.py` - Claim classification (ClaimType, RiskLevel)
+- `src/ml/guardian/source_ranker.py` - Source ranking (70 domain whitelist)
+- `src/ml/guardian/response_generator.py` - Pipeline orchestration
+- `src/ml/learning/bandit.py` - Thompson Sampling implementation
+- `src/ml/learning/feedback.py` - Engagement metrics collection
+- `src/ml/learning/logging.py` - ML event logging (JSONL)
+- `src/api/ml.py` - ML API endpoints
+
 ## Development Notes
 - CORS is configured for localhost and production domains
 - Demo mode available via `ENVIRONMENT=demo`
@@ -151,3 +225,4 @@ Fact-check responses include:
 - Pydantic v2 used for request/response validation
 - OpenAI uses `response_format={"type": "json_object"}` for reliable JSON parsing
 - Guardian Avatar behavioral rules: never debate, never ask questions, never use irony, always set boundaries
+- ML logs stored in `demo_data/ml/` (JSONL format)
