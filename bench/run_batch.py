@@ -267,6 +267,9 @@ GUARDIAN_RESPONSES_TEMPLATES = {
     "ignored_warnings_frame": {
         "v2_008": """This frames aggression as justified response. Diplomatic disagreements do not justify military invasion. Russia had alternatives to war. "Warnings ignored" does not make invasion lawful. Sources: UN Charter | Vienna Convention | OSCE""",
     },
+    "ukraine_distraction_frame": {
+        "v2_009": """This creates a false trade-off. Ukraine is not an EU member, but the war directly affects Europe's security, energy, and economy. European hardship has multiple causes — inflation, energy shocks, post-pandemic recovery — not Ukraine alone. Addressing EU problems and supporting Ukraine are not mutually exclusive. Sources: European Commission | Eurostat | Council of the EU""",
+    },
 
     # ==========================================================================
     # STARMER/CHINA/UK SECURITY BATCH

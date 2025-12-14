@@ -209,6 +209,7 @@ class GuardianScoreboard:
         r'\bdoes not make .* fictional\b',            # Both-can-be-true
         r'\bboth can be true\b',                      # Dual validity
         r'\bdoes not cancel\b',                       # Non-cancellation
+        r'\bcreates a false\b',                       # False trade-off/dichotomy
     ]
 
     # Claim types that REQUIRE hard boundaries

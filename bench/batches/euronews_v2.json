@@ -60,6 +60,11 @@
       "claim_id": "v2_008",
       "text": "Russia warned Europe for years, nobody listened.",
       "cluster": "ignored_warnings_frame"
+    },
+    {
+      "claim_id": "v2_009",
+      "text": "Ukraine is not an EU member! Stop talking about Ukraine and focus on Europe — people are starving and unhappy.",
+      "cluster": "ukraine_distraction_frame"
     }
   ]
 }
