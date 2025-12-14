@@ -47,6 +47,28 @@ class AIInfluencerResponse(BaseModel):
 
 AVATAR_COMPANIES = {"GuardianAvatar", "PolicyAvatar", "MemeAvatar", "EuroShieldAvatar", "ScienceAvatar"}
 
+# Global TikTok Output Rules - applies to ALL avatars
+TIKTOK_OUTPUT_RULES = {
+    "platform": "TikTok",
+    "output_length": {
+        "sentences": "4-5",
+        "max_chars": 450
+    },
+    "sources": {
+        "required": 3,
+        "format": "Quellen: A | B | C"  # or "Sources: A | B | C" for EN
+    },
+    "learning_mode": "dynamic",
+    "optimization_targets": [
+        "top_comment_probability",
+        "reply_quality",
+        "like_reply_ratio",
+        "share_proxy"
+    ],
+    "tone_adaptation": "ML-driven (reinforcement from performance metrics)",
+    "no_static_templates": True
+}
+
 class TruthShieldAI:
     """Real AI-powered fact-checking engine"""
     
@@ -82,22 +104,40 @@ class TruthShieldAI:
                 "style": "engineering excellence with human touch",
                 "emoji": "⚡"
             },
-            # NEW: Guardian Avatar for universal fact-checking
+            # Guardian Avatar - Boundary Enforcement Role
             "GuardianAvatar": {
-                "voice": "universal truth defender, witty, sharp",
-                "tone": "humorous, factual, engaging, unbiased",
-                "style": "The digital Charlie Chaplin - making misinformation look ridiculous",
+                "voice": "authoritative boundary enforcer, de-escalation specialist",
+                "tone": "low emotionality, high authority, neutral empathy, no humor",
+                "style": "Visible moderation presence establishing boundaries and accountability",
                 "emoji": "🛡️",
+                "role": "boundary_enforcement",
+                "primary_function": "de-escalation_and_protection",
+                "use_cases": ["hate_speech", "dehumanization", "threats", "targeted_harassment", "escalation_dynamics", "misinformation"],
+                "behavioral_rules": [
+                    "never debate opinions",
+                    "never ask questions",
+                    "never use irony",
+                    "always set a boundary",
+                    "signal observation and accountability"
+                ],
+                "output_structure": [
+                    "sentence_1: clear stop / boundary",
+                    "sentence_2: name harm or rule violation",
+                    "sentence_3: explain risk (violence, normalization, harm)",
+                    "sentence_4: redirect to acceptable discourse",
+                    "sentence_5: sources"
+                ],
+                "sources_priority": ["EU Fundamental Rights", "UN Hate Speech Guidance", "bpb (German civic education)"],
                 "examples": {
                     "de": [
-                        "Guardian Avatar hier! 🛡️ Diese alte Legende? Zeit für einen Reality-Check mit Humor...",
-                        "Ach herrje, das klingt ja spannend! Aber die Wahrheit ist noch viel interessanter... 😄",
-                        "Moment mal! *kramt in der Faktenkiste* Das riecht nach einer urbanen Legende..."
+                        "Stop. Diese Behauptung verbreitet Fehlinformation. Solche Falschaussagen können zu realem Schaden führen und das Vertrauen in demokratische Institutionen untergraben. Faktenbasierte Diskussion ist hier der richtige Weg. Quelle: EU Fundamental Rights Agency.",
+                        "Diese Aussage ist nachweislich falsch. Die Verbreitung solcher Behauptungen normalisiert Desinformation. Bitte prüfen Sie die offiziellen Quellen. Referenz: Bundeszentrale für politische Bildung.",
+                        "Halt. Diese Behauptung widerspricht etablierten Fakten. Fehlinformation gefährdet den öffentlichen Diskurs. Verifizierte Informationen finden Sie bei den unten genannten Quellen."
                     ],
                     "en": [
-                        "Guardian Avatar here! 🛡️ This old tale? Time for a reality check with humor...",
-                        "Oh my, that sounds exciting! But the truth is even more interesting... 😄",
-                        "Hold on! *digging through the fact box* This smells like an urban legend..."
+                        "Stop. This claim spreads misinformation. Such false statements can lead to real harm and undermine trust in democratic institutions. Fact-based discussion is the appropriate path forward. Source: EU Fundamental Rights Agency.",
+                        "This statement is demonstrably false. Spreading such claims normalizes disinformation. Please verify with official sources. Reference: UN Hate Speech Framework.",
+                        "Hold. This claim contradicts established facts. Misinformation endangers public discourse. Verified information can be found in the sources below."
                     ]
                 }
             },
@@ -557,25 +597,26 @@ class TruthShieldAI:
                 """
             else:
                 # Company-specific prompt (existing code)
+                persona = self.company_personas.get(company, self.company_personas["BMW"])
                 prompt = f"""
                 You are an expert fact-checker specializing in {company} and German industry claims.
-                
+
                 Analyze this claim for factual accuracy:
                 "{text}"
-                
+
                 CONTEXT KNOWLEDGE for {company}:
                 - Electric vehicles (BMW i3, i4, iX) are extensively tested in extreme cold
                 - BMW conducts winter testing at -40°C in Arjeplog, Sweden annually
                 - EV batteries lose range in cold but DO NOT "explode"
                 - Thermal management systems prevent dangerous overheating/cooling
                 - No documented cases of EV explosions due to cold weather
-                
+
                 ANALYSIS CRITERIA:
                 1. Does this contradict established facts about {company}?
                 2. Are there inflammatory/sensational terms without basis?
                 3. Does this spread unfounded fear about the technology?
                 4. Would this claim damage the company's reputation unfairly?
-                
+
                 Respond with JSON:
                 {{
                     "is_verifiable": true,
@@ -587,24 +628,31 @@ class TruthShieldAI:
                     "factual_basis": "established facts"
                 }}
                 """
-            
+
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better analysis
                 messages=[
                     {
-                        "role": "system", 
-                        "content": f"You are {company}, a {persona['style']}. Be decisive in identifying clear misinformation. Use factual knowledge and reasoning."
+                        "role": "system",
+                        "content": f"You are {company}, a {persona['style']}. Be decisive in identifying clear misinformation. Use factual knowledge and reasoning. IMPORTANT: Respond ONLY with valid JSON, no markdown, no code blocks, no explanation."
                     },
                     {
-                        "role": "user", 
+                        "role": "user",
                         "content": prompt
                     }
                 ],
-                temperature=0.1  # Lower temperature for more consistent responses
+                temperature=0.1,  # Lower temperature for more consistent responses
+                response_format={"type": "json_object"}  # Force JSON response
             )
-            
+
             content = response.choices[0].message.content
+            # Clean up potential markdown code blocks
+            if content.startswith("```"):
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:]
+            content = content.strip()
             result = json.loads(content)
             
             # Override plausibility score for logical contradictions
@@ -1180,14 +1228,20 @@ class TruthShieldAI:
         
         try:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
-            
+
             # Special handling for all bot personas
             if company in AVATAR_COMPANIES:
-                lang_instructions = {
-                    "en": "Create a witty English response that",
-                    "de": "Erstelle eine witzige deutsche Antwort, die"
-                }
-                
+                # Build global TikTok platform rules (applies to ALL avatars)
+                sources_format = "Sources: A | B | C" if language == "en" else "Quellen: A | B | C"
+                tiktok_rules = f"""
+                GLOBAL TIKTOK PLATFORM RULES (MUST FOLLOW):
+                - Output length: 4-5 sentences, MAX {TIKTOK_OUTPUT_RULES['output_length']['max_chars']} characters
+                - Sources: Include exactly 3 sources at the end in format: "{sources_format}"
+                - NO static templates - generate dynamic, unique responses
+                - Optimize for: engagement, reply quality, shareability
+                - Tone: Adapt dynamically based on claim severity
+                """
+
                 # Adjust instructions based on bot type
                 if company == "MemeAvatar":
                     lang_instructions = {
@@ -1195,18 +1249,25 @@ class TruthShieldAI:
                         "de": "Erstelle eine maximale Humor Reddit-Style Antwort, die"
                     }
                     humor_level = "MAXIMUM HUMOR - Reddit-style, sarcastic, meme-savvy"
+                elif company == "GuardianAvatar":
+                    # Guardian Avatar: Boundary enforcement role - NO HUMOR
+                    lang_instructions = {
+                        "en": "Create an authoritative boundary-setting response with exactly 5 sentences that",
+                        "de": "Erstelle eine autoritative Grenzziehungs-Antwort mit genau 5 Sätzen, die"
+                    }
+                    humor_level = "NO HUMOR - Authoritative, de-escalation, boundary enforcement"
                 elif company in ["PolicyAvatar", "EuroShieldAvatar", "ScienceAvatar"]:
                     lang_instructions = {
                         "en": "Create a serious, evidence-based response that",
                         "de": "Erstelle eine ernste, evidenzbasierte Antwort, die"
                     }
                     humor_level = "SERIOUS - Evidence-based, authoritative, professional"
-                else:  # GuardianAvatar
+                else:
                     lang_instructions = {
-                        "en": "Create a witty English response that",
-                        "de": "Erstelle eine witzige deutsche Antwort, die"
+                        "en": "Create a factual response that",
+                        "de": "Erstelle eine faktische Antwort, die"
                     }
-                    humor_level = "BALANCED HUMOR - Witty but factual, engaging"
+                    humor_level = "PROFESSIONAL - Factual and clear"
                 
                 language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
                 
@@ -1224,34 +1285,98 @@ class TruthShieldAI:
                 {chr(10).join(sources_list)}
                 """
                 
-                prompt = f"""
-                You are {company} {persona['emoji']}, {persona['style']}.
-                
+                # Build source names for the required 3-source format
+                source_names = []
+                if fact_check.sources:
+                    for src in fact_check.sources[:3]:
+                        # Extract short name from title
+                        name = src.title.split(' - ')[0].split(' | ')[0][:25]
+                        source_names.append(name)
+                # Pad with defaults if needed
+                while len(source_names) < 3:
+                    source_names.append("EU Fundamental Rights" if len(source_names) == 0 else
+                                       "UN Hate Speech Guidance" if len(source_names) == 1 else "bpb.de")
+                sources_line = " | ".join(source_names)
+                sources_suffix = f"Sources: {sources_line}" if language == "en" else f"Quellen: {sources_line}"
+
+                # Special prompt for Guardian Avatar with 4-5 sentence structure (TikTok optimized)
+                if company == "GuardianAvatar":
+                    prompt = f"""
+                You are Guardian Avatar 🛡️, a boundary enforcement moderator for TikTok.
+                {tiktok_rules}
+
+                Role: {persona.get('role', 'boundary_enforcement')}
+                Primary Function: {persona.get('primary_function', 'de-escalation_and_protection')}
                 Voice: {persona['voice']}
                 Tone: {persona['tone']}
-                Humor Level: {humor_level}
-                
+
+                BEHAVIORAL RULES (MUST FOLLOW):
+                - NEVER debate opinions
+                - NEVER ask questions
+                - NEVER use irony or humor
+                - ALWAYS set a clear boundary
+                - Signal observation and accountability
+
                 A claim is circulating:
                 "{claim}"
-                
+
                 Fact-check result:
                 - Is fake: {fact_check.is_fake}
                 - Confidence: {fact_check.confidence}
                 - Category: {fact_check.category}
                 - Explanation: {fact_check.explanation}
                 {sources_text}
-                
+
+                OUTPUT STRUCTURE (4-5 sentences, MAX 450 chars total):
+                Sentence 1: Clear STOP or boundary statement
+                Sentence 2: Name the harm or rule violation
+                Sentence 3: Explain the risk (violence, normalization, harm to discourse)
+                Sentence 4: Redirect to acceptable discourse or fact-based discussion
+                END WITH: "{sources_suffix}"
+
+                {language_directive}
+
+                IMPORTANT:
+                - No humor, no questions, no irony
+                - Be authoritative and de-escalating
+                - Keep under 450 characters total
+                - End with exactly 3 sources in format: {sources_suffix}
+
+                Example of Guardian Avatar style:
+                {persona['examples'][language][0]}
+                """
+                else:
+                    # All other avatars (MemeAvatar, PolicyAvatar, EuroShieldAvatar, ScienceAvatar)
+                    prompt = f"""
+                You are {company} {persona['emoji']}, {persona['style']} for TikTok.
+                {tiktok_rules}
+
+                Voice: {persona['voice']}
+                Tone: {persona['tone']}
+                Humor Level: {humor_level}
+
+                A claim is circulating:
+                "{claim}"
+
+                Fact-check result:
+                - Is fake: {fact_check.is_fake}
+                - Confidence: {fact_check.confidence}
+                - Category: {fact_check.category}
+                - Explanation: {fact_check.explanation}
+                {sources_text}
+
                 {lang_instructions.get(language)}:
                 1. Matches your persona's humor level and style
-                2. Is engaging and appropriate for your audience
+                2. Is engaging and appropriate for your TikTok audience
                 3. References specific facts from the verified sources above
                 4. Includes concrete details (not generic statements)
                 5. Uses 1-2 emojis maximum
-                6. Is 2-3 sentences max
+                6. Is 4-5 sentences, MAX 450 characters total
                 7. If the claim is false, clearly state what the truth is based on the sources
+                8. END WITH exactly 3 sources: "{sources_suffix}"
 
                 {language_directive}
-                
+
                 Examples of {company} style:
                 {persona['examples'][language][0]}
                 """
