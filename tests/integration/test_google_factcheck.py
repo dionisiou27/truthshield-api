@@ -7,11 +7,11 @@ import asyncio
 import sys
 import os
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from services.google_factcheck import search_google_factchecks
-from core.config import settings
+from src.services.google_factcheck import search_google_factchecks
+from src.core.config import settings
 
 async def test_google_factcheck():
     """Test Google Fact Check API with real queries"""

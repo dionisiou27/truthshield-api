@@ -16,6 +16,12 @@ import openai
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
+# ML Pipeline Integration
+from src.ml.guardian.claim_router import ClaimRouter, ClaimAnalysis, ClaimType, RiskLevel
+from src.ml.learning.bandit import (
+    GuardianBandit, BanditContext, ToneVariant, SourceMixStrategy, get_bandit
+)
+
 logger = logging.getLogger(__name__)
 
 class Source(BaseModel):
@@ -70,14 +76,21 @@ TIKTOK_OUTPUT_RULES = {
 }
 
 class TruthShieldAI:
-    """Real AI-powered fact-checking engine"""
-    
+    """Real AI-powered fact-checking engine with ML Pipeline integration"""
+
     def __init__(self):
         self.openai_client = None
         self.setup_openai()
         self.last_api_usage: Dict[str, Dict[str, Any]] = {}
         self.last_mediawiki_results: List[Dict[str, Any]] = []
-        
+
+        # ML Pipeline Components
+        self.claim_router = ClaimRouter()
+        self.bandit = get_bandit("demo_data/ml/bandit_state.json")
+        self.last_claim_analysis: Optional[ClaimAnalysis] = None
+        self.last_tone_variant: Optional[ToneVariant] = None
+        logger.info("🧠 ML Pipeline initialized: ClaimRouter + GuardianBandit")
+
         # Company-specific response templates
         self.company_personas = {
             "BMW": {
@@ -225,13 +238,123 @@ class TruthShieldAI:
         if not api_key:
             logger.warning("⚠️ OPENAI_API_KEY not found - fact-checking will be limited")
             return
-        
+
         try:
             self.openai_client = openai.OpenAI(api_key=api_key)
             logger.info("✅ OpenAI client initialized")
         except Exception as e:
             logger.error(f"❌ OpenAI setup failed: {e}")
-    
+
+    def _get_tone_instructions(self, tone_variant: ToneVariant, language: str) -> str:
+        """
+        Get dynamic tone instructions based on ML-selected variant.
+        These are STYLISTIC variations - factual content remains unchanged.
+        """
+        tone_configs = {
+            ToneVariant.BOUNDARY_STRICT: {
+                "de": """
+                STIL: Direkt und unmissverständlich. Klare Grenze ohne Umschweife.
+                ÖFFNUNG: Beginne mit einem direkten "Stop." oder "Falsch."
+                ENERGIE: Hoch-autoritär, keine Abschwächungen
+                FORMULIERUNG: Kurze, prägnante Sätze. Keine Konjunktive.
+                BEISPIEL-TONFALL: "Stop. Diese Behauptung ist nachweislich falsch."
+                """,
+                "en": """
+                STYLE: Direct and unambiguous. Clear boundary without hedging.
+                OPENING: Start with a direct "Stop." or "False."
+                ENERGY: High-authority, no softening language
+                PHRASING: Short, punchy sentences. No subjunctives.
+                EXAMPLE TONE: "Stop. This claim is demonstrably false."
+                """
+            },
+            ToneVariant.BOUNDARY_FIRM: {
+                "de": """
+                STIL: Bestimmt aber sachlich. Faktenorientiert statt emotional.
+                ÖFFNUNG: Beginne mit der Kernkorrektur: "Diese Darstellung entspricht nicht den Fakten."
+                ENERGIE: Ruhig-autoritär, professionell
+                FORMULIERUNG: Mittellange Sätze mit Faktenreferenzen.
+                BEISPIEL-TONFALL: "Diese Behauptung widerspricht den dokumentierten Fakten."
+                """,
+                "en": """
+                STYLE: Firm but measured. Fact-focused rather than emotional.
+                OPENING: Start with the core correction: "This portrayal doesn't match the facts."
+                ENERGY: Calm-authoritative, professional
+                PHRASING: Medium sentences with fact references.
+                EXAMPLE TONE: "This claim contradicts the documented evidence."
+                """
+            },
+            ToneVariant.BOUNDARY_EDUCATIONAL: {
+                "de": """
+                STIL: Erklärend und kontextualisierend. Aufklärung statt Konfrontation.
+                ÖFFNUNG: Beginne mit Kontext: "Hier fehlt wichtiger Kontext:" oder "Die Faktenlage zeigt:"
+                ENERGIE: Einladend-informativ, nicht belehrend
+                FORMULIERUNG: Erkläre das WARUM hinter der Korrektur.
+                BEISPIEL-TONFALL: "Schauen wir auf die Fakten: Die Quellen belegen..."
+                """,
+                "en": """
+                STYLE: Explanatory and contextualizing. Enlightening rather than confrontational.
+                OPENING: Start with context: "Important context here:" or "The evidence shows:"
+                ENERGY: Inviting-informative, not preachy
+                PHRASING: Explain the WHY behind the correction.
+                EXAMPLE TONE: "Let's look at the facts: The sources show..."
+                """
+            }
+        }
+        return tone_configs.get(tone_variant, tone_configs[ToneVariant.BOUNDARY_FIRM]).get(language, "en")
+
+    def _get_opening_style(self, tone_variant: ToneVariant, language: str) -> str:
+        """
+        Get dynamic opening phrases based on ML-selected tone.
+        Provides variety to avoid repetitive responses.
+        """
+        openings = {
+            ToneVariant.BOUNDARY_STRICT: {
+                "de": [
+                    "Stop.", "Falsch.", "Nein.", "Klarstellung:",
+                    "Das stimmt nicht.", "Faktencheck:"
+                ],
+                "en": [
+                    "Stop.", "False.", "No.", "Correction:",
+                    "That's not accurate.", "Fact-check:"
+                ]
+            },
+            ToneVariant.BOUNDARY_FIRM: {
+                "de": [
+                    "Diese Behauptung ist nicht korrekt.",
+                    "Die Fakten zeigen ein anderes Bild.",
+                    "Das entspricht nicht der Dokumentenlage.",
+                    "Hier liegt ein Fehler vor.",
+                    "Die Quellen widersprechen dem."
+                ],
+                "en": [
+                    "This claim isn't accurate.",
+                    "The facts show a different picture.",
+                    "This doesn't match the documented record.",
+                    "There's an error here.",
+                    "The sources contradict this."
+                ]
+            },
+            ToneVariant.BOUNDARY_EDUCATIONAL: {
+                "de": [
+                    "Wichtiger Kontext:",
+                    "Schauen wir auf die Fakten:",
+                    "Die Quellenlage zeigt:",
+                    "Hier ist der vollständige Kontext:",
+                    "Was die Dokumente belegen:"
+                ],
+                "en": [
+                    "Important context:",
+                    "Let's look at the facts:",
+                    "The source record shows:",
+                    "Here's the full context:",
+                    "What the documents show:"
+                ]
+            }
+        }
+        import random
+        options = openings.get(tone_variant, openings[ToneVariant.BOUNDARY_FIRM]).get(language, "en")
+        return random.choice(options) if isinstance(options, list) else options
+
     async def fact_check_claim(self, text: str, company: str = "BMW") -> FactCheckResult:
         """Main fact-checking pipeline"""
         start_time = datetime.now()
@@ -1299,51 +1422,85 @@ class TruthShieldAI:
                 sources_line = " | ".join(source_names)
                 sources_suffix = f"Sources: {sources_line}" if language == "en" else f"Quellen: {sources_line}"
 
-                # Special prompt for Guardian Avatar with 4-5 sentence structure (TikTok optimized)
+                # Special prompt for Guardian Avatar with ML-driven tone selection
                 if company == "GuardianAvatar":
+                    # === ML PIPELINE INTEGRATION ===
+                    # Step 1: Analyze claim with ClaimRouter
+                    claim_analysis = self.claim_router.analyze_claim(claim)
+                    self.last_claim_analysis = claim_analysis
+
+                    # Step 2: Create context for Bandit
+                    bandit_context = BanditContext(
+                        claim_type=claim_analysis.claim_types[0].value if claim_analysis.claim_types else "unknown",
+                        risk_level=claim_analysis.risk_level.value,
+                        language=language
+                    )
+
+                    # Step 3: Select tone variant via Thompson Sampling
+                    tone_variant = self.bandit.select_tone(bandit_context)
+                    self.last_tone_variant = tone_variant
+                    logger.info(f"🎯 ML selected tone: {tone_variant.value} for risk={claim_analysis.risk_level.value}")
+
+                    # Step 4: Build dynamic tone instructions based on ML selection
+                    tone_instructions = self._get_tone_instructions(tone_variant, language)
+                    opening_style = self._get_opening_style(tone_variant, language)
+
                     prompt = f"""
                 You are Guardian Avatar 🛡️, a boundary enforcement moderator for TikTok.
                 {tiktok_rules}
 
-                Role: {persona.get('role', 'boundary_enforcement')}
-                Primary Function: {persona.get('primary_function', 'de-escalation_and_protection')}
-                Voice: {persona['voice']}
-                Tone: {persona['tone']}
+                === GUARDIAN CHARACTER (IMMUTABLE) ===
+                Role: Boundary Enforcement & De-escalation
+                Core Identity: Visible moderation presence establishing boundaries and accountability
+                Voice: Authoritative but not aggressive, firm but fair
+                Primary Function: Protect discourse, counter misinformation, de-escalate
 
-                BEHAVIORAL RULES (MUST FOLLOW):
-                - NEVER debate opinions
-                - NEVER ask questions
-                - NEVER use irony or humor
-                - ALWAYS set a clear boundary
-                - Signal observation and accountability
+                === BEHAVIORAL RULES (MUST FOLLOW) ===
+                - NEVER debate opinions or engage in back-and-forth arguments
+                - NEVER ask rhetorical questions or quiz the audience
+                - NEVER use irony, sarcasm, or humor
+                - NEVER be condescending, preachy, or lecture-like
+                - ALWAYS set a clear, direct boundary
+                - ALWAYS cite specific facts from sources
+                - BE conversational and human, not robotic
+                - SIGNAL accountability: "This is documented", "The evidence shows"
 
-                A claim is circulating:
+                === CLAIM ANALYSIS (ML-Generated) ===
+                Claim Type: {claim_analysis.claim_types[0].value if claim_analysis.claim_types else 'general_misinformation'}
+                Risk Level: {claim_analysis.risk_level.value.upper()}
+                Key Entities: {', '.join(claim_analysis.entities[:3]) if claim_analysis.entities else 'None identified'}
+
+                === CURRENT TONE VARIANT: {tone_variant.value.upper()} ===
+                {tone_instructions}
+
+                === CLAIM TO ADDRESS ===
                 "{claim}"
 
-                Fact-check result:
-                - Is fake: {fact_check.is_fake}
-                - Confidence: {fact_check.confidence}
-                - Category: {fact_check.category}
-                - Explanation: {fact_check.explanation}
+                === FACT-CHECK EVIDENCE ===
+                Verdict: {'FALSE/MISLEADING' if fact_check.is_fake else 'REQUIRES CONTEXT'}
+                Confidence: {fact_check.confidence:.0%}
+                Category: {fact_check.category}
+                Key Finding: {fact_check.explanation}
                 {sources_text}
 
-                OUTPUT STRUCTURE (4-5 sentences, MAX 450 chars total):
-                Sentence 1: Clear STOP or boundary statement
-                Sentence 2: Name the harm or rule violation
-                Sentence 3: Explain the risk (violence, normalization, harm to discourse)
-                Sentence 4: Redirect to acceptable discourse or fact-based discussion
-                END WITH: "{sources_suffix}"
+                === OUTPUT REQUIREMENTS ===
+                1. Start with: {opening_style}
+                2. State the SPECIFIC factual error (what exactly is wrong)
+                3. Provide ONE concrete fact from the sources that contradicts the claim
+                4. Brief redirect to verified information
+                5. End with: "{sources_suffix}"
 
-                {language_directive}
+                Total length: 4-5 sentences, MAX 450 characters
+                Language: {language_directive}
 
-                IMPORTANT:
-                - No humor, no questions, no irony
-                - Be authoritative and de-escalating
-                - Keep under 450 characters total
-                - End with exactly 3 sources in format: {sources_suffix}
+                === WHAT TO AVOID ===
+                - Generic phrases like "This is misinformation" without specifics
+                - Lecturing or moralizing tone
+                - Repetitive sentence structures
+                - Starting every response the same way
+                - Being preachy about "truth" or "facts"
 
-                Example of Guardian Avatar style:
-                {persona['examples'][language][0]}
+                Generate a UNIQUE response. Do NOT copy previous responses.
                 """
                 else:
                     # All other avatars (MemeAvatar, PolicyAvatar, EuroShieldAvatar, ScienceAvatar)

@@ -10,3 +10,16 @@ node_modules/
 .idea/
 .vscode/
 *.log
+
+# Backup files
+*.backup
+*_backup.py
+*.bak
+
+# IDE
+*.swp
+*.swo
+
+# Local test outputs
+demo_data/ml/*.jsonl
+!demo_data/ml/.gitkeep

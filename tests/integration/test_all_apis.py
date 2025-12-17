@@ -9,13 +9,13 @@ import sys
 import os
 import json
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add project root to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from services.google_factcheck import search_google_factchecks
-from services.news_api import search_news_context
-from services.claimbuster_api import score_claim_worthiness
-from core.config import settings
+from src.services.google_factcheck import search_google_factchecks
+from src.services.news_api import search_news_context
+from src.services.claimbuster_api import score_claim_worthiness
+from src.core.config import settings
 
 async def test_all_apis():
     """Test all real APIs working together"""
