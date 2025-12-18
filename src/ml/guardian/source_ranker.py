@@ -1,6 +1,7 @@
 """
-Guardian Source Ranker v1
-Implements source ranking with authority-based weights and hard filters.
+Guardian Source Ranker v2
+Pure ranking-based source selection. No hard filters, only weighted scoring.
+Topic-aware relevance boosting with soft diversity preferences.
 """
 from enum import Enum
 from typing import List, Dict, Optional, Set
@@ -103,9 +104,29 @@ GUARDIAN_SOURCE_PROFILES: Dict[str, List[str]] = {
     "foreign_influence": [
         "euvsdisinfo.eu",
         "eeas.europa.eu",       # EU External Action Service
+        "news.err.ee",          # Estonian Public Broadcasting - excellent IO coverage
         "state.gov",
         "nato.int",
         "osce.org",
+    ],
+
+    # TERRITORIAL / FRONTLINE CLAIMS - Critical for TikTok temporal awareness
+    # These sources provide real-time frontline updates and IO-frame analysis
+    "territorial_control": [
+        "news.err.ee",          # ERR English - Baltic/Eastern European frontline coverage (Tier A)
+        "euvsdisinfo.eu",       # IO pattern documentation (Tier A)
+        "understandingwar.org", # Institute for Study of War
+        "reuters.com",
+        "apnews.com",
+        "newsukraine.rbc.ua",   # RBC-Ukraine (Tier B - fast freshness, needs corroboration)
+    ],
+
+    # POLICY / MOBILIZATION - Ukraine-specific policy claims
+    "policy_mobilization": [
+        "newsukraine.rbc.ua",   # RBC covers mobilization policy + fakes
+        "news.err.ee",
+        "reuters.com",
+        "apnews.com",
     ],
 
     # Blanket Generalizations & Opinion with Factual Premise
@@ -243,6 +264,14 @@ DOMAIN_WHITELIST: Dict[str, SourceClass] = {
     "ft.com": SourceClass.REPUTABLE_MEDIA,
     "bloomberg.com": SourceClass.REPUTABLE_MEDIA,
     "wsj.com": SourceClass.REPUTABLE_MEDIA,
+    # Baltic/Eastern European public broadcasters - excellent for frontline/IO coverage
+    "news.err.ee": SourceClass.REPUTABLE_MEDIA,  # Estonian Public Broadcasting (English)
+    "err.ee": SourceClass.REPUTABLE_MEDIA,        # ERR Estonian
+    "lrt.lt": SourceClass.REPUTABLE_MEDIA,        # Lithuanian Radio & TV
+    "lsm.lv": SourceClass.REPUTABLE_MEDIA,        # Latvian Public Broadcasting
+    # Ukrainian news agencies - Tier B (good for freshness, require corroboration for frontline)
+    "newsukraine.rbc.ua": SourceClass.REPUTABLE_MEDIA,  # RBC-Ukraine English
+    "rbc.ua": SourceClass.REPUTABLE_MEDIA,              # RBC-Ukraine main
 
     # WIKIPEDIA (background only)
     "wikipedia.org": SourceClass.WIKIPEDIA,
@@ -277,25 +306,25 @@ class SourceCandidate(BaseModel):
 
 
 class RankerConfig(BaseModel):
-    """Configuration for source ranking weights and thresholds."""
+    """Configuration for source ranking weights."""
     # Scoring weights (must sum to 1.0)
-    weight_relevance: float = 0.45
-    weight_authority: float = 0.25
-    weight_recency: float = 0.15
-    weight_specificity: float = 0.10
-    weight_prior: float = 0.05
+    weight_relevance: float = 0.35      # Topic fit
+    weight_authority: float = 0.30      # Source class weight
+    weight_topic_fit: float = 0.20      # Claim-type-specific boost
+    weight_recency: float = 0.10        # Freshness
+    weight_prior: float = 0.05          # Retrieval rank signal
 
-    # Hard thresholds
-    min_relevance: float = 0.55
-    min_final_score: float = 0.60
+    # NO hard thresholds - pure ranking
+    # min_relevance: REMOVED
+    # min_final_score: REMOVED
 
-    # Penalties
-    paywall_penalty: float = 0.25
-    broken_link_penalty: float = 0.50
+    # Soft penalties (reduce score, don't exclude)
+    paywall_penalty: float = 0.15
+    unknown_source_penalty: float = 0.20  # For non-whitelisted sources
 
-    # Diversity requirements
-    max_per_domain: int = 1
-    min_source_classes: int = 2
+    # Soft diversity preferences
+    same_domain_diminish: float = 0.30   # Reduce score for 2nd source from same domain
+    prefer_class_diversity: float = 0.10  # Bonus for new source class
 
     # Selection
     select_top_n: int = 3
@@ -303,16 +332,18 @@ class RankerConfig(BaseModel):
 
 class SourceRanker:
     """
-    Guardian Source Ranker v1
-    Ranks sources by relevance, authority, recency, specificity.
-    Applies hard filters and enforces diversity.
+    Guardian Source Ranker v2
+    Pure ranking - no gates, only weighted scores.
+    All sources compete, best ones float to top.
     """
 
     def __init__(self, config: Optional[RankerConfig] = None):
         self.config = config or RankerConfig()
         self.source_class_weights = SOURCE_CLASS_WEIGHTS
         self.domain_whitelist = DOMAIN_WHITELIST
-        logger.info("SourceRanker initialized with config: %s", self.config.model_dump())
+        self.source_profiles = GUARDIAN_SOURCE_PROFILES
+        self.current_claim_type: Optional[str] = None
+        logger.info("SourceRanker v2 initialized (pure ranking, no hard filters)")
 
     def classify_source(self, url: str) -> SourceClass:
         """Classify a source URL by its domain."""
@@ -346,21 +377,23 @@ class SourceRanker:
         self,
         source: SourceCandidate,
         claim_keywords: List[str],
+        claim_type: Optional[str] = None,
         now_date: Optional[date] = None
     ) -> float:
         """
-        Score a single source candidate.
+        Score a single source candidate. No filtering - pure scoring.
 
         Components:
-        - Relevance: keyword overlap (semantic similarity requires embeddings)
+        - Relevance: keyword overlap
         - Authority: source class weight
-        - Recency: exponential decay over 1 year
-        - Specificity: entity/keyword hit rate
-        - Prior: weak retrieval rank signal
+        - Topic-Fit: boost for claim-type-preferred sources
+        - Recency: exponential decay
+        - Prior: retrieval rank signal
         """
         now_date = now_date or date.today()
+        domain = self._extract_domain(source.url)
 
-        # 1) Relevance: keyword overlap (simplified, no embeddings yet)
+        # 1) Relevance: keyword overlap
         source_text = f"{source.title} {source.snippet}".lower()
         claim_keywords_lower = [kw.lower() for kw in claim_keywords]
 
@@ -368,147 +401,135 @@ class SourceRanker:
         relevance = min(1.0, hits / max(len(claim_keywords_lower), 1))
         source.relevance_score = relevance
 
-        # 2) Authority: source class weight
-        authority = self.source_class_weights.get(source.source_class, 0.2)
-        source.authority_score = authority
+        # 2) Authority: source class weight (soft penalty for unknown, not exclusion)
+        base_authority = self.source_class_weights.get(source.source_class, 0.2)
+        if source.source_class == SourceClass.UNKNOWN:
+            # Soft penalty instead of filtering out
+            base_authority = max(0.1, base_authority - self.config.unknown_source_penalty)
+        source.authority_score = base_authority
 
-        # 3) Recency: exponential decay
+        # 3) Topic-Fit: boost sources that match the claim type profile
+        topic_fit = 0.0
+        if claim_type and claim_type in self.source_profiles:
+            preferred_domains = self.source_profiles[claim_type]
+            if any(pref in domain for pref in preferred_domains):
+                topic_fit = 1.0  # Full boost for profile match
+                logger.debug(f"Topic-fit boost for {domain} (claim_type={claim_type})")
+            elif source.source_class in [SourceClass.PRIMARY_INSTITUTION, SourceClass.MULTILATERAL]:
+                topic_fit = 0.5  # Half boost for high-authority sources
+
+        # 4) Recency: exponential decay
         if source.published_at:
             days = abs((now_date - source.published_at).days)
         else:
-            days = 365  # Assume 1 year old if unknown
+            days = 180  # Assume 6 months old if unknown (less punitive)
         recency = math.exp(-days / 365)
         source.recency_score = recency
-
-        # 4) Specificity: how many key terms appear?
-        specificity_hits = sum(1 for kw in claim_keywords_lower[:5] if kw in source_text)
-        specificity = min(1.0, specificity_hits / 3)  # Normalize to max 3 hits
-        source.specificity_score = specificity
 
         # 5) Prior: weak retrieval rank signal
         prior = 1.0 / (1 + math.log(1 + source.retrieval_rank))
 
-        # 6) Accessibility penalty
+        # 6) Soft accessibility penalty (not exclusion)
         accessibility = 1.0
         if source.paywalled:
             accessibility -= self.config.paywall_penalty
 
-        # Final weighted score
+        # Final weighted score - NO thresholds applied here
         score = (
             self.config.weight_relevance * relevance +
-            self.config.weight_authority * authority +
+            self.config.weight_authority * base_authority +
+            self.config.weight_topic_fit * topic_fit +
             self.config.weight_recency * recency +
-            self.config.weight_specificity * specificity +
             self.config.weight_prior * prior
         ) * accessibility
 
         source.final_score = score
+        source.specificity_score = topic_fit  # Repurpose for topic fit
         return score
 
-    def apply_hard_filters(self, sources: List[SourceCandidate]) -> List[SourceCandidate]:
-        """Apply hard filters to remove unsuitable sources."""
-        filtered = []
+    def apply_soft_diversity(self, sources: List[SourceCandidate]) -> List[SourceCandidate]:
+        """
+        Apply soft diversity adjustments to scores - no exclusion, just re-ranking.
+        Sources from same domain get diminished scores.
+        New source classes get small bonus.
+        """
+        seen_domains: Dict[str, int] = {}
+        seen_classes: Set[SourceClass] = set()
 
-        for source in sources:
-            # Filter 1: Minimum relevance
-            if source.relevance_score < self.config.min_relevance:
-                logger.debug("Filtered %s: low relevance %.2f", source.url, source.relevance_score)
-                continue
-
-            # Filter 2: Unknown source class (not in whitelist)
-            if source.source_class == SourceClass.UNKNOWN:
-                logger.debug("Filtered %s: unknown source class", source.url)
-                continue
-
-            # Filter 3: Wikipedia for factual claims (Guardian mode)
-            # Wikipedia is OK for background context but not as primary source
-            # We'll allow it but with low weight (already handled in scoring)
-
-            # Filter 4: Minimum final score
-            if source.final_score < self.config.min_final_score:
-                logger.debug("Filtered %s: low final score %.2f", source.url, source.final_score)
-                continue
-
-            filtered.append(source)
-
-        return filtered
-
-    def enforce_diversity(self, sources: List[SourceCandidate]) -> List[SourceCandidate]:
-        """Enforce domain and source class diversity."""
-        selected: List[SourceCandidate] = []
-        seen_domains: Set[str] = set()
-        source_classes_used: Set[SourceClass] = set()
-
-        # Sort by final score descending
+        # Sort by current score first
         sorted_sources = sorted(sources, key=lambda s: s.final_score, reverse=True)
 
         for source in sorted_sources:
-            if len(selected) >= self.config.select_top_n:
-                break
-
             domain = self._extract_domain(source.url)
 
-            # Check domain limit
-            domain_count = sum(1 for s in selected if self._extract_domain(s.url) == domain)
-            if domain_count >= self.config.max_per_domain:
-                continue
+            # Diminish score for repeated domains
+            if domain in seen_domains:
+                count = seen_domains[domain]
+                diminish = self.config.same_domain_diminish * count
+                source.final_score = max(0.01, source.final_score - diminish)
+                logger.debug(f"Diminished {domain} by {diminish:.2f} (seen {count}x)")
 
-            # Prefer source class diversity
-            if len(selected) < self.config.min_source_classes:
-                # Still building diversity, prefer new source classes
-                if source.source_class not in source_classes_used:
-                    selected.append(source)
-                    seen_domains.add(domain)
-                    source_classes_used.add(source.source_class)
-                    continue
+            # Small bonus for new source class (diversity reward)
+            if source.source_class not in seen_classes:
+                source.final_score += self.config.prefer_class_diversity
+                seen_classes.add(source.source_class)
 
-            # Normal selection
-            selected.append(source)
-            seen_domains.add(domain)
-            source_classes_used.add(source.source_class)
+            # Track domain
+            seen_domains[domain] = seen_domains.get(domain, 0) + 1
 
-        # If we couldn't meet diversity, relax and fill
-        if len(selected) < self.config.select_top_n:
-            for source in sorted_sources:
-                if source not in selected and len(selected) < self.config.select_top_n:
-                    domain = self._extract_domain(source.url)
-                    domain_count = sum(1 for s in selected if self._extract_domain(s.url) == domain)
-                    if domain_count < self.config.max_per_domain:
-                        selected.append(source)
+        # Re-sort after adjustments
+        return sorted(sources, key=lambda s: s.final_score, reverse=True)
+
+    def select_top_n(self, sources: List[SourceCandidate]) -> List[SourceCandidate]:
+        """
+        Select top N sources. Pure ranking, no hard exclusions.
+        Just take the best scored sources after soft diversity adjustments.
+        """
+        # Sort by final score (already adjusted for diversity)
+        sorted_sources = sorted(sources, key=lambda s: s.final_score, reverse=True)
+
+        # Take top N
+        selected = sorted_sources[:self.config.select_top_n]
+
+        logger.info(f"Selected top {len(selected)} sources from {len(sources)} candidates")
+        for i, s in enumerate(selected):
+            logger.info(f"  {i+1}. {self._extract_domain(s.url)} (score={s.final_score:.3f}, class={s.source_class.value})")
 
         return selected
 
     def rank_sources(
         self,
         candidates: List[SourceCandidate],
-        claim_keywords: List[str]
+        claim_keywords: List[str],
+        claim_type: Optional[str] = None
     ) -> List[SourceCandidate]:
         """
-        Full ranking pipeline:
+        Full ranking pipeline v2 - NO hard filters:
         1. Classify sources
-        2. Score each source
-        3. Apply hard filters
-        4. Enforce diversity
-        5. Return top N
+        2. Score each source (with topic-fit boost)
+        3. Apply soft diversity adjustments
+        4. Return top N (pure ranking)
         """
-        logger.info("Ranking %d source candidates", len(candidates))
+        logger.info(f"Ranking {len(candidates)} source candidates (claim_type={claim_type})")
+        self.current_claim_type = claim_type
+
+        if not candidates:
+            return []
 
         # Step 1: Classify sources
         for source in candidates:
             if source.source_class == SourceClass.UNKNOWN:
                 source.source_class = self.classify_source(source.url)
 
-        # Step 2: Score all sources
+        # Step 2: Score all sources (with topic-fit)
         for source in candidates:
-            self.score_source(source, claim_keywords)
+            self.score_source(source, claim_keywords, claim_type=claim_type)
 
-        # Step 3: Apply hard filters
-        filtered = self.apply_hard_filters(candidates)
-        logger.info("After hard filters: %d sources", len(filtered))
+        # Step 3: Apply soft diversity adjustments (no exclusions)
+        adjusted = self.apply_soft_diversity(candidates)
 
-        # Step 4: Enforce diversity and select top N
-        selected = self.enforce_diversity(filtered)
-        logger.info("Selected %d diverse sources", len(selected))
+        # Step 4: Select top N (pure ranking, no gates)
+        selected = self.select_top_n(adjusted)
 
         return selected
 

@@ -1,342 +1,199 @@
-🔧 UNIFIED TECHNICAL ROADMAP - TIKTOK COMPLIANT
-markdown# 🔧 TECHNICAL ROADMAP - TRUTHSHIELD MVP
-*Last Updated: June 2025 - TikTok Policy Compliant*
+# TruthShield Technical Roadmap
 
-## 📊 CURRENT STACK
-- FastAPI Backend ✅
-- OpenAI GPT-3.5 ✅
-- Basic Web Scraping ✅
-- Local Wikipedia DB (planned)
-- **NEW:** Compliance Management System (required)
+**Last Updated:** 2025-12-18
+**Status:** TRL 4 - Prototype Validated
 
-## 🏗️ ARCHITECTURE OVERVIEW
-┌─────────────────────────────────────────┐
-│         TRUTHSHIELD SYSTEM              │
-├─────────────────────┬───────────────────┤
-│   INTERNAL (Auto)   │  EXTERNAL (Manual) │
-├─────────────────────┼───────────────────┤
-│ • Content Generation│ • Upload Approval   │
-│ • Fact Checking     │ • Manual Posting    │
-│ • Response Creation │ • Comment Review    │
-│ • Queue Management  │ • Engagement Limits │
-└─────────────────────┴───────────────────┘
+---
 
-## 📅 DEVELOPMENT PHASES
+## Current State
 
-### PHASE 1: COMPLIANCE INFRASTRUCTURE (Week 1)
-**Goal:** Build TikTok-compliant foundation
+### Completed Features
 
-#### Core Systems:
-- [x] FastAPI base structure
-- [ ] Compliance tracking module
-- [ ] Manual approval interface
-- [ ] Browser automation setup (Playwright)
+#### Core ML Pipeline
+- [x] Claim Router with multi-label typing (10 claim types)
+- [x] Risk level assessment (LOW/MEDIUM/HIGH/CRITICAL)
+- [x] Temporal awareness (volatility, temporal modes)
+- [x] Weighted IO detection (threshold: 0.45)
+- [x] Response mode routing (DEBUNK/IO_CONTEXT/LIVE_SITUATION/CAUTIOUS)
+- [x] Combined response modes (primary + secondary overlay)
+- [x] Evidence quality assessment (STRONG/MEDIUM/WEAK)
 
-#### Compliance Features:
-```python
-# src/core/compliance.py
-class TikTokComplianceEngine:
-    """Ensures all operations meet TikTok policies"""
-    
-    DAILY_LIMITS = {
-        'posts': 5,
-        'comments': 200,
-        'likes': 500,
-        'follows': 200
-    }
-    
-    def __init__(self):
-        self.redis_client = Redis()  # Track across sessions
-        self.action_log = []
-        
-    async def can_perform_action(self, action_type: str) -> bool:
-        """Check if within 24h rolling limits"""
-        count = await self.get_24h_count(action_type)
-        return count < self.DAILY_LIMITS.get(action_type, 0)
-    
-    async def enforce_delay(self) -> int:
-        """Return required delay in seconds"""
-        last_action = await self.get_last_action_time()
-        if not last_action:
-            return 0
-        
-        elapsed = (datetime.now() - last_action).seconds
-        required_delay = random.randint(120, 300)  # 2-5 min
-        return max(0, required_delay - elapsed)
-Deliverables:
+#### Source Management
+- [x] Source Ranker v2 - pure ranking (no hard filters)
+- [x] 75+ domain whitelist across 7 authority classes
+- [x] Topic-fit boost for claim-type profiles
+- [x] RSS Freshness Service for territorial claims
+- [x] Source tier system (A: authoritative, B: needs corroboration)
+- [x] Corroboration logic for Tier B sources
 
- Compliance dashboard UI
- Rate limiting system
- Action logging database
- Manual approval queue
+#### Thompson Sampling
+- [x] 4 tone buckets (EMPATHIC/WITTY/FIRM/SPICY)
+- [x] Context-based soft nudges
+- [x] Source mix strategies (institution_heavy/balanced/factcheck_heavy)
+- [x] Beta distribution with proper exploration/exploitation
 
-PHASE 2: CONTENT PIPELINE (Week 2)
-Goal: Influencer-specific content generation
-Content Systems:
+#### Learning Safeguards
+- [x] Immutable parameters (factual content, authority weights)
+- [x] Anti-gaming reward function with negative signals
+- [x] Content removal = complete reward nullification
+- [x] Bot engagement detection
+- [x] Platform flag penalties
 
- Personality engine
- Response templates
- Humor optimization
- Educational framing
+#### Bench Infrastructure
+- [x] Batch testing CLI
+- [x] Quality scoreboard (violation, genericness, escalation)
+- [x] Risk-aware boundary detection
+- [x] Bandit replay testing
+- [x] 4 test batches (EU, NATO, China/UK)
 
-AI Disclosure Implementation:
-python# src/services/content_generator.py
-class InfluencerProtectionBot:
-    """Generates personalized responses for influencers"""
-    
-    def __init__(self, influencer_profile: dict):
-        self.influencer = influencer_profile
-        self.personality = self._build_personality()
-        self.disclosure_manager = AIDisclosureService()
-    
-    async def generate_response(self, fake_news: str) -> dict:
-        """Create fact-check with personality"""
-        response = await self._create_response(fake_news)
-        
-        # Add mandatory AI disclosure
-        response['caption'] = self.disclosure_manager.add_disclosure(
-            response['caption'],
-            bot_name=f"{self.influencer['name']}_TruthBot"
-        )
-        
-        # Add visual indicator
-        response['video'] = self.disclosure_manager.add_watermark(
-            response['video'],
-            text="AI GENERATED CONTENT"
-        )
-        
-        return response
-Content Categories:
+---
 
-Immediate Response (<30 min)
+## Phase 1: Production Hardening
 
-Breaking fake news
-Viral misinformation
-Direct attacks on influencer
+### 1.1 RSS Integration Complete
+- [x] ERR (Estonian Public Broadcasting) - Tier A
+- [x] RBC-Ukraine - Tier B with corroboration
+- [ ] Add Ukrinform (official Ukrainian agency) - Tier A
+- [ ] Add ISW (Institute for Study of War) - Tier A
+- [ ] Add LiveUAMap integration
 
+### 1.2 API Stability
+- [ ] Rate limiting for external API calls
+- [ ] Retry logic with exponential backoff
+- [ ] Circuit breaker for failing sources
+- [ ] Health check endpoints for each service
 
-Daily Content (3-5 posts)
+### 1.3 Caching Layer
+- [ ] Redis caching for RSS poll results
+- [ ] Source ranking cache (TTL: 1 hour)
+- [ ] Claim analysis cache (TTL: 15 minutes)
 
-Educational series
-Community Q&A
-Humor pieces
+---
 
+## Phase 2: TikTok Integration
 
-Engagement Content
+### 2.1 Comment Monitoring
+- [ ] TikTok Research API integration
+- [ ] Real-time comment stream processing
+- [ ] Claim extraction from comments
+- [ ] Viral content detection (views/engagement thresholds)
 
-Comment responses
-Duets/Stitches
-Live appearances
+### 2.2 Response Deployment
+- [ ] Semi-automated response queue
+- [ ] Human-in-the-loop approval workflow
+- [ ] Response timing optimization
+- [ ] A/B testing framework for tone variants
 
+### 2.3 Engagement Tracking
+- [ ] 1h/6h/24h outcome snapshots
+- [ ] Reply quality assessment
+- [ ] Toxicity detection in reply chains
+- [ ] Bot engagement detection
 
+---
 
-PHASE 3: DEPLOYMENT SYSTEM (Week 3)
-Goal: Human-supervised automation
-Upload Workflow:
-python# src/services/upload_manager.py
-class SemiAutomatedUploader:
-    """Browser automation with human checkpoints"""
-    
-    def __init__(self):
-        self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch()
-        self.compliance = TikTokComplianceEngine()
-    
-    async def upload_content(self, content: dict) -> bool:
-        """Semi-automated upload process"""
-        
-        # 1. Check compliance
-        if not await self.compliance.can_perform_action('posts'):
-            raise ComplianceLimitError("Daily post limit reached")
-        
-        # 2. Enforce delay
-        delay = await self.compliance.enforce_delay()
-        if delay > 0:
-            print(f"Waiting {delay} seconds for compliance...")
-            await asyncio.sleep(delay)
-        
-        # 3. Prepare upload
-        await self._navigate_to_upload()
-        await self._fill_content_details(content)
-        
-        # 4. HUMAN CHECKPOINT
-        approval = await self._wait_for_human_approval()
-        if not approval:
-            return False
-        
-        # 5. Execute upload
-        await self._click_upload_button()
-        await self.compliance.record_action('posts')
-        
-        return True
-Monitoring Systems:
+## Phase 3: Learning Loop Activation
 
- Real-time engagement tracking
- Shadowban detection
- Growth velocity alerts
- Compliance violation warnings
+### 3.1 Feedback Collection
+- [ ] Automated engagement metric scraping
+- [ ] Report rate tracking
+- [ ] Platform flag monitoring
+- [ ] Reply chain analysis
 
-PHASE 4: OPTIMIZATION (Week 4)
-Goal: Scale within compliance limits
-Analytics Framework:
-python# src/services/analytics.py
-class PerformanceAnalytics:
-    """Track success within TikTok limits"""
-    
-    METRICS = {
-        'engagement_rate': 'likes + comments + shares / views',
-        'growth_rate': 'new_followers / days',
-        'response_time': 'time_to_first_response',
-        'accuracy_score': 'verified_facts / total_claims'
-    }
-    
-    async def generate_report(self) -> dict:
-        """Daily performance within compliance"""
-        return {
-            'posts_used': f"{self.daily_posts}/5",
-            'comments_used': f"{self.daily_comments}/200",
-            'engagement_rate': self.calculate_engagement(),
-            'growth_rate': self.calculate_growth(),
-            'compliance_score': self.compliance_health()
-        }
-🚀 OPERATIONAL WORKFLOW
-Daily Schedule:
-09:00 - Morning Review
-  └─ Scan overnight fake news
-  └─ Generate 3-5 responses
-  └─ Queue for approval
+### 3.2 Bandit Updates
+- [ ] Online learning pipeline activation
+- [ ] Drift detection for arm distributions
+- [ ] Performance degradation alerts
+- [ ] Weekly bandit state snapshots
 
-10:00 - First Post (Manual)
-  └─ Review content
-  └─ Add AI disclosure
-  └─ Upload with delay
+### 3.3 Quality Assurance
+- [ ] Red team weekly testing
+- [ ] Boundary compliance monitoring
+- [ ] Source authority audit trail
+- [ ] Response genericness tracking
 
-11:00-12:00 - Engagement Hour
-  └─ Respond to comments (max 50)
-  └─ Like supporter content
-  └─ Track metrics
+---
 
-14:00 - Lunch Post (Manual)
-  └─ Educational content
-  └─ Community focused
+## Phase 4: Scale & Resilience
 
-15:00-16:00 - Afternoon Engagement
-  └─ More responses (max 50)
-  └─ Community building
+### 4.1 Multi-Platform
+- [ ] X/Twitter integration
+- [ ] YouTube Shorts support
+- [ ] Instagram Reels monitoring
 
-18:00 - Prime Time Post (Manual)
-  └─ Highest quality content
-  └─ Maximum reach potential
+### 4.2 Multi-Language
+- [ ] German (DE) full support
+- [ ] Ukrainian (UK) detection
+- [ ] Russian (RU) IO pattern detection
+- [ ] Language-specific source profiles
 
-19:00-20:00 - Peak Engagement
-  └─ Final responses (max 50)
-  └─ Next day planning
+### 4.3 Infrastructure
+- [ ] Kubernetes deployment
+- [ ] Auto-scaling based on load
+- [ ] Geographic distribution (EU data sovereignty)
+- [ ] Backup and recovery procedures
 
-Daily Limits Check:
-  ✓ Posts: 3-4/5 used
-  ✓ Comments: 150/200 used
-  ✓ Sustainable growth
-📊 SUCCESS METRICS (REVISED)
-Compliance KPIs:
+---
 
-Zero platform violations
-<5% shadowban risk
-100% AI disclosure rate
-Manual approval rate: 100%
+## Future Considerations
 
-Performance KPIs:
+### C2PA Integration
+- Cryptographic provenance for generated responses
+- Chain of custody for source verification
+- Asset authentication standards
 
-Response time: <30 min
-Fact accuracy: >95%
-Engagement rate: >5%
-Sustainable growth: 200-300 followers/day
-(Reduced from 300+ to avoid triggering reviews)
+### On-Premise Deployment
+- Air-gapped version for government use
+- Local LLM fallback (Llama/Mistral)
+- Offline source database
 
-Quality Metrics:
+### Advanced IO Detection
+- Network graph analysis for coordinated behavior
+- Cross-platform IO campaign tracking
+- Temporal clustering for burst detection
 
-Unique content: 100%
-Educational value: High
-Entertainment value: High
-Community trust: Growing
+---
 
-🛡️ RISK MITIGATION
-Technical Safeguards:
-python# Automatic compliance stops
-if daily_posts >= 5:
-    raise HardStop("Daily limit reached")
+## Technical Debt
 
-# Shadowban detection
-if engagement_drop > 50%:
-    alert("Possible shadowban - reduce activity")
+### Known Issues
+- [ ] RSS poll intervals not configurable per-source at runtime
+- [ ] No persistent bandit state storage (in-memory only)
+- [ ] Missing unit tests for RSS corroboration logic
+- [ ] ai_engine.py needs refactoring (>1000 lines)
 
-# Content uniqueness
-if similarity_score > 0.3:
-    reject("Content too similar to previous")
-Operational Safeguards:
+### Documentation Gaps
+- [ ] API endpoint documentation (OpenAPI spec)
+- [ ] Source ranking algorithm deep-dive
+- [ ] IO signal weight calibration methodology
 
-Human review for every post
-Gradual growth strategy
-Diverse content mix
-Strong AI disclosure
+---
 
-💰 RESOURCE REQUIREMENTS
-Technical Infrastructure:
+## Metrics & Success Criteria
 
-Server: €100/month (DigitalOcean)
-OpenAI API: €50/month
-Redis: €20/month
-Monitoring: €30/month
-Total: €200/month
+### Quality Targets
+| Metric | Current | Target |
+|--------|---------|--------|
+| Violation Rate | ~0% | < 5% |
+| Genericness | ~0% | < 5% |
+| Escalation Risk | ~0% | < 2% |
+| Boundary Detection | ~100% | > 85% |
 
-Human Resources:
+### Performance Targets
+| Metric | Target |
+|--------|--------|
+| Claim Analysis Latency | < 500ms |
+| Full Pipeline Latency | < 3s |
+| RSS Poll Interval | 10-30 min |
+| Response Generation | < 2s |
 
-Developer: You (full-time)
-Content Moderator: 2-3 hours/day
-Community Manager: 1-2 hours/day
+### Learning Targets
+| Metric | Target |
+|--------|--------|
+| Bandit Exploration | > 10% |
+| Tone Diversity | All 4 buckets used |
+| Source Mix Variance | > 3 strategies |
 
-🎯 PHASE COMPLETION CHECKLIST
-By End of Week 1:
+---
 
- Compliance system operational
- Manual upload workflow tested
- AI disclosure templates ready
- First test account created
-
-By End of Week 2:
-
- Influencer personality defined
- 20+ response templates
- Content queue functional
- Approval interface complete
-
-By End of Week 3:
-
- Semi-automation running
- Monitoring dashboard live
- First 100 followers
- Zero violations
-
-By End of Week 4:
-
- 1000+ followers
- <30min response time
- 5%+ engagement rate
- Ready to scale
-
-🔄 CONTINUOUS IMPROVEMENT
-Weekly Reviews:
-
-Compliance audit
-Performance analysis
-Content optimization
-Community feedback
-
-Monthly Updates:
-
-Policy changes review
-Algorithm adaptation
-Feature additions
-Scale planning
-
-
-Remember: Compliance First, Growth Second, Impact Always!
+*Roadmap maintained by TruthShield Engineering Team*

@@ -118,10 +118,25 @@ class NegativeSignals:
 
 
 class ToneVariant(str, Enum):
-    """Tone variants for Guardian responses."""
-    BOUNDARY_STRICT = "boundary_strict"      # "Stop. This is misinformation."
-    BOUNDARY_FIRM = "boundary_firm"          # "This claim is demonstrably false."
-    BOUNDARY_EDUCATIONAL = "boundary_educational"  # "Let's clarify the facts here."
+    """
+    Tone variants for Guardian responses.
+    4 distinct buckets for ML optimization.
+    """
+    # Empathic: Acknowledges the feeling, then corrects
+    # "I get why this sounds scary, but here's what's actually happening..."
+    EMPATHIC = "empathic"
+
+    # Witty: Light, confident correction with personality
+    # "Nope. Here's what actually happened."
+    WITTY = "witty"
+
+    # Firm: Direct correction, no fluff
+    # "That's false. The data shows..."
+    FIRM = "firm"
+
+    # Spicy: Bold, slightly provocative but still factual
+    # "Wild claim. Reality check:"
+    SPICY = "spicy"
 
 
 class SourceMixStrategy(str, Enum):
@@ -210,11 +225,12 @@ class GuardianBandit:
     def __init__(self, state_path: Optional[str] = None):
         self.state_path = Path(state_path) if state_path else None
 
-        # Tone variant arms
+        # Tone variant arms - 4 distinct buckets
         self.tone_arms: Dict[ToneVariant, BetaDistribution] = {
-            ToneVariant.BOUNDARY_STRICT: BetaDistribution(1, 1),
-            ToneVariant.BOUNDARY_FIRM: BetaDistribution(1, 1),
-            ToneVariant.BOUNDARY_EDUCATIONAL: BetaDistribution(1, 1),
+            ToneVariant.EMPATHIC: BetaDistribution(1, 1),
+            ToneVariant.WITTY: BetaDistribution(1, 1),
+            ToneVariant.FIRM: BetaDistribution(1, 1),
+            ToneVariant.SPICY: BetaDistribution(1, 1),
         }
 
         # Source mix arms
@@ -251,15 +267,34 @@ class GuardianBandit:
         # Sample from each arm
         samples = {arm: dist.sample() for arm, dist in self.tone_arms.items()}
 
-        # Context-based adjustments (optional)
+        # Context-based adjustments (soft nudges, not hard rules)
         if context:
-            # For high risk, prefer stricter tones
-            if context.risk_level in ("high", "critical"):
-                samples[ToneVariant.BOUNDARY_STRICT] *= 1.2
+            claim_type = context.claim_type.lower() if context.claim_type else ""
+            risk = context.risk_level.lower() if context.risk_level else ""
 
-            # For educational topics, prefer educational tone
-            if context.topic in ("health", "science"):
-                samples[ToneVariant.BOUNDARY_EDUCATIONAL] *= 1.1
+            # Health/science claims → slight preference for empathic (people are scared)
+            if claim_type in ("health_misinformation", "science_denial"):
+                samples[ToneVariant.EMPATHIC] *= 1.15
+
+            # Conspiracy claims → witty or spicy works better (breaks the bubble)
+            if claim_type in ("conspiracy_theory", "foreign_influence"):
+                samples[ToneVariant.WITTY] *= 1.1
+                samples[ToneVariant.SPICY] *= 1.1
+
+            # High risk → firm (no jokes when stakes are high)
+            if risk in ("high", "critical"):
+                samples[ToneVariant.FIRM] *= 1.2
+                samples[ToneVariant.SPICY] *= 0.8  # Reduce spicy for high risk
+
+            # Hate/threats → firm (clear boundary needed)
+            if claim_type in ("hate_or_dehumanization", "threat_or_incitement"):
+                samples[ToneVariant.FIRM] *= 1.3
+                samples[ToneVariant.EMPATHIC] *= 0.7  # Less empathy for hate
+
+            # Low risk, general claims → more variety (let ML explore)
+            if risk == "low":
+                # No adjustment - let Thompson Sampling explore freely
+                pass
 
         # Select arm with highest sample
         selected = max(samples, key=samples.get)

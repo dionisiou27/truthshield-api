@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## 2025-12-18
+
+### Added - Temporal Awareness, IO Detection & RSS Freshness
+
+#### Response Mode System (`src/ml/guardian/claim_router.py`)
+- `ResponseModeResult` class with primary + secondary (overlay) modes
+- Combined modes: `LIVE_SITUATION + IO_CONTEXT` for territorial IO claims
+- `EvidenceQuality` enum (STRONG/MEDIUM/WEAK) for response confidence gating
+- Proper routing matrix: Gate 1 (Temporal) → Gate 2 (Evidence) → Gate 3 (IO Overlay)
+
+#### Weighted IO Detection (`src/ml/guardian/claim_router.py`)
+- Replaced simple 2+ count with weighted scoring system
+- `IO_THRESHOLD = 0.45` for IO pattern classification
+- `IO_SIGNAL_WEIGHTS`:
+  - HIGH (0.35-0.50): bloc_framing, peace_pressure, known_source, territorial_multi
+  - MEDIUM (0.15-0.30): victory_frame, frontline_collapse, map_claims
+  - LOW (0.05-0.15): multi_location, absolutist
+- `apply_external_io_boost()` for RSS freshness IO signals
+- `assess_evidence_quality()` heuristic before source retrieval
+
+#### RSS Freshness Service (`src/services/rss_freshness.py`)
+- NEW service for compliance-safe source ingestion via RSS feeds
+- No HTML scraping - respects robots.txt restrictions
+- Source tiers: A (authoritative) and B (requires corroboration)
+- `RSSSourceConfig` with corroboration_required_for field
+- Registered sources:
+  - **Tier A**: ERR News (Estonia), Reuters, AP, DW, EUvsDisinfo
+  - **Tier B**: RBC-Ukraine (fast signals, needs corroboration for frontline)
+- `check_territorial_freshness()` helper with corroboration analysis
+- IO boost when whitelist source explicitly names IO campaign
+
+#### Source Ranker v2 - Pure Ranking (`src/ml/guardian/source_ranker.py`)
+- Removed all hard filters (min_relevance, min_final_score)
+- Pure ranking with weighted scoring - best sources float to top
+- Topic-fit boost for claim-type-specific source profiles
+- New scoring formula: 0.35×relevance + 0.30×authority + 0.20×topic_fit + 0.10×recency + 0.05×prior
+- Added source profiles: territorial_control, policy_mobilization
+- Whitelist additions: ERR, Baltic broadcasters (LRT, LSM), RBC-Ukraine
+
+#### Thompson Sampling Bandit (`src/ml/learning/bandit.py`)
+- Expanded to 4 tone buckets: EMPATHIC, WITTY, FIRM, SPICY
+- Context-based soft nudges (not hard rules):
+  - Health/science → EMPATHIC preference
+  - Conspiracy → WITTY/SPICY preference
+  - High risk → FIRM preference
+  - Hate/threats → FIRM only
+
+### Changed
+- `src/core/ai_engine.py`: Updated to handle ResponseModeResult with primary+secondary modes
+- `requirements.txt`: Added `feedparser>=6.0.0` for RSS parsing
+
+### Removed
+- Obsolete documentation files:
+  - `API_SOURCE_ANALYSIS_REPORT.md`
+  - `IMPLEMENTATION_STATUS.md`
+  - `PHASE_1_IMPROVEMENTS.md`
+  - `API_SETUP.md`
+
+---
+
 ## 2025-12-14 (Update 5)
 
 ### Added - China/UK Security Batch Testing & Reward Poisoning Tests

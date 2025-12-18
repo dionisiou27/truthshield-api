@@ -3,13 +3,16 @@
 ## Project Overview
 TruthShield is a FastAPI-based cognitive security platform for detecting disinformation and coordinated inauthentic behavior. It provides automated fact-checking, persona-driven counter-narratives, and compliance monitoring for digital information integrity.
 
+**Current Focus:** TikTok social media prototype with Guardian Avatar for real-time counter-narrative intervention.
+
 ## Tech Stack
 - **Framework**: Python 3.11, FastAPI (async)
-- **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode)
+- **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode), Thompson Sampling Bandit
 - **Database**: SQLAlchemy 2.0, SQLite (dev), Alembic migrations
 - **Infrastructure**: Docker, Redis (caching)
 - **Testing**: pytest, black, flake8, mypy
 - **External APIs**: Google Fact Check, News API, ClaimBuster, MediaWiki
+- **RSS Feeds**: feedparser for compliance-safe source ingestion
 
 ## Project Structure
 ```
@@ -17,57 +20,19 @@ src/
 ├── api/           # FastAPI routes (detection, monitoring, content, compliance, ml)
 ├── core/          # Business logic (ai_engine, detection, threat_scoring, etc.)
 ├── models/        # Pydantic models
-├── services/      # External integrations (Google, ClaimBuster, Wiki, News APIs)
+├── services/      # External integrations (Google, ClaimBuster, Wiki, News, RSS)
+│   └── rss_freshness.py  # RSS-based freshness checking for territorial claims
 └── ml/            # Machine Learning Pipeline
     ├── guardian/  # Claim Router, Source Ranker, Response Generator
     └── learning/  # Thompson Sampling Bandit, Feedback Collector, ML Logging
 tests/             # pytest test files
+bench/             # Batch testing infrastructure
+├── batches/       # Test claim batches (euronews_v1, v2, starmer_china)
+├── run_batch.py   # Batch runner CLI
+└── replay.py      # Bandit replay testing
 configs/           # Configuration files
 demo_data/         # Demo/test data + ML logs
 docs/              # Documentation and HTML demo
-```
-
-## Avatar Persona System
-
-TruthShield uses 5 specialized AI avatars for generating counter-narrative responses:
-
-### Guardian Avatar (Primary)
-- **Role**: `boundary_enforcement` - De-escalation and protection
-- **Tone**: Low emotionality, high authority, neutral empathy, NO humor
-- **Use Cases**: Hate speech, dehumanization, threats, targeted harassment, escalation dynamics, misinformation
-- **5-Sentence Structure**:
-  1. Clear stop / boundary
-  2. Name harm or rule violation
-  3. Explain risk (violence, normalization, harm)
-  4. Redirect to acceptable discourse
-  5. Sources
-- **Source Priority**: EU Fundamental Rights, UN Hate Speech Guidance, bpb
-
-### Other Avatars
-- **PolicyAvatar**: EU regulatory compliance, DSA/AI Act expertise
-- **MemeAvatar**: Satirical counter-narratives for viral debunking
-- **EuroShieldAvatar**: EU-focused geopolitical disinformation
-- **ScienceAvatar**: Scientific misinformation (health, climate, tech)
-
-## TikTok Platform Output Rules (Global)
-
-All avatar responses follow these platform-specific rules:
-
-```yaml
-output_length:
-  sentences: "4-5"
-  max_chars: 450
-sources:
-  required: 3
-  format_de: "Quellen: A | B | C"
-  format_en: "Sources: A | B | C"
-learning_mode: dynamic
-no_static_templates: true
-optimization_targets:
-  - top_comment_probability
-  - reply_quality
-  - like_reply_ratio
-  - share_proxy
 ```
 
 ## Common Commands
@@ -79,55 +44,16 @@ uvicorn src.api.main:app --reload --port 8000
 python main.py
 ```
 
-### Run with Docker
-```bash
-docker-compose up --build
-```
-
 ### Run Tests
 ```bash
 pytest tests/
 pytest -v  # verbose
 ```
 
-### Code Quality
+### Run Batch Tests
 ```bash
-black src/ tests/        # format code
-flake8 src/ tests/       # lint
-mypy src/                # type check
+python bench/run_batch.py --input bench/batches/euronews_v1.json --output demo_data/ml
 ```
-
-## API Endpoints
-
-### Detection Endpoints (`/api/v1/detect/`)
-- `POST /fact-check` - AI-powered fact-checking with brand response
-- `POST /universal` - Guardian Avatar universal fact-checker
-- `POST /quick-check` - Fast fact-check without AI response
-- `POST /fact-check/image` - OCR + fact-check for images
-- `POST /ocr` - Extract text from images
-- `GET /health` - Detection engine health
-- `GET /status` - Full detection status with capabilities
-- `GET /companies` - List supported companies/avatars
-- `GET /guardian/examples` - Guardian Avatar example queries
-
-### ML Pipeline Endpoints (`/api/v1/ml/`)
-- `POST /analyze-claim` - Claim typing and risk assessment
-- `POST /rank-sources` - Source ranking with authority scoring
-- `POST /prepare-guardian` - Full ML pipeline for response preparation
-- `POST /feedback` - Submit engagement metrics for bandit learning
-- `GET /bandit/stats` - Thompson Sampling arm statistics
-- `GET /learning/summary` - ML pipeline summary statistics
-- `GET /source-whitelist` - Domain whitelist by source class
-- `GET /training-data` - Export training data for offline analysis
-
-### Other Endpoints
-- `GET /` - API info and available endpoints
-- `GET /health` - Health check
-- `GET /demo` - HTML demo interface
-- `GET /docs` - Swagger/OpenAPI documentation
-- `/api/v1/monitor/` - Monitoring endpoints
-- `/api/v1/content/` - Content analysis endpoints
-- `/api/v1/compliance/` - EU compliance endpoints
 
 ## Environment Variables
 Required in `.env`:
@@ -138,37 +64,61 @@ NEWS_API_KEY=          # News API integration
 HUGGINGFACE_API_KEY=   # HuggingFace models (optional)
 ```
 
-## Key Files
-- `main.py` - Application entry point
-- `src/api/main.py` - FastAPI app configuration and routes
-- `src/api/detection.py` - Detection API routes
-- `src/core/ai_engine.py` - AI engine with avatar personas and TikTok rules
-- `src/core/detection.py` - Disinformation detection logic
-- `src/services/` - External API integrations
+---
 
-## API Response Structure
+## Guardian Avatar System
 
-Fact-check responses include:
-- `is_synthetic` / `is_fake` - Boolean detection result
-- `confidence` - 0.0-1.0 confidence score
-- `fact_check` - Detailed fact-check analysis with sources
-- `ai_response` - Avatar-generated counter-narrative
-- `details.verified_sources` - Curated top 5 sources
-- `details.all_sources_checked` - Complete source list (Raw JSON)
-- `details.api_usage` - Token usage statistics
+### Primary Avatar
+- **Role**: `boundary_enforcement` - De-escalation and protection
+- **Tone**: Low emotionality, high authority, neutral empathy, NO humor
+- **Use Cases**: Hate speech, dehumanization, threats, misinformation, territorial claims, IO patterns
+- **Behavioral Rules**: Never debate, never ask questions, never use irony, always set boundaries
+
+### TikTok Output Rules
+```yaml
+output_length:
+  sentences: "4-5"
+  max_chars: 450
+sources:
+  required: 3
+  format_en: "Sources: A | B | C"
+learning_mode: dynamic
+no_static_templates: true
+```
+
+---
 
 ## ML Pipeline (Guardian Learning Loop)
 
-### Overview
-The ML pipeline implements online learning for Guardian Avatar response optimization using Thompson Sampling.
-
 ### Pipeline Steps
 1. **Claim Intake** → Raw text input
-2. **Claim Typing** → Classification: hate, threat, health misinformation, policy, etc.
-3. **Source Retrieval** → External API calls (Google, News, Wiki)
-4. **Source Ranking** → Authority-weighted scoring with diversity constraints
-5. **Response Generation** → Tone variant selection via bandit
-6. **Learning Loop** → Engagement feedback updates bandit arms
+2. **Claim Analysis** → Type, risk, volatility, temporal mode, IO detection
+3. **Response Mode** → DEBUNK / IO_CONTEXT / LIVE_SITUATION / CAUTIOUS
+4. **Source Retrieval** → External APIs + RSS freshness
+5. **Source Ranking** → Pure ranking with topic-fit boost (no hard filters)
+6. **Response Generation** → Tone variant selection via Thompson Sampling
+7. **Learning Loop** → Engagement feedback updates bandit arms
+
+### Thompson Sampling Bandit
+
+**4 Tone Buckets:**
+```python
+EMPATHIC = "empathic"   # "I get why this sounds scary, but..."
+WITTY = "witty"         # "Nope. Here's what actually happened."
+FIRM = "firm"           # "That's false. The data shows..."
+SPICY = "spicy"         # "Wild claim. Reality check:"
+```
+
+**Context-Based Soft Nudges:**
+- Health/science claims → EMPATHIC preference
+- Conspiracy claims → WITTY/SPICY preference
+- High risk → FIRM preference (no jokes)
+- Hate/threats → FIRM only (clear boundary)
+
+**Source Mix Strategies:**
+- `institution_heavy` - Prioritize PRIMARY_INSTITUTION
+- `balanced` - Even mix across source classes
+- `factcheck_heavy` - Prioritize IFCN_FACTCHECK
 
 ### Source Class Hierarchy
 ```python
@@ -177,37 +127,168 @@ MULTILATERAL: 0.95          # WHO, UNESCO, OSCE
 REPUTABLE_NGO: 0.90         # Amnesty, HRW, Reporter ohne Grenzen
 PEER_REVIEWED: 0.88         # PubMed, Nature, IPCC
 IFCN_FACTCHECK: 0.85        # AFP Faktenfinder, Correctiv, Snopes
-REPUTABLE_MEDIA: 0.70       # Reuters, AP, DW, Zeit
+REPUTABLE_MEDIA: 0.70       # Reuters, AP, DW, ERR, RBC-Ukraine
 WIKIPEDIA: 0.40             # Meta-Wiki (with caution)
 UNKNOWN: 0.20               # Unclassified sources
 ```
 
-### Source Ranking Formula
+### Source Ranking Formula (v2 - Pure Ranking)
+```python
+final_score = (
+    0.35 * relevance +      # Keyword overlap
+    0.30 * authority +      # Source class weight
+    0.20 * topic_fit +      # Claim-type profile match
+    0.10 * recency +        # Freshness (exponential decay)
+    0.05 * prior            # Retrieval rank signal
+) * accessibility           # Soft paywall penalty
 ```
-final_score = 0.45×relevance + 0.25×authority + 0.15×recency + 0.10×specificity + 0.05×prior
+
+**No hard filters** - all sources compete, best ones float to top.
+
+---
+
+## Temporal Awareness (TikTok Time-Sensitive Claims)
+
+### Claim Volatility
+```python
+STABLE = "stable"           # Facts don't change (science, history)
+LOW = "low"                 # Slow-moving topics
+MEDIUM = "medium"           # Default
+HIGH = "high"               # Daily changes (elections, policy)
+VERY_HIGH = "very_high"     # Hourly changes (active frontline)
 ```
 
-### Thompson Sampling Bandit
+### Temporal Modes
+```python
+LIVE_REQUIRED = "live_required"   # Must use fresh sources (< 72h)
+ARCHIVE_OK = "archive_ok"         # Established fact-checks OK
+AMBIGUOUS = "ambiguous"           # Unclear timeframe - be cautious
+```
 
-**Tone Variants:**
-- `boundary_strict` - "Stop. This is misinformation."
-- `boundary_firm` - "This claim is demonstrably false."
-- `boundary_educational` - "Let's clarify the facts here."
+### Response Modes
+```python
+DEBUNK = "debunk"               # Classic fact-check
+IO_CONTEXT = "io_context"       # Information Operation context
+LIVE_SITUATION = "live_situation"  # Fluid facts, hedge everything
+CAUTIOUS = "cautious"           # Weak evidence, be careful
+```
 
-**Source Mix Strategies:**
-- `institution_heavy` - Prioritize PRIMARY_INSTITUTION
-- `balanced` - Even mix across source classes
-- `factcheck_heavy` - Prioritize IFCN_FACTCHECK
+**Response Mode Routing Matrix:**
+1. **Gate 1: TEMPORAL** - Is this LIVE_REQUIRED?
+2. **Gate 2: EVIDENCE** - Is evidence WEAK → CAUTIOUS
+3. **Gate 3: IO OVERLAY** - Is this IO pattern? (secondary mode, not replacement)
 
-### Learning Safeguards (Defence/EU Review Compliance)
+**Combined Modes:** `LIVE_SITUATION + IO_CONTEXT` for territorial claims with IO framing.
 
-**LEARNABLE PARAMETERS (stylistic only):**
-- Tone variant (strict/firm/educational) - HOW the message is framed
-- Source mix strategy - WHICH source class priority, not WHICH sources
+---
+
+## Information Operation (IO) Detection
+
+### Weighted IO Scoring
+```python
+IO_THRESHOLD = 0.45  # Score threshold for IO classification
+
+IO_SIGNAL_WEIGHTS = {
+    # HIGH signal (0.35-0.50)
+    "bloc_framing": 0.45,         # "The West admits..."
+    "peace_pressure": 0.40,       # "Negotiate before..."
+    "known_source": 0.40,         # RT, Sputnik, TASS
+    "territorial_multi": 0.35,    # Territorial + multi-location combo
+    "whitelist_names_io": 0.30,   # Whitelist source explicitly names IO
+    # MEDIUM signal (0.15-0.30)
+    "victory_frame": 0.25,        # Victory/defeat narratives
+    "frontline_collapse": 0.25,   # "Frontline is collapsing"
+    "map_claims": 0.20,           # "Look at the map"
+    # LOW signal (0.05-0.15)
+    "multi_location": 0.15,       # Multiple locations in claim
+    "absolutist": 0.10,           # "Completely destroyed"
+}
+```
+
+### IO Response Handling
+- IO claims require **narrative acknowledgment**, not just fact correction
+- IO_CONTEXT can be **overlay** on LIVE_SITUATION (both modes active)
+- Evidence quality gates response confidence level
+
+---
+
+## RSS Freshness Service
+
+### Purpose
+Compliance-safe ingestion of trusted sources via RSS feeds for territorial/frontline claims.
+No HTML scraping - only RSS polling + link pinning.
+
+### Source Registry
+```python
+RSS_SOURCE_REGISTRY = {
+    # TIER A - Authoritative
+    "ERR_NEWS_EN": RSSSourceConfig(
+        base_domain="news.err.ee",
+        trust_tier="A",
+        rss_url="https://news.err.ee/rss",
+        names_io_campaigns=True,  # ERR explicitly names IO campaigns
+        topics=["territorial_control", "foreign_influence"],
+    ),
+    "REUTERS": RSSSourceConfig(..., trust_tier="A"),
+    "AP_NEWS": RSSSourceConfig(..., trust_tier="A"),
+    "DW_EN": RSSSourceConfig(..., trust_tier="A"),
+    "EUVSDISINFO": RSSSourceConfig(..., trust_tier="A", names_io_campaigns=True),
+
+    # TIER B - Fast signals, require corroboration
+    "RBC_UKRAINE_EN": RSSSourceConfig(
+        base_domain="newsukraine.rbc.ua",
+        trust_tier="B",
+        names_io_campaigns=True,
+        topics=["territorial_control", "policy_mobilization"],
+        corroboration_required_for=["territorial_control", "frontline_update"],
+    ),
+}
+```
+
+### Corroboration Logic
+- **Tier A sources**: Authoritative, no corroboration needed
+- **Tier B sources**: Good for freshness signals, but territorial claims need second source
+- **Corroborated** = 1+ Tier A hit OR 2+ total sources
+
+### Integration
+```python
+from src.services.rss_freshness import check_territorial_freshness
+
+result = await check_territorial_freshness(
+    claim_keywords=["Kupiansk", "advance"],
+    locations=["Kupiansk"],
+    claim_type="territorial_control"
+)
+# Returns: has_fresh_coverage, corroboration status, IO boost, evidence boost
+```
+
+---
+
+## Guardian Source Profiles
+
+Topic-specific source preferences:
+```python
+GUARDIAN_SOURCE_PROFILES = {
+    "hate_or_dehumanization": ["fra.europa.eu", "ohchr.org", "bpb.de", "amnesty.org"],
+    "health_misinformation": ["who.int", "cdc.gov", "nih.gov", "pubmed.ncbi.nlm.nih.gov"],
+    "delegitimization_frame": ["transparency.org", "worldbank.org", "ec.europa.eu"],
+    "foreign_influence": ["euvsdisinfo.eu", "eeas.europa.eu", "news.err.ee", "nato.int"],
+    "territorial_control": ["news.err.ee", "euvsdisinfo.eu", "reuters.com", "newsukraine.rbc.ua"],
+    "policy_mobilization": ["newsukraine.rbc.ua", "news.err.ee", "reuters.com"],
+    "science_denial": ["ipcc.ch", "nature.com", "science.org"],
+}
+```
+
+---
+
+## Learning Safeguards (Defence/EU Review Compliance)
+
+### LEARNABLE Parameters (stylistic only)
+- Tone variant (EMPATHIC/WITTY/FIRM/SPICY) - HOW the message is framed
+- Source mix strategy - WHICH source class priority
 - Response length within constraints
-- Sentence structure order
 
-**IMMUTABLE PARAMETERS (never optimized):**
+### IMMUTABLE Parameters (never optimized)
 - Factual content and claims
 - Source class authority weights
 - Boundary definitions and rules
@@ -215,88 +296,37 @@ final_score = 0.45×relevance + 0.25×authority + 0.15×recency + 0.10×specific
 - Source whitelist membership
 - Risk level assessments
 - Claim type classifications
-
-This separation prevents drift toward:
-- Engagement > factual integrity
-- Provocation or polarization
-- Weakened source authority
+- IO detection thresholds
 
 ### Reward Function (Anti-Gaming)
 ```python
 # Positive signals
-reward = 0.35 * top_comment_proxy      # Position in comments
-       + 0.20 * reply_quality          # Constructive replies
-       + 0.15 * like_reply_ratio       # Engagement balance
-       + 0.10 * shares_proxy           # Share velocity
+reward = 0.35 * top_comment_proxy
+       + 0.20 * reply_quality
+       + 0.15 * like_reply_ratio
+       + 0.10 * shares_proxy
 
-# Negative signals (NegativeSignals class)
-       - 0.30 * reports_rate           # Report penalty
-       - 0.15 * toxicity_in_replies    # Toxicity penalty
-       - 0.50 * platform_flag          # Moderation flags
-       - 0.20 * reply_chain_escalation # Provocation prevention
-       - 0.40 * bot_engagement         # Inauthentic engagement
-       - 0.30 * spam_pattern           # Repetitive patterns
+# Negative signals
+       - 0.30 * reports_rate
+       - 0.15 * toxicity_in_replies
+       - 0.50 * platform_flag
+       - 0.20 * reply_chain_escalation
+       - 0.40 * bot_engagement
+       - 0.30 * spam_pattern
 
 # Content removal = complete reward nullification (-1.0)
 ```
 
-### Source Usage Types (Retrieval vs Authority)
-```python
-RETRIEVAL_ONLY_SOURCES  # Discovery, context, signal finding (Wikipedia)
-AUTHORITY_SOURCES       # May be cited as evidence (Government, UN, Factcheck)
-```
-
-### Guardian Source Profiles (Context-Sensitive)
-```python
-GUARDIAN_SOURCE_PROFILES = {
-    "hate_or_dehumanization": ["fra.europa.eu", "ohchr.org", "bpb.de", "amnesty.org"],
-    "health_misinformation": ["who.int", "cdc.gov", "nih.gov", "pubmed.ncbi.nlm.nih.gov"],
-    "delegitimization_frame": ["transparency.org", "worldbank.org", "ec.europa.eu"],
-    "foreign_influence": ["eeas.europa.eu", "nato.int", "euvsdisinfo.eu"],
-    # ... per-claim-type source profiles
-}
-```
-
-### Key Files
-- `src/ml/guardian/claim_router.py` - Claim classification (ClaimType, RiskLevel)
-- `src/ml/guardian/source_ranker.py` - Source ranking (70 domain whitelist)
-- `src/ml/guardian/response_generator.py` - Pipeline orchestration
-- `src/ml/learning/bandit.py` - Thompson Sampling implementation
-- `src/ml/learning/feedback.py` - Engagement metrics collection
-- `src/ml/learning/scoreboard.py` - Quality metrics and boundary detection
-- `src/ml/learning/logging.py` - ML event logging (JSONL)
-- `src/api/ml.py` - ML API endpoints
+---
 
 ## Bench Infrastructure
 
-### Overview
-Offline batch testing for Guardian responses before production deployment.
-
-### Run Batch Tests
+### Available Batches
 ```bash
-# Run with batch definition file
-python bench/run_batch.py --input bench/batches/euronews_v1.json --output demo_data/ml
-
-# Available batches
-bench/batches/euronews_v1.json  # EU delegitimization claims (10 claims)
-bench/batches/euronews_v2.json  # NATO/war framing claims (8 claims)
-```
-
-### Batch Definition Format
-```json
-{
-  "batch_id": "guardian_euronews_anti_eu_v1",
-  "source_platform": "tiktok",
-  "mode": "shadow",
-  "avatar": "guardian",
-  "common_params": {
-    "language": "en",
-    "risk_level": "MEDIUM"
-  },
-  "claims": [
-    {"claim_id": "001", "text": "...", "cluster": "delegitimization_frame"}
-  ]
-}
+bench/batches/euronews_v1.json       # EU delegitimization (10 claims)
+bench/batches/euronews_v2.json       # NATO/war framing (8 claims)
+bench/batches/euronews_starmer_china_v1.json  # China/UK direct (8 claims)
+bench/batches/euronews_starmer_china_v2.json  # China/UK grey-zone (12 claims)
 ```
 
 ### Quality Targets
@@ -305,37 +335,43 @@ bench/batches/euronews_v2.json  # NATO/war framing claims (8 claims)
 | `violation_rate` | < 5% | Any rule violation |
 | `genericness_rate` | < 5% | Vague/hedging responses |
 | `escalation_rate` | < 2% | Potentially escalatory language |
-| `missing_boundary` | < 15% | No clear boundary statement |
+| `missing_boundary` | > 85% | Clear boundary statement present |
 
 ### Risk-Aware Boundary Detection
-The scoreboard uses risk-aware boundary checking:
-
 | Risk Level | Boundary Required |
 |------------|------------------|
 | HIGH/CRITICAL | **Hard** boundary (stop, false, misinformation) |
 | MEDIUM | Hard OR **Soft** boundary (misleading, distorts, omits) |
 | LOW | Optional |
 
-**Hard Boundary Patterns:** stop, halt, false, wrong, misinformation, factually wrong
-**Soft Boundary Patterns:** misleading, misconception, distorts, framing, inverts, omits, misrepresents, erases, reverses
+---
 
-### Bandit Replay Testing
-```bash
-# Run offline bandit simulation
-python bench/replay.py run demo_data/ml/guardian_responses.jsonl
+## Key Files
 
-# Generate report
-python bench/replay.py report demo_data/ml/replay_results.json
+### Core ML Pipeline
+- `src/ml/guardian/claim_router.py` - Claim analysis (type, risk, volatility, IO, response mode)
+- `src/ml/guardian/source_ranker.py` - Pure ranking source selection (75+ domain whitelist)
+- `src/ml/guardian/response_generator.py` - Pipeline orchestration
+- `src/ml/learning/bandit.py` - Thompson Sampling (4 tone buckets)
+- `src/ml/learning/feedback.py` - Engagement metrics collection
+- `src/ml/learning/scoreboard.py` - Quality metrics and boundary detection
 
-# Verify sanity checks
-python bench/replay.py verify demo_data/ml/replay_results.json
-```
+### Services
+- `src/services/rss_freshness.py` - RSS-based freshness checking
+- `src/services/google_factcheck.py` - Google Fact Check API
+- `src/services/wiki_api.py` - MediaWiki integration
+
+### API
+- `src/api/ml.py` - ML pipeline endpoints
+- `src/api/detection.py` - Detection endpoints
+- `src/core/ai_engine.py` - AI engine with avatar personas
+
+---
 
 ## Development Notes
-- CORS is configured for localhost and production domains
-- Demo mode available via `ENVIRONMENT=demo`
 - All API routes are async
 - Pydantic v2 used for request/response validation
-- OpenAI uses `response_format={"type": "json_object"}` for reliable JSON parsing
-- Guardian Avatar behavioral rules: never debate, never ask questions, never use irony, always set boundaries
 - ML logs stored in `demo_data/ml/` (JSONL format)
+- Guardian Avatar behavioral rules: never debate, never ask questions, never use irony
+- Source ranking is **pure ranking** (no hard filters, only weighted scores)
+- RSS feeds respect robots.txt compliance (no HTML scraping for blocked sources)
