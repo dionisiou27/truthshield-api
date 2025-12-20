@@ -45,9 +45,13 @@ app.include_router(compliance_router)
 app.include_router(ml_router)
 
 # Serve static files (images, css, etc.) from docs folder
-docs_path = Path(__file__).parent.parent.parent / "docs"
-if docs_path.exists():
-    app.mount("/images", StaticFiles(directory=docs_path / "images"), name="images")
+docs_path = Path(__file__).resolve().parent.parent.parent / "docs"
+images_path = docs_path / "images"
+print(f"📁 Static files path: {images_path} (exists: {images_path.exists()})")
+if images_path.exists():
+    app.mount("/images", StaticFiles(directory=str(images_path)), name="images")
+else:
+    print(f"⚠️ Images folder not found at {images_path}")
 
 class HealthResponse(BaseModel):
     status: str
