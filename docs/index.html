@@ -472,6 +472,21 @@
 
             <div class="max-w-3xl mx-auto">
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8">
+                    <!-- API Server Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-primary mb-2">API Server</label>
+                        <div class="flex gap-2">
+                            <select id="api-server" class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all text-sm">
+                                <option value="https://truthshield-api.onrender.com">☁️ Render (Cloud)</option>
+                                <option value="http://localhost:8000">🖥️ Localhost:8000</option>
+                            </select>
+                            <button onclick="testConnection()" class="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm font-medium text-primary transition-all">
+                                Test
+                            </button>
+                            <span id="connection-status" class="flex items-center text-xs"></span>
+                        </div>
+                    </div>
+
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-primary mb-2">Enter a claim to analyze or Tab the use cases above</label>
                         <textarea id="claim-input" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all" placeholder="e.g., 'The EU is planning to ban all combustion engines by 2030...'"></textarea>
@@ -583,8 +598,11 @@
     </footer>
 
     <script>
-        // API Configuration
-        const API_BASE = 'https://truthshield-api.onrender.com';
+        // API Configuration - dynamically from dropdown
+        function getApiBase() {
+            const select = document.getElementById('api-server');
+            return select?.value || 'https://truthshield-api.onrender.com';
+        }
 
         // Helper functions
         function escapeHtml(s) {
@@ -597,10 +615,32 @@
             return de.some(x => s.includes(x)) ? 'de' : 'en';
         }
 
+        // Test API connection
+        async function testConnection() {
+            const status = document.getElementById('connection-status');
+            const apiBase = getApiBase();
+            status.innerHTML = '<span class="text-yellow-500">⏳ Testing...</span>';
+
+            try {
+                const response = await fetch(`${apiBase}/health`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(10000)
+                });
+                if (response.ok) {
+                    status.innerHTML = '<span class="text-green-500">✅ Connected</span>';
+                } else {
+                    status.innerHTML = `<span class="text-red-500">❌ ${response.status}</span>`;
+                }
+            } catch (error) {
+                status.innerHTML = '<span class="text-red-500">❌ Offline</span>';
+            }
+        }
+
         async function analyzeDemo() {
             const input = document.getElementById('claim-input').value;
             const result = document.getElementById('demo-result');
             const button = document.querySelector('#demo button');
+            const API_BASE = getApiBase();
 
             if (!input || input.trim().length < 10) {
                 alert('Please enter at least 10 characters to analyze!');
