@@ -712,12 +712,11 @@
                 lastResponseData = data;  // Store for language switching
                 // Show language toggle if both languages available
                 const langToggle = document.getElementById('lang-toggle');
-                if (data?.details?.ai_responses?.en && data?.details?.ai_responses?.de) {
-                    langToggle.style.display = 'flex';
-                } else {
-                    langToggle.style.display = 'none';
+                if (langToggle) {
+                    langToggle.style.display = (data?.details?.ai_responses?.en && data?.details?.ai_responses?.de) ? 'flex' : 'none';
                 }
-                displayResults(data, document.getElementById('result-content'), currentLang);
+                const resultContent = document.getElementById('result-content') || result;
+                displayResults(data, resultContent, currentLang);
 
             } catch (error) {
                 console.error('API Error:', error);
