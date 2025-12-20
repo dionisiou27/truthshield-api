@@ -500,7 +500,7 @@
 
                     <div id="demo-result" class="hidden mt-6 p-6 bg-gray-50 rounded-xl">
                         <!-- Language Toggle -->
-                        <div id="lang-toggle" class="hidden flex justify-end gap-2 mb-4">
+                        <div id="lang-toggle" style="display: none;" class="flex justify-end gap-2 mb-4">
                             <button onclick="switchLang('en')" id="btn-en" class="px-3 py-1 text-xs font-medium rounded-full bg-primary text-white">EN</button>
                             <button onclick="switchLang('de')" id="btn-de" class="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300">DE</button>
                         </div>
@@ -713,9 +713,9 @@
                 // Show language toggle if both languages available
                 const langToggle = document.getElementById('lang-toggle');
                 if (data?.details?.ai_responses?.en && data?.details?.ai_responses?.de) {
-                    langToggle.classList.remove('hidden');
+                    langToggle.style.display = 'flex';
                 } else {
-                    langToggle.classList.add('hidden');
+                    langToggle.style.display = 'none';
                 }
                 displayResults(data, document.getElementById('result-content'), currentLang);
 
