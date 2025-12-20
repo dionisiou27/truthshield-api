@@ -583,32 +583,166 @@
     </footer>
 
     <script>
-        function analyzeDemo() {
+        // API Configuration
+        const API_BASE = 'https://truthshield-api.onrender.com';
+
+        // Helper functions
+        function escapeHtml(s) {
+            return (s || '').replace(/[&<>"]+/g, m => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"}[m]));
+        }
+
+        function detectLang(t) {
+            const s = (t || '').toLowerCase();
+            const de = [' der ', ' die ', ' das ', ' nicht ', ' ist ', ' mit ', 'und ', 'ä', 'ö', 'ü', 'ß'];
+            return de.some(x => s.includes(x)) ? 'de' : 'en';
+        }
+
+        async function analyzeDemo() {
             const input = document.getElementById('claim-input').value;
             const result = document.getElementById('demo-result');
+            const button = document.querySelector('#demo button');
 
-            if (input.trim()) {
-                result.classList.remove('hidden');
+            if (!input || input.trim().length < 10) {
+                alert('Please enter at least 10 characters to analyze!');
+                return;
+            }
+
+            // Show loading state
+            result.classList.remove('hidden');
+            result.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse"></div>
+                    <span class="font-semibold text-primary">Analyzing...</span>
+                </div>
+                <p class="text-paragraph text-sm">Connecting to TruthShield API...</p>
+            `;
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/detect/fact-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: input,
+                        company: 'TruthShield',
+                        language: detectLang(input),
+                        generate_ai_response: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                displayResults(data, result);
+
+            } catch (error) {
+                console.error('API Error:', error);
                 result.innerHTML = `
                     <div class="flex items-center gap-3 mb-4">
-                        <div class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
-                        <span class="font-semibold text-primary">Analysis Complete</span>
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span class="font-semibold text-primary">Connection Error</span>
                     </div>
-                    <p class="text-paragraph text-sm mb-4">Your claim has been received. In production, this would return:</p>
-                    <div class="bg-secondary text-white p-4 rounded-lg font-mono text-xs overflow-x-auto">
-                        <pre>{
-  "verdict": "NEEDS_VERIFICATION",
-  "confidence": 0.87,
-  "claim_type": "policy_statement",
-  "sources": ["europa.eu", "reuters.com"],
-  "response_mode": "DEBUNK"
-}</pre>
-                    </div>
+                    <p class="text-paragraph text-sm mb-2">Unable to reach TruthShield API.</p>
+                    <p class="text-paragraph text-xs">${escapeHtml(error.message)}</p>
                     <p class="text-paragraph text-sm mt-4">
-                        <a href="https://github.com/dionisiou27/truthshield-api" class="text-accent hover:underline">Deploy the API</a> to get real analysis results.
+                        <a href="https://github.com/dionisiou27/truthshield-api" class="text-accent hover:underline">Deploy the API locally</a> or check your connection.
                     </p>
                 `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Analyze Claim
+                `;
             }
+        }
+
+        function displayResults(data, resultEl) {
+            const factCheck = data?.fact_check || {};
+            const aiResponse = data?.ai_response?.response_text || '';
+            const confidence = factCheck.confidence ? Math.round(factCheck.confidence * 100) : '–';
+            const category = factCheck.category || 'Unknown';
+            const sources = data?.details?.verified_sources || factCheck.sources || [];
+            const processingTime = data?.processing_time_ms || '–';
+
+            // Determine verdict color
+            let verdictColor = 'bg-yellow-400';
+            let verdictText = 'Needs Verification';
+            if (category.toLowerCase().includes('false') || category.toLowerCase().includes('misleading')) {
+                verdictColor = 'bg-red-500';
+                verdictText = 'Likely False';
+            } else if (category.toLowerCase().includes('true') || category.toLowerCase().includes('verified')) {
+                verdictColor = 'bg-green-500';
+                verdictText = 'Verified';
+            }
+
+            resultEl.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-3 h-3 rounded-full ${verdictColor}"></div>
+                    <span class="font-semibold text-primary">${verdictText}</span>
+                    <span class="text-xs text-paragraph ml-auto">${processingTime}ms</span>
+                </div>
+
+                <!-- KPIs -->
+                <div class="grid grid-cols-3 gap-4 mb-4 text-center">
+                    <div class="bg-white border border-gray-200 rounded-lg p-3">
+                        <div class="text-2xl font-bold text-primary">${confidence}%</div>
+                        <div class="text-xs text-paragraph">Confidence</div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-3">
+                        <div class="text-sm font-bold text-primary">${escapeHtml(category)}</div>
+                        <div class="text-xs text-paragraph">Category</div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-3">
+                        <div class="text-2xl font-bold text-primary">${sources.length}</div>
+                        <div class="text-xs text-paragraph">Sources</div>
+                    </div>
+                </div>
+
+                ${aiResponse ? `
+                <!-- Guardian Response -->
+                <div class="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-lg">🛡️</span>
+                        <span class="font-semibold text-primary text-sm">Guardian Response</span>
+                    </div>
+                    <p class="text-paragraph text-sm">${escapeHtml(aiResponse)}</p>
+                </div>
+                ` : ''}
+
+                ${sources.length > 0 ? `
+                <!-- Sources -->
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="text-sm font-semibold text-primary mb-2">Verified Sources:</div>
+                    <div class="space-y-2">
+                        ${sources.slice(0, 3).map(s => `
+                            <a href="${escapeHtml(s.url || '#')}" target="_blank" class="block text-xs text-accent hover:underline truncate">
+                                📎 ${escapeHtml(s.title || s.url || 'Source')}
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Raw JSON Toggle -->
+                <details class="mt-4">
+                    <summary class="text-xs text-paragraph cursor-pointer hover:text-primary">Show Raw JSON</summary>
+                    <pre class="mt-2 bg-secondary text-white p-3 rounded-lg text-xs overflow-x-auto max-h-48">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+                </details>
+            `;
         }
     </script>
 
