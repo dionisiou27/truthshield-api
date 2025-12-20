@@ -717,15 +717,20 @@
             const sources = data?.details?.verified_sources || factCheck.sources || [];
             const processingTime = data?.processing_time_ms || '–';
 
-            // Determine verdict color
+            // Determine verdict based on category AND confidence
             let verdictColor = 'bg-yellow-400';
             let verdictText = 'Needs Verification';
+            const confidenceNum = typeof confidence === 'number' ? confidence : parseInt(confidence) || 0;
+
             if (category.toLowerCase().includes('false') || category.toLowerCase().includes('misleading')) {
                 verdictColor = 'bg-red-500';
-                verdictText = 'Likely False';
-            } else if (category.toLowerCase().includes('true') || category.toLowerCase().includes('verified')) {
+                verdictText = confidenceNum >= 80 ? 'False' : 'Likely False';
+            } else if (category.toLowerCase().includes('true') || category.toLowerCase().includes('verified') || confidenceNum >= 80) {
                 verdictColor = 'bg-green-500';
-                verdictText = 'Verified';
+                verdictText = confidenceNum >= 90 ? 'Verified' : 'Likely True';
+            } else if (confidenceNum >= 60) {
+                verdictColor = 'bg-blue-400';
+                verdictText = 'Under Review';
             }
 
             resultEl.innerHTML = `
