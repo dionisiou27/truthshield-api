@@ -499,11 +499,18 @@
                     </button>
 
                     <div id="demo-result" class="hidden mt-6 p-6 bg-gray-50 rounded-xl">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-                            <span class="font-semibold text-primary">Analysis Result</span>
+                        <!-- Language Toggle -->
+                        <div id="lang-toggle" class="hidden flex justify-end gap-2 mb-4">
+                            <button onclick="switchLang('en')" id="btn-en" class="px-3 py-1 text-xs font-medium rounded-full bg-primary text-white">EN</button>
+                            <button onclick="switchLang('de')" id="btn-de" class="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300">DE</button>
                         </div>
-                        <p class="text-paragraph text-sm">Demo mode - Connect to the API for live results.</p>
+                        <div id="result-content">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                <span class="font-semibold text-primary">Analysis Result</span>
+                            </div>
+                            <p class="text-paragraph text-sm">Demo mode - Connect to the API for live results.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -615,6 +622,25 @@
             return de.some(x => s.includes(x)) ? 'de' : 'en';
         }
 
+        // Global state for language switching
+        let lastResponseData = null;
+        let currentLang = 'en';
+
+        function switchLang(lang) {
+            currentLang = lang;
+            // Update button styles
+            document.getElementById('btn-en').className = lang === 'en'
+                ? 'px-3 py-1 text-xs font-medium rounded-full bg-primary text-white'
+                : 'px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300';
+            document.getElementById('btn-de').className = lang === 'de'
+                ? 'px-3 py-1 text-xs font-medium rounded-full bg-primary text-white'
+                : 'px-3 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300';
+            // Re-render with new language
+            if (lastResponseData) {
+                displayResults(lastResponseData, document.getElementById('result-content'), lang);
+            }
+        }
+
         // Test API connection
         async function testConnection() {
             const status = document.getElementById('connection-status');
@@ -683,7 +709,15 @@
                 }
 
                 const data = await response.json();
-                displayResults(data, result);
+                lastResponseData = data;  // Store for language switching
+                // Show language toggle if both languages available
+                const langToggle = document.getElementById('lang-toggle');
+                if (data?.details?.ai_responses?.en && data?.details?.ai_responses?.de) {
+                    langToggle.classList.remove('hidden');
+                } else {
+                    langToggle.classList.add('hidden');
+                }
+                displayResults(data, document.getElementById('result-content'), currentLang);
 
             } catch (error) {
                 console.error('API Error:', error);
@@ -709,9 +743,11 @@
             }
         }
 
-        function displayResults(data, resultEl) {
+        function displayResults(data, resultEl, lang = 'en') {
             const factCheck = data?.fact_check || {};
-            const aiResponse = data?.ai_response?.response_text || '';
+            // Get response in selected language (fallback to default ai_response)
+            const aiResponses = data?.details?.ai_responses || {};
+            const aiResponse = aiResponses[lang]?.response_text || data?.ai_response?.response_text || '';
             const confidence = factCheck.confidence ? Math.round(factCheck.confidence * 100) : '–';
             const category = factCheck.category || 'Unknown';
             const sources = data?.details?.verified_sources || factCheck.sources || [];
