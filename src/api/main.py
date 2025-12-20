@@ -25,11 +25,12 @@ origins = [
     "http://127.0.0.1:8000",
     "https://dionisiou27.github.io",
     "https://truthshield-demo.surge.sh",
+    "null",  # Allow file:// URLs for local development
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
