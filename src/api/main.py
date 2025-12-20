@@ -1,6 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
 from src.api.detection import router as detection_router
@@ -42,6 +43,11 @@ app.include_router(monitoring_router)
 app.include_router(content_router)
 app.include_router(compliance_router)
 app.include_router(ml_router)
+
+# Serve static files (images, css, etc.) from docs folder
+docs_path = Path(__file__).parent.parent.parent / "docs"
+if docs_path.exists():
+    app.mount("/images", StaticFiles(directory=docs_path / "images"), name="images")
 
 class HealthResponse(BaseModel):
     status: str
