@@ -666,16 +666,15 @@
             `;
 
             try {
-                const response = await fetch(`${API_BASE}/api/v1/detect/fact-check`, {
+                // Use /universal endpoint for Guardian Avatar fact-checking
+                const response = await fetch(`${API_BASE}/api/v1/detect/universal`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         text: input,
-                        company: 'TruthShield',
-                        language: detectLang(input),
-                        generate_ai_response: true
+                        language: detectLang(input)
                     })
                 });
 
