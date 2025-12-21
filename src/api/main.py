@@ -45,9 +45,22 @@ app.include_router(compliance_router)
 app.include_router(ml_router)
 
 # Serve static files (images, css, etc.) from docs folder
-docs_path = Path(__file__).resolve().parent.parent.parent / "docs"
+# Try multiple path resolution methods for compatibility
+import os
+project_root = Path(__file__).resolve().parent.parent.parent
+docs_path = project_root / "docs"
 images_path = docs_path / "images"
-print(f"📁 Static files path: {images_path} (exists: {images_path.exists()})")
+
+# Fallback: try CWD-based path if the above doesn't work
+if not images_path.exists():
+    cwd_images = Path(os.getcwd()) / "docs" / "images"
+    if cwd_images.exists():
+        images_path = cwd_images
+        docs_path = Path(os.getcwd()) / "docs"
+
+print(f"📁 Project root: {project_root}")
+print(f"📁 Docs path: {docs_path} (exists: {docs_path.exists()})")
+print(f"📁 Images path: {images_path} (exists: {images_path.exists()})")
 if images_path.exists():
     app.mount("/images", StaticFiles(directory=str(images_path)), name="images")
 else:
