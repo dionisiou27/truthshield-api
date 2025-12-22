@@ -1,9 +1,25 @@
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
+import os
+
+# Determine paths at module load
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DOCS_PATH = PROJECT_ROOT / "docs"
+IMAGES_PATH = DOCS_PATH / "images"
+
+# Fallback to CWD if needed
+if not IMAGES_PATH.exists():
+    IMAGES_PATH = Path(os.getcwd()) / "docs" / "images"
+    DOCS_PATH = Path(os.getcwd()) / "docs"
+
+print(f"📁 Images path: {IMAGES_PATH} (exists: {IMAGES_PATH.exists()})")
+if IMAGES_PATH.exists():
+    print(f"📁 Images found: {list(IMAGES_PATH.glob('*.png'))}")
+
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
 from src.api.content import router as content_router
@@ -44,27 +60,37 @@ app.include_router(content_router)
 app.include_router(compliance_router)
 app.include_router(ml_router)
 
-# Serve static files (images, css, etc.) from docs folder
-# Try multiple path resolution methods for compatibility
-import os
-project_root = Path(__file__).resolve().parent.parent.parent
-docs_path = project_root / "docs"
-images_path = docs_path / "images"
+# Explicit image route (more reliable than StaticFiles mount on some platforms)
+@app.get("/images/{filename}")
+async def serve_image(filename: str):
+    """Serve images from docs/images folder"""
+    image_file = IMAGES_PATH / filename
+    if image_file.exists() and image_file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']:
+        media_types = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.svg': 'image/svg+xml',
+            '.webp': 'image/webp'
+        }
+        return FileResponse(image_file, media_type=media_types.get(image_file.suffix.lower(), 'image/png'))
+    return Response(status_code=404, content=f"Image not found: {filename}")
 
-# Fallback: try CWD-based path if the above doesn't work
-if not images_path.exists():
-    cwd_images = Path(os.getcwd()) / "docs" / "images"
-    if cwd_images.exists():
-        images_path = cwd_images
-        docs_path = Path(os.getcwd()) / "docs"
-
-print(f"📁 Project root: {project_root}")
-print(f"📁 Docs path: {docs_path} (exists: {docs_path.exists()})")
-print(f"📁 Images path: {images_path} (exists: {images_path.exists()})")
-if images_path.exists():
-    app.mount("/images", StaticFiles(directory=str(images_path)), name="images")
-else:
-    print(f"⚠️ Images folder not found at {images_path}")
+# Debug endpoint to check paths on Render
+@app.get("/debug/paths")
+async def debug_paths():
+    """Debug endpoint to check file paths"""
+    images = list(IMAGES_PATH.glob('*.png')) if IMAGES_PATH.exists() else []
+    return {
+        "project_root": str(PROJECT_ROOT),
+        "docs_path": str(DOCS_PATH),
+        "images_path": str(IMAGES_PATH),
+        "docs_exists": DOCS_PATH.exists(),
+        "images_exists": IMAGES_PATH.exists(),
+        "cwd": os.getcwd(),
+        "images_found": [img.name for img in images]
+    }
 
 class HealthResponse(BaseModel):
     status: str
