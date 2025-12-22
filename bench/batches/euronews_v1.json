@@ -1,0 +1,70 @@
+{
+  "batch_id": "guardian_euronews_anti_eu_v1",
+  "source_platform": "tiktok",
+  "source_account": "euronews",
+  "collection_method": "manual_screenshot_transcription",
+  "purpose": "prototype_testing_guardian",
+  "mode": "shadow",
+  "avatar": "guardian",
+
+  "common_params": {
+    "language": "en",
+    "risk_level": "MEDIUM",
+    "claim_type": "delegitimization_frame",
+    "topic": "eu_security_ukraine",
+    "time_window": "2025-11-26_to_2025-11-28"
+  },
+
+  "claims": [
+    {
+      "claim_id": "euronews_001",
+      "text": "Who is she? Did anybody vote for her?",
+      "cluster": "democratic_delegitimization"
+    },
+    {
+      "claim_id": "euronews_002",
+      "text": "Why are we listening to someone we didn't vote for?",
+      "cluster": "democratic_delegitimization"
+    },
+    {
+      "claim_id": "euronews_003",
+      "text": "Worst dictator in Europe. Disgraceful against the European people.",
+      "cluster": "democratic_delegitimization"
+    },
+    {
+      "claim_id": "euronews_004",
+      "text": "EU is gagging for war with Russia and imposing ridiculous rules.",
+      "cluster": "eu_war_framing"
+    },
+    {
+      "claim_id": "euronews_005",
+      "text": "Europe talks a lot but does nothing. Time for action.",
+      "cluster": "eu_incompetence_frame"
+    },
+    {
+      "claim_id": "euronews_006",
+      "text": "Russia is not the problem. Europe is the real problem.",
+      "cluster": "blame_shift"
+    },
+    {
+      "claim_id": "euronews_007",
+      "text": "Putin was right from the start. He is fighting NATO in Ukraine.",
+      "cluster": "foreign_influence_narrative"
+    },
+    {
+      "claim_id": "euronews_008",
+      "text": "The war will stop only when Putin decides. Europe is weak.",
+      "cluster": "authoritarian_strength_frame"
+    },
+    {
+      "claim_id": "euronews_009",
+      "text": "Europe is a paper tiger. All words, zero military strength.",
+      "cluster": "authoritarian_strength_frame"
+    },
+    {
+      "claim_id": "euronews_010",
+      "text": "The EU wants war. They are pushing Ukraine to keep fighting.",
+      "cluster": "eu_war_framing"
+    }
+  ]
+}

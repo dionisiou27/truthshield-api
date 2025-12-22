@@ -1,8 +1,6 @@
 import os
 import asyncio
 import logging
-import ssl
-import certifi
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import json
@@ -13,17 +11,20 @@ import unicodedata
 from dotenv import load_dotenv
 load_dotenv()  # Force load .env file
 
-# Configure SSL certificates globally
-os.environ['SSL_CERT_FILE'] = certifi.where()
-os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
-
 import httpx
 import openai
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
-# ML Learning System
-from .ml_learning import ml_system, FeatureExtractor
+# ML Pipeline Integration
+from src.ml.guardian.claim_router import (
+    ClaimRouter, ClaimAnalysis, ClaimType, RiskLevel,
+    ClaimVolatility, TemporalMode, ResponseMode,
+    ResponseModeResult, EvidenceQuality,
+)
+from src.ml.learning.bandit import (
+    GuardianBandit, BanditContext, ToneVariant, SourceMixStrategy, get_bandit
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,19 +54,47 @@ class AIInfluencerResponse(BaseModel):
     company_voice: str
     bot_name: Optional[str] = None  # Added for Guardian Avatar
     bot_type: Optional[str] = None  # Added for Guardian Avatar
-    interaction_id: Optional[str] = None  # ML tracking ID for engagement updates
 
 AVATAR_COMPANIES = {"GuardianAvatar", "PolicyAvatar", "MemeAvatar", "EuroShieldAvatar", "ScienceAvatar"}
 
+# Global TikTok Output Rules - applies to ALL avatars
+TIKTOK_OUTPUT_RULES = {
+    "platform": "TikTok",
+    "output_length": {
+        "sentences": "4-5",
+        "max_chars": 450
+    },
+    "sources": {
+        "required": 3,
+        "format": "Quellen: A | B | C"  # or "Sources: A | B | C" for EN
+    },
+    "learning_mode": "dynamic",
+    "optimization_targets": [
+        "top_comment_probability",
+        "reply_quality",
+        "like_reply_ratio",
+        "share_proxy"
+    ],
+    "tone_adaptation": "ML-driven (reinforcement from performance metrics)",
+    "no_static_templates": True
+}
+
 class TruthShieldAI:
-    """Real AI-powered fact-checking engine"""
-    
+    """Real AI-powered fact-checking engine with ML Pipeline integration"""
+
     def __init__(self):
         self.openai_client = None
         self.setup_openai()
         self.last_api_usage: Dict[str, Dict[str, Any]] = {}
         self.last_mediawiki_results: List[Dict[str, Any]] = []
-        
+
+        # ML Pipeline Components
+        self.claim_router = ClaimRouter()
+        self.bandit = get_bandit("demo_data/ml/bandit_state.json")
+        self.last_claim_analysis: Optional[ClaimAnalysis] = None
+        self.last_tone_variant: Optional[ToneVariant] = None
+        logger.info("🧠 ML Pipeline initialized: ClaimRouter + GuardianBandit")
+
         # Company-specific response templates
         self.company_personas = {
             "BMW": {
@@ -92,11 +121,11 @@ class TruthShieldAI:
                 "style": "engineering excellence with human touch",
                 "emoji": "⚡"
             },
-            # Guardian Avatar - Boundary Enforcement & De-escalation
+            # Guardian Avatar - Boundary Enforcement Role
             "GuardianAvatar": {
-                "voice": "authoritative, calm, firm, protective",
-                "tone": "low emotionality, high authority, neutral empathy, zero humor",
-                "style": "Boundary enforcer - de-escalation through clear limits and accountability",
+                "voice": "authoritative boundary enforcer, de-escalation specialist",
+                "tone": "low emotionality, high authority, neutral empathy, no humor",
+                "style": "Visible moderation presence establishing boundaries and accountability",
                 "emoji": "🛡️",
                 "role": "boundary_enforcement",
                 "primary_function": "de-escalation_and_protection",
@@ -104,25 +133,28 @@ class TruthShieldAI:
                 "behavioral_rules": [
                     "never debate opinions",
                     "never ask questions",
-                    "never use irony or humor",
-                    "always set a clear boundary",
+                    "never use irony",
+                    "always set a boundary",
                     "signal observation and accountability"
                 ],
-                "output_structure": {
-                    "sentence_1": "clear stop / boundary statement",
-                    "sentence_2": "name the harm or rule violation",
-                    "sentence_3": "explain risk (violence, normalization, harm)",
-                    "sentence_4": "redirect to acceptable discourse",
-                    "sentence_5": "cite sources"
-                },
+                "output_structure": [
+                    "sentence_1: clear stop / boundary",
+                    "sentence_2: name harm or rule violation",
+                    "sentence_3: explain risk (violence, normalization, harm)",
+                    "sentence_4: redirect to acceptable discourse",
+                    "sentence_5: sources"
+                ],
+                "sources_priority": ["EU Fundamental Rights", "UN Hate Speech Guidance", "bpb (German civic education)"],
                 "examples": {
                     "de": [
-                        "Diese Aussage überschreitet eine Grenze. Sie enthält Desinformation, die nachweislich falsch ist. Solche Behauptungen können zu realen Schäden führen und gefährliche Narrative normalisieren. Faktenbasierte Diskussionen sind willkommen. Quellen: [Quelle]",
-                        "Stop. Diese Behauptung ist dokumentiert falsch. Die Verbreitung solcher Falschinformationen gefährdet den öffentlichen Diskurs. Wir laden zu konstruktivem Austausch auf Basis verifizierter Fakten ein. Quellen: [Quelle]"
+                        "Stop. Diese Behauptung verbreitet Fehlinformation. Solche Falschaussagen können zu realem Schaden führen und das Vertrauen in demokratische Institutionen untergraben. Faktenbasierte Diskussion ist hier der richtige Weg. Quelle: EU Fundamental Rights Agency.",
+                        "Diese Aussage ist nachweislich falsch. Die Verbreitung solcher Behauptungen normalisiert Desinformation. Bitte prüfen Sie die offiziellen Quellen. Referenz: Bundeszentrale für politische Bildung.",
+                        "Halt. Diese Behauptung widerspricht etablierten Fakten. Fehlinformation gefährdet den öffentlichen Diskurs. Verifizierte Informationen finden Sie bei den unten genannten Quellen."
                     ],
                     "en": [
-                        "This statement crosses a line. It contains demonstrably false information. Such claims can lead to real-world harm and normalize dangerous narratives. Fact-based discussions are welcome. Sources: [Source]",
-                        "Stop. This claim is documented as false. Spreading such misinformation endangers public discourse. We invite constructive exchange based on verified facts. Sources: [Source]"
+                        "Stop. This claim spreads misinformation. Such false statements can lead to real harm and undermine trust in democratic institutions. Fact-based discussion is the appropriate path forward. Source: EU Fundamental Rights Agency.",
+                        "This statement is demonstrably false. Spreading such claims normalizes disinformation. Please verify with official sources. Reference: UN Hate Speech Framework.",
+                        "Hold. This claim contradicts established facts. Misinformation endangers public discourse. Verified information can be found in the sources below."
                     ]
                 }
             },
@@ -205,38 +237,410 @@ class TruthShieldAI:
         }
     
     def setup_openai(self):
-        """Initialize OpenAI client with proper SSL configuration"""
+        """Initialize OpenAI client"""
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             logger.warning("⚠️ OPENAI_API_KEY not found - fact-checking will be limited")
             return
 
-        # Check if we should disable SSL verification (for development environments with proxies)
-        disable_ssl = os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
-
         try:
-            # Create custom httpx client
-            # Note: verify=False is for development environments with self-signed proxy certs
-            http_client = httpx.Client(
-                verify=False if disable_ssl else certifi.where(),
-                timeout=httpx.Timeout(60.0, connect=10.0)
-            )
-
-            self.openai_client = openai.OpenAI(
-                api_key=api_key,
-                http_client=http_client
-            )
-            ssl_mode = "disabled (dev mode)" if disable_ssl else "enabled"
-            logger.info(f"✅ OpenAI client initialized (SSL verification: {ssl_mode})")
+            self.openai_client = openai.OpenAI(api_key=api_key)
+            logger.info("✅ OpenAI client initialized")
         except Exception as e:
             logger.error(f"❌ OpenAI setup failed: {e}")
-            # Fallback: try without custom http_client
-            try:
-                self.openai_client = openai.OpenAI(api_key=api_key)
-                logger.info("✅ OpenAI client initialized (fallback mode)")
-            except Exception as e2:
-                logger.error(f"❌ OpenAI fallback also failed: {e2}")
-    
+
+    def _get_tone_instructions(self, tone_variant: ToneVariant, language: str) -> str:
+        """
+        Get dynamic tone instructions based on ML-selected variant.
+        4 distinct tone buckets for real ML differentiation.
+        """
+        tone_configs = {
+            ToneVariant.EMPATHIC: {
+                "de": """
+                VIBE: Verstehend, dann korrigierend. Du checkst die Angst/Sorge dahinter.
+                HOOK: "Ich versteh die Sorge, aber..." / "Klingt scary, ist aber..."
+                ENERGIE: Warm aber klar. Kein Mitleid, sondern Verständnis.
+                BEISPIEL: "Ich versteh warum das beunruhigt. Aber hier sind die Fakten: [Zahl]. Checkt die Quelle."
+                """,
+                "en": """
+                VIBE: Understanding first, then correcting. You get why people worry.
+                HOOK: "I get why this sounds scary, but..." / "Makes sense to worry, but..."
+                ENERGY: Warm but clear. Not pity, just understanding.
+                EXAMPLE: "I get why this sounds scary. But here's what's actually true: [fact]. Check the source."
+                """
+            },
+            ToneVariant.WITTY: {
+                "de": """
+                VIBE: Locker, selbstbewusst, leicht frech. Fakten mit Persönlichkeit.
+                HOOK: "Nope." / "Ähm, ne." / "Plot twist:"
+                ENERGIE: Entspannt-überlegen. Kein Stress, nur Klarheit.
+                BEISPIEL: "Nope. Was wirklich passiert ist: [Fakt]. Easy zu checken."
+                """,
+                "en": """
+                VIBE: Casual, confident, slightly cheeky. Facts with personality.
+                HOOK: "Nope." / "Um, no." / "Plot twist:"
+                ENERGY: Relaxed-confident. No stress, just clarity.
+                EXAMPLE: "Nope. Here's what actually happened: [fact]. Easy to check."
+                """
+            },
+            ToneVariant.FIRM: {
+                "de": """
+                VIBE: Direkt, keine Umwege. Fakt rein, fertig.
+                HOOK: "Falsch." / "Das stimmt nicht." / "Die Daten zeigen:"
+                ENERGIE: Sachlich-autoritär. Kein Raum für Diskussion.
+                BEISPIEL: "Falsch. [Konkreter Fakt mit Zahl]. Quelle steht unten."
+                """,
+                "en": """
+                VIBE: Direct, no detours. Fact in, done.
+                HOOK: "False." / "That's not true." / "The data shows:"
+                ENERGY: Matter-of-fact authoritative. No room for debate.
+                EXAMPLE: "False. [Specific fact with number]. Source below."
+                """
+            },
+            ToneVariant.SPICY: {
+                "de": """
+                VIBE: Bold, etwas provokant, aber faktisch korrekt. Weckt auf.
+                HOOK: "Wilder Take." / "Reality Check:" / "Uff, ne."
+                ENERGIE: Selbstbewusst-frech. Bricht die Bubble.
+                BEISPIEL: "Wilder Take. Realität: [krasser Fakt]. Kannst du nachschauen."
+                """,
+                "en": """
+                VIBE: Bold, slightly provocative, but factually correct. Wakes people up.
+                HOOK: "Wild take." / "Reality check:" / "Oof, no."
+                ENERGY: Confident-sassy. Breaks the bubble.
+                EXAMPLE: "Wild take. Reality: [striking fact]. Look it up."
+                """
+            }
+        }
+        return tone_configs.get(tone_variant, tone_configs[ToneVariant.FIRM]).get(language, "en")
+
+    def _get_opening_style(self, tone_variant: ToneVariant, language: str) -> str:
+        """
+        Get dynamic opening phrases based on ML-selected tone.
+        Each bucket has distinct hooks - this is where ML learns what works.
+        """
+        openings = {
+            ToneVariant.EMPATHIC: {
+                "de": [
+                    "Ich versteh die Sorge.",
+                    "Klingt scary, aber:",
+                    "Verständlich, dass das nervt.",
+                    "Die Angst ist echt, aber:",
+                ],
+                "en": [
+                    "I get why this sounds scary.",
+                    "Makes sense to worry, but:",
+                    "I hear you, but here's the thing:",
+                    "The concern is real, but:",
+                ]
+            },
+            ToneVariant.WITTY: {
+                "de": [
+                    "Nope.",
+                    "Ähm, ne.",
+                    "Plot twist:",
+                    "Spoiler:",
+                    "Kurze Unterbrechung:",
+                ],
+                "en": [
+                    "Nope.",
+                    "Um, no.",
+                    "Plot twist:",
+                    "Spoiler alert:",
+                    "Quick interruption:",
+                ]
+            },
+            ToneVariant.FIRM: {
+                "de": [
+                    "Falsch.",
+                    "Das stimmt nicht.",
+                    "Die Daten zeigen:",
+                    "Fakt:",
+                    "Klarstellung:",
+                ],
+                "en": [
+                    "False.",
+                    "That's not true.",
+                    "The data shows:",
+                    "Fact:",
+                    "Correction:",
+                ]
+            },
+            ToneVariant.SPICY: {
+                "de": [
+                    "Wilder Take.",
+                    "Reality Check:",
+                    "Uff.",
+                    "Bold move, aber:",
+                    "Interessante Theorie.",
+                ],
+                "en": [
+                    "Wild take.",
+                    "Reality check:",
+                    "Oof.",
+                    "Bold claim, but:",
+                    "Interesting theory.",
+                ]
+            }
+        }
+        import random
+        options = openings.get(tone_variant, openings[ToneVariant.FIRM]).get(language, "en")
+        return random.choice(options) if isinstance(options, list) else options
+
+    def _get_temporal_instructions(
+        self,
+        temporal_mode: TemporalMode,
+        volatility: ClaimVolatility,
+        is_territorial: bool,
+        language: str
+    ) -> str:
+        """
+        Get time-aware response instructions based on claim volatility.
+        Critical for TikTok where upload time ≠ claim time.
+        """
+        if temporal_mode == TemporalMode.LIVE_REQUIRED:
+            if is_territorial:
+                return {
+                    "de": """
+                    ⚡ ZEITKRITISCH: Territorial-Claim. Die Lage kann sich stündlich ändern.
+                    - NIEMALS absolute Aussagen ("X kontrolliert Y")
+                    - IMMER hedgen: "Nach aktuellen Berichten...", "Stand der letzten Meldungen..."
+                    - Zeitliche Vorsicht: "Claims zur Gebietsrollen können sich schnell ändern"
+                    """,
+                    "en": """
+                    ⚡ TIME-CRITICAL: Territorial claim. Situation can change hourly.
+                    - NEVER make absolute statements ("X controls Y")
+                    - ALWAYS hedge: "According to latest reports...", "As of recent updates..."
+                    - Temporal caution: "Claims about territorial control change rapidly"
+                    """
+                }.get(language, "en")
+            else:
+                return {
+                    "de": """
+                    ⚡ LIVE-CHECK ERFORDERLICH: Volatile Situation.
+                    - Vorsichtige Formulierung: "Nach aktuellen Informationen..."
+                    - Keine absoluten Behauptungen
+                    - Empfehlung: Aktuelle Quellen prüfen
+                    """,
+                    "en": """
+                    ⚡ LIVE CHECK REQUIRED: Volatile situation.
+                    - Cautious phrasing: "Based on current information..."
+                    - No absolute claims
+                    - Recommend: Check latest sources
+                    """
+                }.get(language, "en")
+
+        elif temporal_mode == TemporalMode.AMBIGUOUS:
+            return {
+                "de": """
+                ❓ ZEITLICH UNKLAR: Gemischte Signale.
+                - Vorsichtig bleiben
+                - Keine definitiven Aussagen
+                - Bei Unsicherheit hedgen
+                """,
+                "en": """
+                ❓ TEMPORALLY UNCLEAR: Mixed signals.
+                - Stay cautious
+                - No definitive statements
+                - Hedge when uncertain
+                """
+            }.get(language, "en")
+
+        # ARCHIVE_OK - can be more direct
+        return {
+            "de": "✅ Stabile Faktenlage. Direkte Aussagen möglich.",
+            "en": "✅ Stable factual basis. Direct statements OK."
+        }.get(language, "en")
+
+    def _get_response_mode_instructions(
+        self,
+        response_mode_result: Optional[ResponseModeResult],
+        is_io: bool,
+        io_indicators: List[str],
+        language: str
+    ) -> str:
+        """
+        Get response framing instructions based on detected response mode.
+        Now supports primary + secondary (overlay) modes.
+
+        Routing Matrix:
+        - CAUTIOUS > LIVE_SITUATION > IO_CONTEXT > DEBUNK
+        - IO_CONTEXT can be overlay on LIVE_SITUATION
+        """
+        # Backwards compatibility: if no ResponseModeResult, use legacy logic
+        if response_mode_result is None:
+            return self._get_legacy_response_mode_instructions(
+                ResponseMode.DEBUNK, is_io, io_indicators, language
+            )
+
+        primary = response_mode_result.primary
+        secondary = response_mode_result.secondary
+        evidence_quality = response_mode_result.evidence_quality
+        io_score = response_mode_result.io_score
+
+        instructions_parts = []
+
+        # === EVIDENCE QUALITY WARNING (always first) ===
+        if evidence_quality == EvidenceQuality.WEAK:
+            instructions_parts.append({
+                "de": """
+⚠️ SCHWACHE EVIDENZLAGE
+- Du MUSST Hedging verwenden: "nach verfügbaren Berichten", "stand jetzt"
+- KEINE definitiven Aussagen
+- Anerkenne Unsicherheit explizit
+                """,
+                "en": """
+⚠️ WEAK EVIDENCE BASE
+- You MUST use hedging: "according to available reports", "as of now"
+- NO definitive statements
+- Acknowledge uncertainty explicitly
+                """
+            }.get(language, "en"))
+
+        # === PRIMARY MODE INSTRUCTIONS ===
+        if primary == ResponseMode.CAUTIOUS:
+            instructions_parts.append({
+                "de": """
+❓ VORSICHT-MODUS: Unklare Faktenlage.
+- Hedging ist PFLICHT
+- Keine definitiven Aussagen möglich
+- Auf weitere Quellen verweisen
+- "Die Sachlage ist nicht eindeutig geklärt..."
+                """,
+                "en": """
+❓ CAUTION MODE: Unclear factual basis.
+- Hedging is MANDATORY
+- No definitive statements possible
+- Refer to additional sources
+- "The facts are not definitively established..."
+                """
+            }.get(language, "en"))
+
+        elif primary == ResponseMode.LIVE_SITUATION:
+            instructions_parts.append({
+                "de": """
+⚡ LIVE-SITUATION: Fakten sind fluid.
+- Keine absoluten Aussagen über territoriale Kontrolle
+- "Nach aktuellen Berichten...", "Stand der letzten Meldungen..."
+- Die Lage ändert sich schnell
+- Datum/Zeit des letzten Updates nennen wenn möglich
+                """,
+                "en": """
+⚡ LIVE SITUATION: Facts are fluid.
+- No absolute statements about territorial control
+- "According to latest reports...", "As of recent updates..."
+- Situation changes rapidly
+- Mention date/time of last update if possible
+                """
+            }.get(language, "en"))
+
+        elif primary == ResponseMode.IO_CONTEXT:
+            instructions_parts.append({
+                "de": f"""
+📢 INFORMATIONSOPERATION ERKANNT (Score: {io_score:.2f})
+Indikatoren: {', '.join(io_indicators) if io_indicators else 'Narrativ-Muster'}
+
+WICHTIG: Dies ist KEIN einfacher Faktencheck.
+Der Claim ist Teil einer koordinierten Narrative.
+
+Deine Antwort MUSS:
+1. Das Narrativ benennen, nicht nur den Fakt widerlegen
+2. "Diese Behauptung ist Teil einer laufenden Informationskampagne..."
+3. Kontext geben: WARUM wird das jetzt verbreitet?
+4. Nuanciert bleiben: Teilwahrheiten anerkennen, Framing entlarven
+
+NICHT: "Das ist falsch."
+SONDERN: "Diese Behauptung zirkuliert im Rahmen einer Kampagne..."
+                """,
+                "en": f"""
+📢 INFORMATION OPERATION DETECTED (Score: {io_score:.2f})
+Indicators: {', '.join(io_indicators) if io_indicators else 'Narrative patterns'}
+
+IMPORTANT: This is NOT a simple fact-check.
+The claim is part of a coordinated narrative campaign.
+
+Your response MUST:
+1. Name the narrative, don't just refute the fact
+2. "This claim is part of an ongoing information campaign..."
+3. Give context: WHY is this being spread now?
+4. Stay nuanced: Acknowledge partial truths, expose framing
+
+NOT: "This is false."
+BUT: "This claim circulates as part of a campaign..."
+                """
+            }.get(language, "en"))
+
+        elif primary == ResponseMode.DEBUNK:
+            instructions_parts.append({
+                "de": "✅ Standard Faktencheck. Klare Aussagen erlaubt.",
+                "en": "✅ Standard fact-check. Clear statements allowed."
+            }.get(language, "en"))
+
+        # === SECONDARY (OVERLAY) MODE INSTRUCTIONS ===
+        if secondary == ResponseMode.IO_CONTEXT:
+            # This is the key case: LIVE_SITUATION + IO_CONTEXT
+            instructions_parts.append({
+                "de": f"""
+📢 ZUSÄTZLICH: IO-OVERLAY (Score: {io_score:.2f})
+Indikatoren: {', '.join(io_indicators) if io_indicators else 'Narrativ-Muster'}
+
+Diese Live-Situation wird im Rahmen einer IO instrumentalisiert.
+- Nenne das Narrativ ZUSÄTZLICH zu den Live-Fakten
+- "Diese sich schnell ändernde Lage wird im Rahmen einer Kampagne instrumentalisiert..."
+- Trenne: Was wir wissen vs. Wie es geframed wird
+                """,
+                "en": f"""
+📢 ADDITIONALLY: IO OVERLAY (Score: {io_score:.2f})
+Indicators: {', '.join(io_indicators) if io_indicators else 'Narrative patterns'}
+
+This live situation is being instrumentalized as part of an IO.
+- Name the narrative IN ADDITION to live facts
+- "This rapidly changing situation is being instrumentalized as part of a campaign..."
+- Separate: What we know vs. How it's being framed
+                """
+            }.get(language, "en"))
+
+        return "\n".join(instructions_parts)
+
+    def _get_legacy_response_mode_instructions(
+        self,
+        response_mode: ResponseMode,
+        is_io: bool,
+        io_indicators: List[str],
+        language: str
+    ) -> str:
+        """Legacy method for backwards compatibility."""
+        if response_mode == ResponseMode.IO_CONTEXT:
+            return {
+                "de": f"""
+📢 INFORMATIONSOPERATION ERKANNT
+Indikatoren: {', '.join(io_indicators) if io_indicators else 'Narrativ-Muster'}
+Der Claim ist Teil einer koordinierten Narrative.
+                """,
+                "en": f"""
+📢 INFORMATION OPERATION DETECTED
+Indicators: {', '.join(io_indicators) if io_indicators else 'Narrative patterns'}
+The claim is part of a coordinated narrative campaign.
+                """
+            }.get(language, "en")
+
+        elif response_mode == ResponseMode.LIVE_SITUATION:
+            return {
+                "de": "⚡ LIVE-SITUATION: Fakten sind fluid. Keine absoluten Aussagen.",
+                "en": "⚡ LIVE SITUATION: Facts are fluid. No absolute statements."
+            }.get(language, "en")
+
+        elif response_mode == ResponseMode.CAUTIOUS:
+            return {
+                "de": "❓ VORSICHT: Unklare Faktenlage. Hedging verwenden.",
+                "en": "❓ CAUTION: Unclear factual basis. Use hedging."
+            }.get(language, "en")
+
+        return {
+            "de": "✅ Standard Faktencheck. Klare Aussagen erlaubt.",
+            "en": "✅ Standard fact-check. Clear statements allowed."
+        }.get(language, "en")
+
     async def fact_check_claim(self, text: str, company: str = "BMW") -> FactCheckResult:
         """Main fact-checking pipeline"""
         start_time = datetime.now()
@@ -248,8 +652,8 @@ class TruthShieldAI:
             # Step 2: Search for supporting sources  
             sources = await self._search_sources(text, company)
             
-            # Step 3: Determine final verdict (with ML pattern boost)
-            verdict = self._determine_verdict(analysis, sources, claim_text=text)
+            # Step 3: Determine final verdict
+            verdict = self._determine_verdict(analysis, sources)
             verdict = self._apply_special_case_overrides(text, sources, verdict)
             
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -602,25 +1006,26 @@ class TruthShieldAI:
                 """
             else:
                 # Company-specific prompt (existing code)
+                persona = self.company_personas.get(company, self.company_personas["BMW"])
                 prompt = f"""
                 You are an expert fact-checker specializing in {company} and German industry claims.
-                
+
                 Analyze this claim for factual accuracy:
                 "{text}"
-                
+
                 CONTEXT KNOWLEDGE for {company}:
                 - Electric vehicles (BMW i3, i4, iX) are extensively tested in extreme cold
                 - BMW conducts winter testing at -40°C in Arjeplog, Sweden annually
                 - EV batteries lose range in cold but DO NOT "explode"
                 - Thermal management systems prevent dangerous overheating/cooling
                 - No documented cases of EV explosions due to cold weather
-                
+
                 ANALYSIS CRITERIA:
                 1. Does this contradict established facts about {company}?
                 2. Are there inflammatory/sensational terms without basis?
                 3. Does this spread unfounded fear about the technology?
                 4. Would this claim damage the company's reputation unfairly?
-                
+
                 Respond with JSON:
                 {{
                     "is_verifiable": true,
@@ -632,24 +1037,31 @@ class TruthShieldAI:
                     "factual_basis": "established facts"
                 }}
                 """
-            
+
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better analysis
                 messages=[
                     {
-                        "role": "system", 
-                        "content": f"You are {company}, a {persona['style']}. Be decisive in identifying clear misinformation. Use factual knowledge and reasoning."
+                        "role": "system",
+                        "content": f"You are {company}, a {persona['style']}. Be decisive in identifying clear misinformation. Use factual knowledge and reasoning. IMPORTANT: Respond ONLY with valid JSON, no markdown, no code blocks, no explanation."
                     },
                     {
-                        "role": "user", 
+                        "role": "user",
                         "content": prompt
                     }
                 ],
-                temperature=0.1  # Lower temperature for more consistent responses
+                temperature=0.1,  # Lower temperature for more consistent responses
+                response_format={"type": "json_object"}  # Force JSON response
             )
-            
+
             content = response.choices[0].message.content
+            # Clean up potential markdown code blocks
+            if content.startswith("```"):
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:]
+            content = content.strip()
             result = json.loads(content)
             
             # Override plausibility score for logical contradictions
@@ -686,120 +1098,13 @@ class TruthShieldAI:
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
             return {
-                "assessment": "error",
+                "assessment": "error", 
                 "reasoning": str(e),
                 "plausibility_score": 50,
                 "red_flags": [],
                 "misinformation_indicators": []
             }
-
-    def _is_scientific_claim(self, text: str) -> bool:
-        """Detect if a claim is scientific/medical in nature"""
-        text_lower = text.lower()
-
-        scientific_keywords = [
-            # Medical/Health
-            "vaccine", "impfung", "impfstoff", "covid", "corona", "virus", "disease", "krankheit",
-            "treatment", "behandlung", "medication", "medikament", "symptom", "diagnosis",
-            "cancer", "krebs", "diabetes", "heart", "herz", "infection", "infektion",
-            "antibiotics", "antibiotika", "therapy", "therapie", "clinical", "klinisch",
-
-            # Science
-            "study", "studie", "research", "forschung", "scientist", "wissenschaftler",
-            "experiment", "laboratory", "labor", "peer-reviewed", "published", "veröffentlicht",
-            "evidence", "beweis", "data", "daten", "statistics", "statistik",
-
-            # Environment/Climate
-            "climate", "klima", "environment", "umwelt", "pollution", "co2", "emission",
-            "global warming", "erderwärmung", "renewable", "erneuerbar",
-
-            # Technology/Physics
-            "radiation", "strahlung", "5g", "electromagnetic", "quantum", "nuclear", "nuklear",
-            "genetic", "genetisch", "dna", "rna", "mrna", "cell", "zelle",
-
-            # Biology
-            "evolution", "species", "organism", "protein", "gene", "genom", "mutation"
-        ]
-
-        return any(keyword in text_lower for keyword in scientific_keywords)
-
-    def _is_health_claim(self, text: str) -> bool:
-        """Detect if a claim is health-related (for WHO sources)"""
-        text_lower = text.lower()
-
-        health_keywords = [
-            # Diseases
-            "covid", "corona", "virus", "disease", "krankheit", "pandemic", "pandemie",
-            "cancer", "krebs", "diabetes", "heart disease", "herzkrankheit", "stroke", "schlaganfall",
-            "hiv", "aids", "malaria", "tuberculosis", "tb", "ebola", "influenza", "grippe",
-            "measles", "masern", "polio", "hepatitis", "cholera", "dengue",
-
-            # Vaccines & Treatment
-            "vaccine", "impfung", "impfstoff", "vaccination", "immunization", "immunisierung",
-            "treatment", "behandlung", "therapy", "therapie", "medication", "medikament",
-            "antibiotics", "antibiotika", "antiviral",
-
-            # Health conditions
-            "obesity", "übergewicht", "fettleibigkeit", "depression", "mental health", "psychische gesundheit",
-            "addiction", "sucht", "alcohol", "alkohol", "tobacco", "tabak", "smoking", "rauchen",
-            "drug", "drogen",
-
-            # Health systems
-            "who", "world health", "weltgesundheit", "public health", "öffentliche gesundheit",
-            "healthcare", "gesundheitswesen", "hospital", "krankenhaus", "doctor", "arzt",
-
-            # Nutrition & Lifestyle
-            "nutrition", "ernährung", "diet", "diät", "exercise", "bewegung", "sleep", "schlaf"
-        ]
-
-        return any(keyword in text_lower for keyword in health_keywords)
-
-    async def _search_academic_sources(self, query: str) -> List[Dict]:
-        """Search academic databases: PubMed, arXiv, Semantic Scholar"""
-        all_results = []
-
-        # PubMed - Medical/Life Sciences (FREE, no key needed)
-        try:
-            from src.services.pubmed_api import search_pubmed
-            pubmed_results = await search_pubmed(query, max_results=3)
-            all_results.extend(pubmed_results)
-            logger.info(f"📚 PubMed: {len(pubmed_results)} results")
-        except Exception as e:
-            logger.error(f"PubMed search failed: {e}")
-
-        # arXiv - Preprints (FREE, no key needed)
-        try:
-            from src.services.arxiv_api import search_arxiv
-            arxiv_results = await search_arxiv(query, max_results=2)
-            all_results.extend(arxiv_results)
-            logger.info(f"📄 arXiv: {len(arxiv_results)} results")
-        except Exception as e:
-            logger.error(f"arXiv search failed: {e}")
-
-        # Semantic Scholar - Citations & Influence (FREE, no key needed)
-        try:
-            from src.services.semantic_scholar_api import search_semantic_scholar
-            ss_results = await search_semantic_scholar(query, max_results=2)
-            all_results.extend(ss_results)
-            logger.info(f"🎓 Semantic Scholar: {len(ss_results)} results")
-        except Exception as e:
-            logger.error(f"Semantic Scholar search failed: {e}")
-
-        # WHO - Health Information (FREE, no key needed)
-        if self._is_health_claim(query):
-            try:
-                from src.services.who_api import search_who
-                who_results = await search_who(query, max_results=3)
-                all_results.extend(who_results)
-                logger.info(f"🏥 WHO: {len(who_results)} results")
-            except Exception as e:
-                logger.error(f"WHO search failed: {e}")
-
-        # Sort by credibility score
-        all_results.sort(key=lambda x: x.get('credibility_score', 0), reverse=True)
-
-        return all_results
-
+    
     async def _search_sources(self, query: str, company: str = "GuardianAvatar") -> List[Source]:
         """Search for sources to verify the claim using real fact-checking APIs and scrapers"""
         try:
@@ -833,16 +1138,14 @@ class TruthShieldAI:
             google_api_available = bool(settings.google_api_key and settings.google_api_key != "your_google_api_key_here")
             news_api_available = bool(settings.news_api_key and settings.news_api_key != "your_news_api_key_here")
             claimbuster_api_available = bool(settings.claimbuster_api_key and settings.claimbuster_api_key != "your_claimbuster_api_key_here")
-            core_api_available = bool(getattr(settings, 'core_api_key', None))
             api_usage = {
                 "google_fact_check": {"available": google_api_available, "called": False, "results": 0, "error": None},
                 "news_api": {"available": news_api_available, "called": False, "results": 0, "error": None},
                 "claimbuster": {"available": claimbuster_api_available, "called": False, "results": 0, "error": None},
                 "mediawiki": {"available": True, "called": False, "results": 0, "error": None},
-                "academic": {"available": True, "called": False, "results": 0, "error": None},  # PubMed, arXiv, Semantic Scholar are free
                 "fallback_sources_added": 0
             }
-            logger.info(f"API Status - Google: {'✅' if google_api_available else '❌'}, News: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}, Academic: ✅")
+            logger.info(f"API Status - Google Fact Check: {'✅' if google_api_available else '❌'}, NewsAPI: {'✅' if news_api_available else '❌'}, ClaimBuster: {'✅' if claimbuster_api_available else '❌'}")
             
             # Start with real Google Fact Check API results
             sources = []
@@ -948,56 +1251,7 @@ class TruthShieldAI:
                 except Exception as e:
                     logger.error(f"❌ ClaimBuster API error: {e}")
                     api_usage["claimbuster"]["error"] = str(e)
-
-            # 🎓 ACADEMIC SOURCES (PubMed, arXiv, Semantic Scholar)
-            # GuardianAvatar uses ALL sources, ScienceAvatar always uses academic, others only for scientific claims
-            should_use_academic = (
-                company == "GuardianAvatar" or  # Guardian = all sources
-                company == "ScienceAvatar" or   # Science = always academic
-                self._is_scientific_claim(truncated_query)  # Others = only for scientific claims
-            )
-            if should_use_academic:
-                try:
-                    academic_results = await self._search_academic_sources(truncated_query)
-                    api_usage["academic"]["called"] = True
-                    api_usage["academic"]["results"] = len(academic_results)
-
-                    for result in academic_results[:5]:  # Max 5 academic sources
-                        source = Source(
-                            url=result['url'],
-                            title=result['title'],
-                            snippet=result['snippet'],
-                            credibility_score=result['credibility_score'],
-                            date_published=result.get('pub_date', '')
-                        )
-                        sources.append(source)
-                        logger.info(f"🎓 Academic: {result['source']} - {result['title'][:50]}...")
-
-                except Exception as e:
-                    logger.error(f"❌ Academic sources error: {e}")
-                    api_usage["academic"]["error"] = str(e)
-
-            # 📰 RSS NEWS (Live news from trusted sources - FREE, no key needed)
-            # GuardianAvatar always uses RSS news for current events context
-            if company == "GuardianAvatar" or not news_api_available:
-                try:
-                    from src.services.rss_news import search_rss_news
-                    rss_results = await search_rss_news(truncated_query, detected_lang, max_results=3)
-
-                    for result in rss_results[:3]:  # Max 3 RSS news articles
-                        source = Source(
-                            url=result['url'],
-                            title=result['title'],
-                            snippet=result['snippet'],
-                            credibility_score=result['credibility_score'],
-                            date_published=result.get('pub_date', '')
-                        )
-                        sources.append(source)
-                        logger.info(f"📰 RSS News: {result['source']} - {result['title'][:50]}...")
-
-                except Exception as e:
-                    logger.warning(f"⚠️ RSS News error (non-critical): {e}")
-
+            
             # Add bot-specific sources with primary/secondary prioritization
             try:
                 prioritized_sources = self._get_prioritized_sources(query, company)
@@ -1121,27 +1375,81 @@ class TruthShieldAI:
             },
             "GuardianAvatar": {
                 "primary": [
-                    Source(url="https://www.factcheck.org/", title="FactCheck.org", 
-                           snippet="Non-partisan fact-checking of political and social claims...", 
+                    Source(url="https://www.factcheck.org/", title="FactCheck.org",
+                           snippet="Non-partisan fact-checking of political and social claims...",
                            credibility_score=0.9, date_published="2024-01-01"),
-                    Source(url="https://www.snopes.com/", title="Snopes", 
-                           snippet="Fact-checking urban legends, rumors, and misinformation...", 
-                           credibility_score=0.85, date_published="2024-01-01")
+                    Source(url="https://correctiv.org/", title="Correctiv Faktencheck",
+                           snippet="German investigative journalism and fact-checking...",
+                           credibility_score=0.9, date_published="2024-01-01")
                 ],
-                "secondary": ["mimikama", "correctiv", "wikipedia", "factcheckeu", "politifact"]
+                "secondary": ["mimikama", "snopes", "wikipedia", "factcheckeu", "politifact"],
+                # Claim-type-specific primary sources for Guardian
+                "health_primaries": [
+                    Source(url="https://www.who.int/", title="WHO - World Health Organization",
+                           snippet="Official WHO health information, vaccine safety data, and disease guidance...",
+                           credibility_score=0.98, date_published="2024-01-01"),
+                    Source(url="https://www.ema.europa.eu/", title="EMA - European Medicines Agency",
+                           snippet="EU regulatory authority for vaccine and medicine safety assessments...",
+                           credibility_score=0.98, date_published="2024-01-01"),
+                    Source(url="https://www.rki.de/", title="RKI - Robert Koch Institut",
+                           snippet="Germany's federal disease control and vaccination recommendations...",
+                           credibility_score=0.97, date_published="2024-01-01")
+                ],
+                "science_primaries": [
+                    Source(url="https://www.ipcc.ch/", title="IPCC - Intergovernmental Panel on Climate Change",
+                           snippet="UN body for assessing the science of climate change...",
+                           credibility_score=0.98, date_published="2024-01-01"),
+                    Source(url="https://www.nasa.gov/", title="NASA - National Aeronautics and Space Administration",
+                           snippet="U.S. space agency with climate and earth science research...",
+                           credibility_score=0.98, date_published="2024-01-01"),
+                    Source(url="https://www.nature.com/", title="Nature - Scientific Journal",
+                           snippet="Peer-reviewed scientific research and publications...",
+                           credibility_score=0.95, date_published="2024-01-01")
+                ],
+                "eu_primaries": [
+                    Source(url="https://ec.europa.eu/", title="European Commission",
+                           snippet="Official EU policies and legislative information...",
+                           credibility_score=0.97, date_published="2024-01-01"),
+                    Source(url="https://fra.europa.eu/", title="EU Agency for Fundamental Rights",
+                           snippet="EU body monitoring fundamental rights and hate speech...",
+                           credibility_score=0.97, date_published="2024-01-01")
+                ]
             }
         }
         
         # Get avatar-specific sources or default to Guardian Avatar
         bot_config = bot_sources.get(company, bot_sources["GuardianAvatar"])
-        
-        # Always add primary sources first
+
+        # For GuardianAvatar: Check claim type and add appropriate primary authorities FIRST
+        if company == "GuardianAvatar":
+            # Health misinformation detection
+            health_keywords = ["vaccine", "impf", "mrna", "covid", "corona", "virus", "medic", "health",
+                               "microchip", "chip", "autism", "autis", "5g", "pfizer", "moderna", "biontech"]
+            if any(kw in text_lower for kw in health_keywords):
+                logger.info("🏥 Health claim detected - adding WHO/EMA/RKI as primary sources")
+                sources.extend(bot_config.get("health_primaries", []))
+
+            # Science denial detection
+            science_keywords = ["climate", "klima", "earth", "erde", "evolution", "moon", "mond",
+                                "flat", "flach", "nasa", "space", "weltraum", "co2", "warming"]
+            if any(kw in text_lower for kw in science_keywords):
+                logger.info("🔬 Science claim detected - adding IPCC/NASA/Nature as primary sources")
+                sources.extend(bot_config.get("science_primaries", []))
+
+            # EU/political claim detection
+            eu_keywords = ["eu", "europa", "commission", "kommission", "brüssel", "brussels",
+                           "merkel", "scholz", "macron", "von der leyen", "parliament", "parlam"]
+            if any(kw in text_lower for kw in eu_keywords):
+                logger.info("🇪🇺 EU claim detected - adding EC/FRA as primary sources")
+                sources.extend(bot_config.get("eu_primaries", []))
+
+        # Always add primary sources
         sources.extend(bot_config["primary"])
-        
+
         # Add secondary sources based on claim type
         secondary_sources = self._get_secondary_sources(text_lower, bot_config["secondary"])
         sources.extend(secondary_sources)
-        
+
         return sources
     
     def _get_secondary_sources(self, text_lower: str, secondary_types: List[str]) -> List[Source]:
@@ -1199,45 +1507,24 @@ class TruthShieldAI:
         
         return sources
 
-    def _determine_verdict(self, ai_analysis: Dict, sources: List[Source], claim_text: str = "") -> Dict:
-        """Enhanced verdict logic with ML pattern boost for better misinformation detection"""
-
+    def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
+        """Enhanced verdict logic with clearer thresholds for better misinformation detection"""
+        
         # Default to uncertain
         verdict = {
             "is_fake": False,
             "confidence": 0.5,
             "explanation": "Insufficient information to make determination",
-            "category": "uncertain",
-            "ml_pattern_match": None
+            "category": "uncertain"
         }
-
+        
         try:
             plausibility = ai_analysis.get("plausibility_score", 50)
             red_flags = ai_analysis.get("red_flags", [])
             misinformation_indicators = ai_analysis.get("misinformation_indicators", [])
             reasoning = ai_analysis.get("reasoning", "")
             factual_basis = ai_analysis.get("factual_basis", "")
-
-            # 🧠 ML Pattern Boost: Check if we've seen similar claims before
-            ml_confidence_boost = 0.0
-            ml_pattern_type = None
-            if claim_text:
-                try:
-                    similar_patterns = ml_system.pattern_learner.find_similar_patterns(claim_text)
-                    if similar_patterns:
-                        best_pattern = similar_patterns[0]
-                        # Boost based on pattern occurrence and confidence
-                        ml_confidence_boost = min(0.15, best_pattern.avg_detection_confidence * 0.05 * min(best_pattern.occurrence_count, 10))
-                        ml_pattern_type = best_pattern.pattern_type
-                        logger.info(f"🧠 ML Pattern Match: {ml_pattern_type} (boost: +{ml_confidence_boost:.2f}, seen {best_pattern.occurrence_count}x)")
-                        verdict["ml_pattern_match"] = {
-                            "type": ml_pattern_type,
-                            "boost": ml_confidence_boost,
-                            "occurrences": best_pattern.occurrence_count
-                        }
-                except Exception as e:
-                    logger.warning(f"ML pattern lookup failed: {e}")
-
+            
             logger.info(f"Verdict analysis: plausibility={plausibility}, red_flags={len(red_flags)}, indicators={len(misinformation_indicators)}")
             
             # Very strong indicators of misinformation
@@ -1288,16 +1575,7 @@ class TruthShieldAI:
                     "explanation": f"Mixed indicators: plausibility {plausibility}%, {len(red_flags)} concerns, needs more verification",
                     "category": "needs_verification"
                 })
-
-            # 🧠 Apply ML confidence boost
-            if ml_confidence_boost > 0 and ml_pattern_type:
-                original_confidence = verdict["confidence"]
-                # If ML pattern type matches verdict direction, boost confidence
-                if (ml_pattern_type == "misinformation" and verdict["is_fake"]) or \
-                   (ml_pattern_type == "true" and not verdict["is_fake"]):
-                    verdict["confidence"] = min(0.98, original_confidence + ml_confidence_boost)
-                    logger.info(f"🧠 ML boosted confidence: {original_confidence:.2f} → {verdict['confidence']:.2f}")
-
+            
             logger.info(f"Final verdict: is_fake={verdict['is_fake']}, confidence={verdict['confidence']}, category={verdict['category']}")
             
         except Exception as e:
@@ -1358,228 +1636,416 @@ class TruthShieldAI:
             })
         
         return verdict
-
-    async def generate_brand_response(self,
-                                    claim: str,
+    
+    async def generate_brand_response(self, 
+                                    claim: str, 
                                     fact_check: FactCheckResult,
                                     company: str = "BMW",
-                                    language: str = "en",
-                                    platform: str = "tiktok") -> Dict[str, AIInfluencerResponse]:
-        """Generate company-branded response in both languages, optimized for platform"""
-
+                                    language: str = "en") -> Dict[str, AIInfluencerResponse]:
+        """Generate company-branded response in both languages"""
+        
         responses = {}
-
+        
         # Generate English response
-        responses['en'] = await self._generate_single_response(claim, fact_check, company, "en", platform)
-
+        responses['en'] = await self._generate_single_response(claim, fact_check, company, "en")
+        
         # Generate German response
-        responses['de'] = await self._generate_single_response(claim, fact_check, company, "de", platform)
-
+        responses['de'] = await self._generate_single_response(claim, fact_check, company, "de")
+        
         # Add Guardian Avatar metadata if applicable
-        if company in AVATAR_COMPANIES:
+        if company == "GuardianAvatar":
             for lang in responses:
-                responses[lang].bot_name = f"{company} 🛡️"
+                responses[lang].bot_name = "Guardian Avatar 🛡️"
                 responses[lang].bot_type = "universal_avatar"
-
-        # 🧠 ML Recording: Log this interaction for learning
-        try:
-            source_urls = [src.url for src in fact_check.sources[:5]]
-            # Use primary language response for ML recording
-            primary_response = responses.get(language, responses.get('en', responses.get('de')))
-
-            interaction_id = await ml_system.record_fact_check(
-                claim=claim,
-                language=language,
-                avatar=company,
-                platform=platform,
-                is_fake=fact_check.is_fake,
-                confidence=fact_check.confidence,
-                astroturfing_score=0.0,  # Will be set if astroturfing detection runs
-                sources=source_urls,
-                response=primary_response.response_text if primary_response else "",
-                category=fact_check.category
-            )
-            # Store interaction_id for later engagement updates
-            if primary_response:
-                primary_response.interaction_id = interaction_id
-            logger.info(f"🧠 ML recorded interaction: {interaction_id}")
-        except Exception as e:
-            logger.warning(f"ML recording failed (non-critical): {e}")
-
+        
         return responses
 
     async def _generate_single_response(self,
                                       claim: str,
                                       fact_check: FactCheckResult,
                                       company: str,
-                                      language: str,
-                                      platform: str = "tiktok") -> AIInfluencerResponse:
-        """Generate response in specific language, optimized for platform"""
-
-        # Import platform config
-        from .platform_config import get_platform_spec, get_platform_prompt_modifier, get_avatar_platform_style, format_sources_for_platform
-
-        platform_spec = get_platform_spec(platform)
-
+                                      language: str) -> AIInfluencerResponse:
+        """Generate response in specific language"""
+        
         if not self.openai_client:
-            # Fallback responses - avatar-specific
-            if company == "GuardianAvatar":
-                # Guardian: Boundary enforcement style (no humor, authoritative)
+            # Fallback responses
+            if company in AVATAR_COMPANIES:
+                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 fallback_texts = {
-                    "en": "This claim requires verification. Unverified information can cause real harm. Fact-based discourse is essential. Sources: Pending verification.",
-                    "de": "Diese Behauptung erfordert Überprüfung. Ungeprüfte Informationen können realen Schaden verursachen. Faktenbasierter Diskurs ist essentiell. Quellen: Verifizierung ausstehend."
-                }
-            elif company in AVATAR_COMPANIES:
-                persona = self.company_personas.get(company, self.company_personas["PolicyAvatar"])
-                fallback_texts = {
-                    "en": f"{company} here! {persona['emoji']} Checking this claim... Stay tuned!",
-                    "de": f"{company} hier! {persona['emoji']} Prüfe diese Behauptung... Bleibt dran!"
+                    "en": f"{company} here! {persona['emoji']} Let me fact-check this claim...",
+                    "de": f"{company} hier! {persona['emoji']} Lass mich diese Behauptung prüfen..."
                 }
             else:
                 fallback_texts = {
                     "en": f"As {company}, we take this claim seriously and verify all facts.",
                     "de": f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten."
                 }
-
+            
             return AIInfluencerResponse(
                 response_text=fallback_texts.get(language, fallback_texts["en"]),
-                tone="authoritative" if company == "GuardianAvatar" else "professional",
+                tone="professional",
                 engagement_score=0.6,
                 hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}Facts", "#TruthShield"],
                 company_voice=company
             )
-
+        
         try:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
 
-            # Get platform-specific modifiers
-            platform_instructions = get_platform_prompt_modifier(platform, company)
-            avatar_platform_style = get_avatar_platform_style(company, platform) if company in AVATAR_COMPANIES else ""
+            # Special handling for all bot personas
+            if company in AVATAR_COMPANIES:
+                # Build global TikTok platform rules (applies to ALL avatars)
+                sources_format = "Sources: A | B | C" if language == "en" else "Quellen: A | B | C"
+                tiktok_rules = f"""
+                GLOBAL TIKTOK PLATFORM RULES (MUST FOLLOW):
+                - Output length: 4-5 sentences, MAX {TIKTOK_OUTPUT_RULES['output_length']['max_chars']} characters
+                - Sources: Include exactly 3 sources at the end in format: "{sources_format}"
+                - NO static templates - generate dynamic, unique responses
+                - Optimize for: engagement, reply quality, shareability
+                - Tone: Adapt dynamically based on claim severity
+                """
 
-            # Build sources for platform format
-            source_names = [src.title.split(" - ")[0][:30] for src in fact_check.sources[:3]]
-            formatted_sources = format_sources_for_platform(source_names, platform)
+                # Adjust instructions based on bot type
+                if company == "MemeAvatar":
+                    lang_instructions = {
+                        "en": "Create a maximum humor Reddit-style response that",
+                        "de": "Erstelle eine maximale Humor Reddit-Style Antwort, die"
+                    }
+                    humor_level = "MAXIMUM HUMOR - Reddit-style, sarcastic, meme-savvy"
+                elif company == "GuardianAvatar":
+                    # Guardian Avatar: Boundary enforcement role - NO HUMOR
+                    lang_instructions = {
+                        "en": "Create an authoritative boundary-setting response with exactly 5 sentences that",
+                        "de": "Erstelle eine autoritative Grenzziehungs-Antwort mit genau 5 Sätzen, die"
+                    }
+                    humor_level = "NO HUMOR - Authoritative, de-escalation, boundary enforcement"
+                elif company in ["PolicyAvatar", "EuroShieldAvatar", "ScienceAvatar"]:
+                    lang_instructions = {
+                        "en": "Create a serious, evidence-based response that",
+                        "de": "Erstelle eine ernste, evidenzbasierte Antwort, die"
+                    }
+                    humor_level = "SERIOUS - Evidence-based, authoritative, professional"
+                else:
+                    lang_instructions = {
+                        "en": "Create a factual response that",
+                        "de": "Erstelle eine faktische Antwort, die"
+                    }
+                    humor_level = "PROFESSIONAL - Factual and clear"
+                
+                language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
+                
+                # Build sources context with snippets
+                sources_text = ""
+                if fact_check.sources:
+                    top_sources = fact_check.sources[:3]  # Top 3 sources
+                    sources_list = []
+                    for i, src in enumerate(top_sources, 1):
+                        snippet = src.snippet[:150] + "..." if len(src.snippet) > 150 else src.snippet
+                        sources_list.append(f"{i}. {src.title}\n   URL: {src.url}\n   Info: {snippet}")
+                    sources_text = f"""
+                
+                VERIFIED SOURCES (use these facts in your response):
+                {chr(10).join(sources_list)}
+                """
+                
+                # Special prompt for Guardian Avatar with ML-driven tone selection
+                if company == "GuardianAvatar":
+                    # === ML PIPELINE INTEGRATION ===
+                    # Step 1: Analyze claim with ClaimRouter
+                    claim_analysis = self.claim_router.analyze_claim(claim)
+                    self.last_claim_analysis = claim_analysis
 
-            # Build detailed sources context
-            sources_context = ""
-            if fact_check.sources:
-                top_sources = fact_check.sources[:platform_spec.required_sources]
-                sources_list = []
-                for i, src in enumerate(top_sources, 1):
-                    snippet = src.snippet[:120] + "..." if len(src.snippet) > 120 else src.snippet
-                    sources_list.append(f"{i}. {src.title}\n   Key info: {snippet}")
-                sources_context = f"""
-VERIFIED SOURCES (incorporate these facts naturally):
-{chr(10).join(sources_list)}
+                    # Step 2: Create context for Bandit
+                    bandit_context = BanditContext(
+                        claim_type=claim_analysis.claim_types[0].value if claim_analysis.claim_types else "unknown",
+                        risk_level=claim_analysis.risk_level.value,
+                        language=language
+                    )
 
-END YOUR RESPONSE WITH: {formatted_sources}
-"""
+                    # Step 3: Select tone variant via Thompson Sampling
+                    tone_variant = self.bandit.select_tone(bandit_context)
+                    self.last_tone_variant = tone_variant
+                    logger.info(f"🎯 ML selected tone: {tone_variant.value} for risk={claim_analysis.risk_level.value}")
 
-            # Language directive
-            language_directive = "Antwort ausschließlich auf Deutsch. Benutze deutsche Umgangssprache für TikTok." if language == "de" else "Respond only in English."
+                    # Step 4: Build dynamic tone instructions based on ML selection
+                    tone_instructions = self._get_tone_instructions(tone_variant, language)
+                    opening_style = self._get_opening_style(tone_variant, language)
 
-            # Build dynamic prompt - NO STATIC TEMPLATES
-            if company == "GuardianAvatar":
-                # GUARDIAN: Special 5-sentence boundary enforcement structure
-                prompt = f"""You are Guardian 🛡️ - a boundary enforcement bot for de-escalation and protection.
+                    # Step 5: Build authoritative source labels based on claim type
+                    # Domain-to-label mapping for authoritative source names
+                    domain_to_label = {
+                        # Primary Health Authorities
+                        "who.int": "WHO",
+                        "ema.europa.eu": "EMA",
+                        "rki.de": "RKI",
+                        "cdc.gov": "CDC",
+                        "fda.gov": "FDA",
+                        "nih.gov": "NIH",
+                        "pubmed.ncbi.nlm.nih.gov": "PubMed",
+                        "ncbi.nlm.nih.gov": "PubMed",
+                        # EU/UN Institutions
+                        "ec.europa.eu": "EU-Kommission",
+                        "europa.eu": "EU",
+                        "fra.europa.eu": "EU Grundrechteagentur",
+                        "ohchr.org": "UN Menschenrechte",
+                        "un.org": "UN",
+                        "eeas.europa.eu": "EU Außendienst",
+                        # Science & Climate
+                        "ipcc.ch": "IPCC",
+                        "nasa.gov": "NASA",
+                        "nature.com": "Nature",
+                        "science.org": "Science",
+                        # Fact-Checkers
+                        "correctiv.org": "Correctiv",
+                        "faktenfinder.tagesschau.de": "ARD Faktenfinder",
+                        "afp.com": "AFP",
+                        "factcheck.afp.com": "AFP Faktenfinder",
+                        "dpa.com": "dpa",
+                        "reuters.com": "Reuters",
+                        "snopes.com": "Snopes",
+                        "politifact.com": "PolitiFact",
+                        "fullfact.org": "Full Fact",
+                        # Media
+                        "bpb.de": "bpb",
+                        "tagesschau.de": "Tagesschau",
+                        "dw.com": "Deutsche Welle",
+                        "zeit.de": "Zeit",
+                        "spiegel.de": "Spiegel",
+                        "sueddeutsche.de": "SZ",
+                        # NGOs
+                        "amnesty.org": "Amnesty",
+                        "hrw.org": "Human Rights Watch",
+                        "transparency.org": "Transparency Int.",
+                        "reporter-ohne-grenzen.de": "Reporter ohne Grenzen",
+                    }
 
-CORE IDENTITY:
-- Role: Boundary enforcement
-- Primary function: De-escalation and protection
-- Emotionality: LOW (calm, measured)
-- Authority: HIGH (firm, clear)
-- Empathy: NEUTRAL (neither cold nor warm)
-- Humor: NONE (zero jokes, irony, or sarcasm)
+                    # Claim-type-specific primary authorities
+                    primary_authorities_by_type = {
+                        "health_misinformation": ["WHO", "EMA", "RKI", "CDC", "FDA", "PubMed", "NIH"],
+                        "science_denial": ["IPCC", "Nature", "NASA", "PubMed", "Science"],
+                        "conspiracy_theory": ["EU", "Reuters", "AFP", "Correctiv", "bpb"],
+                        "hate_or_dehumanization": ["EU Grundrechteagentur", "UN Menschenrechte", "Amnesty", "bpb"],
+                        "foreign_influence": ["EU Außendienst", "EU", "Reuters", "AFP"],
+                        "delegitimization_frame": ["EU-Kommission", "Transparency Int.", "Reuters"],
+                        "economic_misinformation": ["EU-Kommission", "Reuters", "Zeit"],
+                    }
 
-STRICT BEHAVIORAL RULES:
-- NEVER debate opinions
-- NEVER ask questions
-- NEVER use irony, humor, or sarcasm
-- ALWAYS set a clear boundary
-- Signal that this content is being observed and there is accountability
+                    # Get the primary claim type
+                    claim_type_str = claim_analysis.claim_types[0].value if claim_analysis.claim_types else "general"
+                    preferred_authorities = primary_authorities_by_type.get(claim_type_str, [])
 
-THE CONTENT TO ADDRESS:
-"{claim}"
+                    # Build source labels with deduplication and authority prioritization
+                    source_labels = []
+                    seen_labels = set()
 
-FACT-CHECK VERDICT:
-- Status: {"❌ FALSE/MISLEADING" if fact_check.is_fake else "✅ TRUE/ACCURATE"}
-- Confidence: {fact_check.confidence:.0%}
-- Category: {fact_check.category}
-- Finding: {fact_check.explanation}
+                    if fact_check.sources:
+                        # First pass: find preferred authorities
+                        for src in fact_check.sources:
+                            if len(source_labels) >= 3:
+                                break
+                            # Extract domain from URL
+                            url = src.url.lower()
+                            domain = None
+                            for d in domain_to_label.keys():
+                                if d in url:
+                                    domain = d
+                                    break
 
-{sources_context}
+                            if domain:
+                                label = domain_to_label[domain]
+                                # Prioritize if it's a preferred authority for this claim type
+                                if label in preferred_authorities and label not in seen_labels:
+                                    source_labels.insert(0, label)  # Add at front
+                                    seen_labels.add(label)
 
-MANDATORY 5-SENTENCE STRUCTURE:
-1. BOUNDARY: Clear stop statement or boundary declaration (e.g., "This crosses a line." / "Stop." / "This is not acceptable.")
-2. HARM: Name the specific harm or rule violation (e.g., "This contains documented misinformation about X.")
-3. RISK: Explain the risk - violence, normalization, or real-world harm (e.g., "Such claims normalize dangerous narratives and can lead to real harm.")
-4. REDIRECT: Redirect to acceptable discourse (e.g., "Constructive, fact-based discussion is welcome.")
-5. SOURCES: Cite the sources (e.g., "Sources: Wikipedia | PubMed | Reuters")
+                        # Second pass: fill remaining slots
+                        for src in fact_check.sources:
+                            if len(source_labels) >= 3:
+                                break
+                            url = src.url.lower()
+                            domain = None
+                            for d in domain_to_label.keys():
+                                if d in url:
+                                    domain = d
+                                    break
 
-{language_directive}
+                            if domain:
+                                label = domain_to_label[domain]
+                                if label not in seen_labels:
+                                    source_labels.append(label)
+                                    seen_labels.add(label)
+                            else:
+                                # Fallback: extract from title
+                                name = src.title.split(' - ')[0].split(' | ')[0][:20]
+                                if name and name not in seen_labels:
+                                    source_labels.append(name)
+                                    seen_labels.add(name)
 
-Generate EXACTLY 5 sentences following the structure above. Be authoritative but not aggressive. No questions. No humor. No debate. Just firm, calm boundary-setting:"""
+                    # Default fallbacks based on claim type
+                    defaults_by_type = {
+                        "health_misinformation": ["WHO", "EMA", "RKI"],
+                        "science_denial": ["IPCC", "NASA", "Nature"],
+                        "hate_or_dehumanization": ["EU Grundrechteagentur", "UN Menschenrechte", "bpb"],
+                        "conspiracy_theory": ["Correctiv", "AFP Faktenfinder", "Reuters"],
+                    }
+                    defaults = defaults_by_type.get(claim_type_str, ["EU", "Reuters", "bpb"])
 
-            elif company in AVATAR_COMPANIES:
-                # Other avatars (Policy, Meme, EuroShield, Science) - engaging style
-                prompt = f"""You are {company} {persona['emoji']}, a fact-checking persona.
+                    for default in defaults:
+                        if len(source_labels) >= 3:
+                            break
+                        if default not in seen_labels:
+                            source_labels.append(default)
+                            seen_labels.add(default)
 
-PERSONA IDENTITY:
-- Voice: {persona['voice']}
-- Tone: {persona['tone']}
-- Style: {persona['style']}
-- Platform personality: {avatar_platform_style}
+                    sources_line = " | ".join(source_labels[:3])
+                    sources_suffix = f"Sources: {sources_line}" if language == "en" else f"Quellen: {sources_line}"
+                    logger.info(f"📚 Guardian sources for {claim_type_str}: {sources_line}")
 
-{platform_instructions}
+                    # Get temporal instructions (TikTok time-awareness)
+                    temporal_instructions = self._get_temporal_instructions(
+                        claim_analysis.temporal_mode,
+                        claim_analysis.volatility,
+                        claim_analysis.is_territorial,
+                        language
+                    )
 
-THE CLAIM TO ADDRESS:
-"{claim}"
+                    # Get response mode instructions (IO-awareness + Evidence Quality)
+                    response_mode_instructions = self._get_response_mode_instructions(
+                        claim_analysis.response_mode_result,  # Now uses ResponseModeResult
+                        claim_analysis.is_io_pattern,
+                        claim_analysis.io_indicators,
+                        language
+                    )
 
-FACT-CHECK VERDICT:
-- Status: {"❌ FALSE/MISLEADING" if fact_check.is_fake else "✅ TRUE/ACCURATE"}
-- Confidence: {fact_check.confidence:.0%}
-- Category: {fact_check.category}
-- Key finding: {fact_check.explanation}
+                    # Log the detection with new structure
+                    if claim_analysis.is_io_pattern:
+                        logger.info(f"📢 IO detected (score={claim_analysis.io_score:.2f}): {claim_analysis.io_indicators}")
+                    if claim_analysis.response_mode_result:
+                        mode_str = claim_analysis.response_mode_result.primary.value
+                        if claim_analysis.response_mode_result.secondary:
+                            mode_str += f"+{claim_analysis.response_mode_result.secondary.value}"
+                        logger.info(f"🎯 Response mode: {mode_str} (evidence={claim_analysis.response_mode_result.evidence_quality.value})")
+                    else:
+                        logger.info(f"🎯 Response mode (legacy): {claim_analysis.response_mode.value}")
 
-{sources_context}
+                    prompt = f"""
+                You are Guardian 🛡️ on TikTok. Fact-checker with personality.
+                {tiktok_rules}
 
-CRITICAL INSTRUCTIONS:
-1. DO NOT use generic phrases like "Let me fact-check this" or "Here's what I found"
-2. START with a HOOK - surprising fact, rhetorical question, or bold statement
-3. Be SPECIFIC - use actual data/facts from sources
-4. Match the platform tone exactly ({platform_spec.tone_style})
-5. {"Sei witzig und sarkastisch aber faktenbasiert" if language == "de" else "Be witty and engaging but fact-based"}
-6. End with source attribution in the specified format
+                === YOUR VIBE ===
+                - Confident, not aggressive
+                - Clear, not preachy
+                - Human, not robotic
+                - Tone: {tone_variant.value.replace('_', ' ').title()}
 
-{language_directive}
+                === RESPONSE MODE ===
+                {response_mode_instructions}
 
-Generate a single, scroll-stopping response. No preamble, no meta-commentary, just the response:"""
+                === TEMPORAL CONTEXT ===
+                {temporal_instructions}
 
+                === THE CLAIM ===
+                "{claim}"
+
+                === WHAT YOU KNOW ===
+                Verdict: {'FALSE' if fact_check.is_fake else 'MISLEADING'}
+                Key fact: {fact_check.explanation}
+                {sources_text}
+
+                === OUTPUT (TikTok Format) ===
+                1. HOOK (max 8 words): "{opening_style}" or your own punchy opener
+                2. THE CORRECTION: What's actually true. One fact.
+                3. PROOF: One number/date/stat from sources
+                4. Sources: "{sources_suffix}"
+
+                MAX 450 chars. {language_directive}
+
+                === ONE RULE ===
+                No moralizing. No "you should know". No lectures.
+                Just: Hook → Fact → Source. Done.
+                """
+                else:
+                    # All other avatars (MemeAvatar, PolicyAvatar, EuroShieldAvatar, ScienceAvatar)
+                    # Build simple source labels for non-Guardian avatars
+                    source_names = []
+                    if fact_check.sources:
+                        for src in fact_check.sources[:3]:
+                            name = src.title.split(' - ')[0].split(' | ')[0][:25]
+                            if name and name not in source_names:
+                                source_names.append(name)
+                    while len(source_names) < 3:
+                        source_names.append("EU" if len(source_names) == 0 else
+                                           "Reuters" if len(source_names) == 1 else "bpb")
+                    sources_line = " | ".join(source_names)
+                    sources_suffix = f"Sources: {sources_line}" if language == "en" else f"Quellen: {sources_line}"
+                    prompt = f"""
+                You are {company} {persona['emoji']}, {persona['style']} for TikTok.
+                {tiktok_rules}
+
+                Voice: {persona['voice']}
+                Tone: {persona['tone']}
+                Humor Level: {humor_level}
+
+                A claim is circulating:
+                "{claim}"
+
+                Fact-check result:
+                - Is fake: {fact_check.is_fake}
+                - Confidence: {fact_check.confidence}
+                - Category: {fact_check.category}
+                - Explanation: {fact_check.explanation}
+                {sources_text}
+
+                {lang_instructions.get(language)}:
+                1. Matches your persona's humor level and style
+                2. Is engaging and appropriate for your TikTok audience
+                3. References specific facts from the verified sources above
+                4. Includes concrete details (not generic statements)
+                5. Uses 1-2 emojis maximum
+                6. Is 4-5 sentences, MAX 450 characters total
+                7. If the claim is false, clearly state what the truth is based on the sources
+                8. END WITH exactly 3 sources: "{sources_suffix}"
+
+                {language_directive}
+
+                Examples of {company} style:
+                {persona['examples'][language][0]}
+                """
             else:
-                # Company-branded response
-                prompt = f"""You are the official AI voice for {company}.
-
-Company Voice: {persona['voice']}
-Tone: {persona['tone']}
-Style: {persona['style']}
-
-{platform_instructions}
-
-A claim about {company} is circulating:
-"{claim}"
-
-Fact-check result:
-- Is fake: {fact_check.is_fake}
-- Confidence: {fact_check.confidence}
-- Category: {fact_check.category}
-- Explanation: {fact_check.explanation}
-
-{sources_context}
-
-{language_directive}
-
-Generate a brand-appropriate response:"""
-
+                # Existing company-specific prompt
+                lang_instructions = {
+                    "en": "Create an English response that",
+                    "de": "Erstelle eine deutsche Antwort, die"
+                }
+                
+                language_directive = "Antwort ausschließlich auf Deutsch." if language == "de" else "Respond only in English."
+                prompt = f"""
+                You are the official AI brand influencer for {company}.
+                
+                Company Voice: {persona['voice']}
+                Tone: {persona['tone']}
+                Style: {persona['style']}
+                
+                A claim about {company} is circulating:
+                "{claim}"
+                
+                Fact-check result:
+                - Is fake: {fact_check.is_fake}
+                - Confidence: {fact_check.confidence}
+                - Category: {fact_check.category}
+                - Explanation: {fact_check.explanation}
+                
+                {lang_instructions.get(language, lang_instructions["en"])}:
+                1. Addresses the claim directly
+                2. Uses {company}'s brand voice
+                3. Is engaging and shareable
+                4. Includes relevant emojis
+                5. Is 1-2 sentences max
+                
+                {language_directive}
+                Make it feel authentic to {company}'s communication style.
+                """
+            
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
@@ -1588,41 +2054,25 @@ Generate a brand-appropriate response:"""
             )
             
             response_text = response.choices[0].message.content
-
-            # Platform-specific hashtag generation
-            hashtag_min, hashtag_max = platform_spec.hashtag_count
-            base_hashtags = ["#TruthShield", "#FactCheck"] if company in AVATAR_COMPANIES else [f"#{company}Facts"]
-
-            # Add platform-specific hashtags
-            platform_hashtags = {
-                "tiktok": ["#fyp", "#viral", "#learnontiktok", "#faktencheck"],
-                "twitter": ["#thread", "#factsmatter"],
-                "instagram": ["#factcheck", "#truth", "#viral", "#explore"],
-                "reddit": [],  # Reddit doesn't use hashtags
-                "linkedin": ["#factchecking", "#misinformation", "#media"],
-            }
-
-            extra_hashtags = platform_hashtags.get(platform.lower(), [])
-            hashtags = base_hashtags + [f"#{company}"] + extra_hashtags[:hashtag_max - len(base_hashtags) - 1]
-
+            
+            # Determine hashtags
+            if company in AVATAR_COMPANIES:
+                hashtags = ["#TruthShield", "#FactCheck", f"#{company}"]
+            else:
+                hashtags = [f"#{company}Facts", "#TruthShield"]
+            
             return AIInfluencerResponse(
                 response_text=response_text,
                 tone=persona["tone"],
                 engagement_score=0.85,
-                hashtags=hashtags[:hashtag_max] if hashtag_max > 0 else [],
+                hashtags=hashtags,
                 company_voice=company
             )
             
         except Exception as e:
             logger.error(f"Brand response generation failed: {e}")
-            if company == "GuardianAvatar":
-                # Guardian: Maintains boundary-enforcement style even in fallback
-                fallback = {
-                    "en": "This content is being reviewed. Spreading unverified claims can cause harm. Responsible discourse matters. Sources: Under review.",
-                    "de": "Dieser Inhalt wird überprüft. Das Verbreiten ungeprüfter Behauptungen kann Schaden verursachen. Verantwortungsvoller Diskurs ist wichtig. Quellen: In Überprüfung."
-                }
-            elif company in AVATAR_COMPANIES:
-                persona = self.company_personas.get(company, self.company_personas["PolicyAvatar"])
+            if company in AVATAR_COMPANIES:
+                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 fallback = {
                     "en": f"{company} says: That's an interesting claim! Let me check the facts... {persona['emoji']}",
                     "de": f"{company} sagt: Das ist eine interessante Behauptung! Lass mich die Fakten prüfen... {persona['emoji']}"

@@ -11,5 +11,15 @@ node_modules/
 .vscode/
 *.log
 # Generated files
-demo_data/
+demo_data/ml/*.jsonl
+!demo_data/ml/.gitkeep
 truthshield_ml.db
+
+# Backup files
+*.backup
+*_backup.py
+*.bak
+
+# IDE
+*.swp
+*.swo

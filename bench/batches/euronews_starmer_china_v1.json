@@ -1,0 +1,65 @@
+{
+  "batch_id": "guardian_euronews_starmer_china_v1",
+  "source_platform": "tiktok",
+  "source_account": "euronews",
+  "collection_method": "manual_screenshot_transcription",
+  "purpose": "prototype_testing_guardian_china_uk_security",
+  "mode": "shadow",
+  "avatar": "guardian",
+
+  "common_params": {
+    "language": "en",
+    "risk_level": "MEDIUM",
+    "topic": "china_uk_security_starmer",
+    "time_window": "2025-12-14"
+  },
+
+  "test_focus": [
+    "threat_assessment_accuracy",
+    "no_false_equivalence",
+    "historical_causality_nuance"
+  ],
+
+  "claims": [
+    {
+      "claim_id": "v1_001",
+      "text": "China is not a threat to the UK.",
+      "cluster": "threat_downplay"
+    },
+    {
+      "claim_id": "v1_002",
+      "text": "China has never threatened the UK, so calling it a security threat is propaganda.",
+      "cluster": "propaganda_frame"
+    },
+    {
+      "claim_id": "v1_003",
+      "text": "Britain is the real global power; China is not.",
+      "cluster": "power_deflection"
+    },
+    {
+      "claim_id": "v1_004",
+      "text": "The UK is a money laundering machine for the rich and corrupt.",
+      "cluster": "uk_delegitimization"
+    },
+    {
+      "claim_id": "v1_005",
+      "text": "China has no interest in other lands or expansion.",
+      "cluster": "expansion_denial"
+    },
+    {
+      "claim_id": "v1_006",
+      "text": "Just don't mess with China and everyone will be okay.",
+      "cluster": "submission_frame"
+    },
+    {
+      "claim_id": "v1_007",
+      "text": "Britain created most regional conflicts like Palestine or India–Pakistan.",
+      "cluster": "colonial_blame_shift"
+    },
+    {
+      "claim_id": "v1_008",
+      "text": "China only cares about trade and does not meddle abroad.",
+      "cluster": "influence_denial"
+    }
+  ]
+}

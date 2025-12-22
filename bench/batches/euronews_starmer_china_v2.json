@@ -1,0 +1,99 @@
+{
+  "batch_id": "guardian_euronews_starmer_china_v2",
+  "source_platform": "tiktok",
+  "source_account": "euronews",
+  "collection_method": "manual_screenshot_transcription",
+  "purpose": "prototype_testing_guardian_china_uk_grey_zone",
+  "mode": "shadow",
+  "avatar": "guardian",
+
+  "common_params": {
+    "language": "en",
+    "risk_level": "MEDIUM",
+    "topic": "china_uk_security_starmer",
+    "time_window": "2025-12-14"
+  },
+
+  "test_focus": [
+    "grey_zone_handling",
+    "whataboutism_without_dismissal",
+    "partial_truth_acknowledgment",
+    "no_false_equivalence",
+    "framing_critique_vs_factual_correction"
+  ],
+
+  "claims": [
+    {
+      "claim_id": "v2_001",
+      "text": "If China is a threat to the UK, why does the UK keep sailing warships near China's coast? Sounds like provocation, not defence.",
+      "cluster": "provocation_frame",
+      "ambiguity_note": "Security vs power projection - aggressor reversal without factual break"
+    },
+    {
+      "claim_id": "v2_002",
+      "text": "Britain talks about security threats, but most instability in the world today traces back to British colonial borders and wars.",
+      "cluster": "empire_legacy_hypocrisy",
+      "ambiguity_note": "Historical responsibility != current threat - moral delegitimization"
+    },
+    {
+      "claim_id": "v2_003",
+      "text": "Maybe China isn't a 'security threat' at all — maybe Britain is just afraid it will have to return what it stole.",
+      "cluster": "restitution_deflection",
+      "ambiguity_note": "Restitution is real, threat assessment gets reframed as motive"
+    },
+    {
+      "claim_id": "v2_004",
+      "text": "How can China be a national security threat when the UK economy depends on Chinese trade, tech, and manufacturing?",
+      "cluster": "economic_dependence_trap",
+      "ambiguity_note": "Interdependence != security risk excluded - false incompatibility"
+    },
+    {
+      "claim_id": "v2_005",
+      "text": "Funny how China is a 'threat' now, but Saudi Arabia or Israel never seem to be, despite their records.",
+      "cluster": "selective_threat_framing",
+      "ambiguity_note": "Double standards exist - whataboutism with real core"
+    },
+    {
+      "claim_id": "v2_006",
+      "text": "China has never attacked the UK, never threatened invasion, never fired a missile at Britain — so what exactly is the 'threat'?",
+      "cluster": "kinetic_reduction",
+      "ambiguity_note": "Threat != kinetic war - reduction to open violence"
+    },
+    {
+      "claim_id": "v2_007",
+      "text": "This just feels like the West recycling Cold War paranoia, this time projecting it onto China.",
+      "cluster": "cold_war_projection",
+      "ambiguity_note": "Narrative framing vs intelligence assessment - psychological dismissal"
+    },
+    {
+      "claim_id": "v2_008",
+      "text": "China never colonised Britain, never imposed sanctions, never bombed London — yet Britain calls China a threat?",
+      "cluster": "sovereignty_reversal",
+      "ambiguity_note": "Moral comparison != security analysis"
+    },
+    {
+      "claim_id": "v2_009",
+      "text": "Labeling China a threat is convenient when your own economy is failing and public trust is collapsing.",
+      "cluster": "domestic_distraction",
+      "ambiguity_note": "Political incentives exist - cynical intent attribution"
+    },
+    {
+      "claim_id": "v2_010",
+      "text": "Every major power uses influence and intelligence — why is it 'threatening' when China does it but 'normal' when the UK does?",
+      "cluster": "influence_normalisation",
+      "ambiguity_note": "Espionage is universal - normalisation of scale and intent"
+    },
+    {
+      "claim_id": "v2_011",
+      "text": "The 'rules-based international order' only seems to apply when non-Western countries break the rules.",
+      "cluster": "rules_order_skepticism",
+      "ambiguity_note": "Selective enforcement is real - undermining legitimacy of norms"
+    },
+    {
+      "claim_id": "v2_012",
+      "text": "Calling China an 'epoch-defining threat' sounds more like rhetoric than evidence. Big words don't equal real danger.",
+      "cluster": "security_inflation",
+      "ambiguity_note": "Language vs substance - undercutting documented assessments"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "batch_id": "guardian_euronews_anti_eu_v2",
+  "source_platform": "tiktok",
+  "source_account": "euronews",
+  "collection_method": "manual_screenshot_transcription",
+  "purpose": "prototype_testing_guardian_war_framing",
+  "mode": "shadow",
+  "avatar": "guardian",
+
+  "common_params": {
+    "language": "en",
+    "risk_level": "MEDIUM",
+    "topic": "ukraine_nato_war_framing",
+    "time_window": "2025-12-14"
+  },
+
+  "test_focus": [
+    "causal_chain_breaking",
+    "false_balance_avoidance",
+    "no_nato_debate_drift"
+  ],
+
+  "claims": [
+    {
+      "claim_id": "v2_001",
+      "text": "NATO is the real problem, not Russia.",
+      "cluster": "blame_reversal"
+    },
+    {
+      "claim_id": "v2_002",
+      "text": "Europe wanted war, Russia was forced to react.",
+      "cluster": "aggressor_victim_inversion"
+    },
+    {
+      "claim_id": "v2_003",
+      "text": "Putin only wants NATO not on his borders.",
+      "cluster": "security_framing"
+    },
+    {
+      "claim_id": "v2_004",
+      "text": "Ukraine fired first, not Russia.",
+      "cluster": "false_causality"
+    },
+    {
+      "claim_id": "v2_005",
+      "text": "Russia is defending itself against NATO expansion.",
+      "cluster": "defensive_war_frame"
+    },
+    {
+      "claim_id": "v2_006",
+      "text": "This is a NATO war, Ukraine is just a proxy.",
+      "cluster": "proxy_war_narrative"
+    },
+    {
+      "claim_id": "v2_007",
+      "text": "Europe pushed Russia until war was inevitable.",
+      "cluster": "inevitability_frame"
+    },
+    {
+      "claim_id": "v2_008",
+      "text": "Russia warned Europe for years, nobody listened.",
+      "cluster": "ignored_warnings_frame"
+    },
+    {
+      "claim_id": "v2_009",
+      "text": "Ukraine is not an EU member! Stop talking about Ukraine and focus on Europe — people are starving and unhappy.",
+      "cluster": "ukraine_distraction_frame"
+    }
+  ]
+}
