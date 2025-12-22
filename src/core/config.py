@@ -17,10 +17,12 @@ class Settings(BaseSettings):
     
     # AI APIs - Diese werden von Environment Variables geladen
     openai_api_key: Optional[str] = None
-    google_api_key: Optional[str] = None  # NEU
-    news_api_key: Optional[str] = None    # NEU
-    claimbuster_api_key: Optional[str] = None  # NEW
-    claimbuster_api_key: Optional[str] = None  # NEU
+    google_api_key: Optional[str] = None
+    news_api_key: Optional[str] = None
+    claimbuster_api_key: Optional[str] = None
+
+    # Academic APIs
+    core_api_key: Optional[str] = None  # CORE.ac.uk - free at https://core.ac.uk/services/api
     
     # Social Media APIs
     twitter_api_key: Optional[str] = None
