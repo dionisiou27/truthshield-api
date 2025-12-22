@@ -18,9 +18,12 @@ TruthShield provides an automated kinetic layer for the information space. It br
 │  DETECTION          ANALYSIS           INTERVENTION         │
 │  ─────────          ────────           ────────────         │
 │  • RSS Feeds        • Claim Router     • Guardian Avatar    │
-│  • API Polling      • IO Detection     • Thompson Sampling  │
-│  • MediaWiki        • Source Ranker    • TikTok Response    │
-│  • Fact Check API   • Evidence Score   • Learning Loop      │
+│  • Social Monitor   • IO Detection     • Thompson Sampling  │
+│  • Web Scraper      • Source Ranker    • TikTok Response    │
+│  • OCR Service      • Evidence Score   • Learning Loop      │
+│  • Fact Check API   • Risk Assessment  • Meme Generator*    │
+│  • MediaWiki        • Temporal Modes   • Counter-Narrative  │
+│                                         * Planning Phase     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,8 +49,11 @@ docker-compose up --build
 
 ```bash
 OPENAI_API_KEY=        # Required: GPT-4-Turbo for fact-checking
-GOOGLE_API_KEY=        # Google Fact Check API
+GOOGLE_API_KEY=        # Google Fact Check / Custom Search API
 NEWS_API_KEY=          # News API integration
+HUGGINGFACE_API_KEY=   # HuggingFace models (optional)
+TWITTER_API_KEY=       # Twitter/X API (for social monitoring)
+TWITTER_API_SECRET=    # Twitter/X API secret
 ```
 
 ---
@@ -247,17 +253,41 @@ reward = 0.35 * top_comment + 0.20 * reply_quality
 
 ## Tech Stack
 
-- **Core:** Python 3.11, FastAPI (Async)
-- **AI/ML:** OpenAI GPT-4-Turbo, Thompson Sampling Bandit
-- **Sources:** Google Fact Check, MediaWiki, RSS Feeds
-- **Infrastructure:** Docker, Redis (caching)
+- **Core:** Python 3.11, FastAPI (Async), Uvicorn
+- **AI/ML:** OpenAI GPT-4-Turbo, Thompson Sampling Bandit, LangChain, Transformers, PyTorch
+- **OCR/Vision:** EasyOCR, Pillow
+- **Data Processing:** Pandas, NumPy, Polars, PyArrow
+- **Sources:** Google Fact Check, Google Custom Search, News API, ClaimBuster, MediaWiki, RSS Feeds
+- **Web Scraping:** BeautifulSoup4 (FactCheck.org, Snopes, Correctiv)
+- **Social Media:** Tweepy (Twitter/X), Instagrapi (Instagram)
+- **Infrastructure:** Docker, Redis (caching), HTTPX
+- **Statistics:** SciPy, Scikit-learn, Statsmodels
+- **Testing:** pytest, black, flake8, mypy
+
+---
+
+## Additional Features
+
+### 🖼️ OCR Service
+Extract text from images (memes, screenshots, infographics) using EasyOCR for multi-language analysis.
+
+### 📊 Social Media Monitor
+Real-time Twitter/X monitoring with prioritization engine, virality prediction, and coordination detection. Pre-configured for brand protection (Vodafone, BMW, Bayer, Deutsche Telekom, SAP, Siemens).
+
+### 🔍 Web Scraper
+Dynamic fact-checker integration via web scraping (FactCheck.org, Snopes, Correctiv) for when APIs are unavailable.
+
+### 🎨 Meme Generator (Planning Phase)
+"Inoculation Meme" generator to transform fact-checks into viral, shareable content. Uses LLM-driven concept creation + programmatic image rendering. See `docs/MEME_GENERATOR_PLAN.md` for roadmap.
 
 ---
 
 ## Documentation
 
 - `CLAUDE.md` - Full technical documentation
+- `README.md` - This file (overview)
 - `CHANGELOG.md` - Version history
+- `docs/MEME_GENERATOR_PLAN.md` - Meme Generator implementation plan
 - `STRATEGY/Technical_Docs/03_Tech_Roadmap.md` - Development roadmap
 
 ---

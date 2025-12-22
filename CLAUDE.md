@@ -6,33 +6,47 @@ TruthShield is a FastAPI-based cognitive security platform for detecting disinfo
 **Current Focus:** TikTok social media prototype with Guardian Avatar for real-time counter-narrative intervention.
 
 ## Tech Stack
-- **Framework**: Python 3.11, FastAPI (async)
-- **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode), Thompson Sampling Bandit
+- **Framework**: Python 3.11, FastAPI (async), Uvicorn
+- **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode), Thompson Sampling Bandit, LangChain, Transformers, PyTorch
+- **OCR/Vision**: EasyOCR, Pillow
+- **Data Processing**: Pandas, NumPy, Polars, PyArrow
 - **Database**: SQLAlchemy 2.0, SQLite (dev), Alembic migrations
-- **Infrastructure**: Docker, Redis (caching)
+- **Infrastructure**: Docker, Redis (caching), HTTPX
 - **Testing**: pytest, black, flake8, mypy
-- **External APIs**: Google Fact Check, News API, ClaimBuster, MediaWiki
+- **External APIs**: Google Fact Check, Google Custom Search, News API, ClaimBuster, MediaWiki
+- **Social Media**: Tweepy (Twitter/X), Instagrapi (Instagram)
 - **RSS Feeds**: feedparser for compliance-safe source ingestion
+- **Web Scraping**: BeautifulSoup4 for fact-checker sites (FactCheck.org, Snopes, Correctiv)
+- **Statistics**: SciPy, Scikit-learn, Statsmodels
 
 ## Project Structure
 ```
 src/
-├── api/           # FastAPI routes (detection, monitoring, content, compliance, ml)
-├── core/          # Business logic (ai_engine, detection, threat_scoring, etc.)
+├── api/           # FastAPI routes (detection, monitoring, content, compliance, ml, meme)
+├── core/          # Business logic (ai_engine, detection, threat_scoring, prioritization, virality)
 ├── models/        # Pydantic models
-├── services/      # External integrations (Google, ClaimBuster, Wiki, News, RSS)
-│   └── rss_freshness.py  # RSS-based freshness checking for territorial claims
+├── services/      # External integrations
+│   ├── rss_freshness.py      # RSS-based freshness checking for territorial claims
+│   ├── google_factcheck.py   # Google Fact Check API
+│   ├── google_custom_search.py  # Google Custom Search
+│   ├── claimbuster_api.py    # ClaimBuster API
+│   ├── wiki_api.py           # MediaWiki integration
+│   ├── news_api.py           # News API integration
+│   ├── web_scraper.py        # Web scraping for fact-checkers (FactCheck.org, Snopes, Correctiv)
+│   ├── social_monitor.py     # Twitter/social media monitoring with prioritization
+│   └── ocr_service.py        # EasyOCR text extraction from images
 └── ml/            # Machine Learning Pipeline
     ├── guardian/  # Claim Router, Source Ranker, Response Generator
-    └── learning/  # Thompson Sampling Bandit, Feedback Collector, ML Logging
+    ├── learning/  # Thompson Sampling Bandit, Feedback Collector, ML Logging
+    └── meme/      # Meme Generator (PLANNING PHASE)
 tests/             # pytest test files
 bench/             # Batch testing infrastructure
 ├── batches/       # Test claim batches (euronews_v1, v2, starmer_china)
 ├── run_batch.py   # Batch runner CLI
 └── replay.py      # Bandit replay testing
 configs/           # Configuration files
-demo_data/         # Demo/test data + ML logs
-docs/              # Documentation and HTML demo
+demo_data/         # Demo/test data + ML logs + memes
+docs/              # Documentation, HTML demo, Meme Generator plan
 ```
 
 ## Common Commands
@@ -62,6 +76,8 @@ OPENAI_API_KEY=        # OpenAI GPT-4-Turbo access (required)
 GOOGLE_API_KEY=        # Google Custom Search / Fact Check
 NEWS_API_KEY=          # News API integration
 HUGGINGFACE_API_KEY=   # HuggingFace models (optional)
+TWITTER_API_KEY=       # Twitter/X API (for social monitoring)
+TWITTER_API_SECRET=    # Twitter/X API secret
 ```
 
 ---
@@ -359,12 +375,194 @@ bench/batches/euronews_starmer_china_v2.json  # China/UK grey-zone (12 claims)
 ### Services
 - `src/services/rss_freshness.py` - RSS-based freshness checking
 - `src/services/google_factcheck.py` - Google Fact Check API
+- `src/services/google_custom_search.py` - Google Custom Search API
 - `src/services/wiki_api.py` - MediaWiki integration
+- `src/services/news_api.py` - News API integration
+- `src/services/claimbuster_api.py` - ClaimBuster API
+- `src/services/web_scraper.py` - Web scraping for fact-checkers (FactCheck.org, Snopes, Correctiv)
+- `src/services/social_monitor.py` - Twitter/social media monitoring with prioritization engine
+- `src/services/ocr_service.py` - EasyOCR text extraction from images
 
 ### API
 - `src/api/ml.py` - ML pipeline endpoints
 - `src/api/detection.py` - Detection endpoints
 - `src/core/ai_engine.py` - AI engine with avatar personas
+
+---
+
+## Additional Services & Features
+
+### OCR Service (Image Text Extraction)
+
+**Purpose:** Extract text from images (memes, screenshots, infographics) for analysis.
+
+**Implementation:** `src/services/ocr_service.py`
+
+**Technology:** EasyOCR with multi-language support (EN, DE)
+
+**Key Features:**
+- Singleton reader pattern (cached for performance)
+- Async execution (non-blocking)
+- Support for EN/DE languages
+- Returns cleaned, paragraph-formatted text
+
+**Usage:**
+```python
+from src.services.ocr_service import extract_text_from_image
+
+text = await extract_text_from_image(image_bytes, languages=["en", "de"])
+```
+
+**Use Cases:**
+- Analyzing text in viral meme images
+- Extracting claims from screenshots
+- Processing infographics for fact-checking
+
+---
+
+### Social Media Monitor
+
+**Purpose:** Monitor Twitter/X for misinformation, coordinated campaigns, and brand threats.
+
+**Implementation:** `src/services/social_monitor.py`
+
+**Technology:** Tweepy (Twitter API), custom prioritization engine, virality predictor
+
+**Key Components:**
+1. **Twitter Monitoring** - Real-time keyword tracking
+2. **Prioritization Engine** - Risk/reach/coordination scoring
+3. **Virality Predictor** - Engagement trajectory analysis
+4. **Company Target Database** - Pre-configured brand protection keywords
+
+**Prioritization Metrics:**
+- Track Pool: Min views, growth rate (24h)
+- Account Pool: Min followers, follower spike detection
+- Coordination Score: Multi-account pattern detection
+
+**Supported Companies:**
+- Vodafone, BMW, Bayer, Deutsche Telekom, SAP, Siemens
+
+**Usage:**
+```python
+from src.services.social_monitor import SocialMediaMonitor
+
+monitor = SocialMediaMonitor()
+threats = await monitor.scan_for_threats("vodafone", limit=20)
+prioritized = monitor.prioritize_batch(threats)
+```
+
+**Features:**
+- Real-time Twitter stream monitoring
+- Company-specific threat detection
+- Virality prediction for early intervention
+- Coordination detection (astroturfing, bot networks)
+
+---
+
+### Web Scraper (Fact-Checker Integration)
+
+**Purpose:** Scrape fact-checking websites for dynamic source retrieval when APIs are unavailable.
+
+**Implementation:** `src/services/web_scraper.py`
+
+**Technology:** HTTPX, BeautifulSoup4
+
+**Supported Sites:**
+1. **FactCheck.org** (EN) - credibility_score: 0.9
+2. **Snopes** (EN) - credibility_score: 0.85
+3. **Correctiv** (DE) - credibility_score: 0.9
+
+**Features:**
+- Async scraping with timeout protection
+- Parallel multi-site scraping
+- Automatic URL normalization
+- Snippet extraction (max 300 chars)
+- Respectful scraping (User-Agent identification)
+
+**Usage:**
+```python
+from src.services.web_scraper import scrape_factcheckers
+
+results = await scrape_factcheckers("COVID vaccines autism", limit_per_site=2)
+# Returns: List[Dict] with title, url, snippet, source, credibility_score
+```
+
+**Compliance:**
+- Respects TruthShield User-Agent identification
+- Rate-limited requests
+- No aggressive scraping
+
+---
+
+## Meme Generator (PLANNING PHASE)
+
+**Status:** 🚧 **Planning Phase** - Not yet implemented
+
+**Documentation:** `docs/MEME_GENERATOR_PLAN.md`
+
+### Overview
+
+**Concept:** "Inoculation Meme" (Impf-Meme) Generator - Transform factual debunks into viral, shareable memes.
+
+**Goal:** Build digital resilience through humor + facts, exposing disinformation methods without ad hominem attacks.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│         MEME GENERATOR PIPELINE             │
+├─────────────────────────────────────────────┤
+│  Claim → Concept (LLM) → Template → Render │
+└─────────────────────────────────────────────┘
+```
+
+**Components (Planned):**
+1. **MemeConceptGenerator** (`src/ml/meme/concept_generator.py`) - LLM-driven concept creation
+2. **TemplateSelector** (`src/ml/meme/template_selector.py`) - Meme format selection
+3. **ImageRenderer** (`src/ml/meme/image_renderer.py`) - Programmatic PNG generation with Pillow
+
+### Output Format
+
+**MemeSpec:**
+```python
+visual_template: str        # e.g., "Drake", "Panik/Kalm"
+top_text: str               # Hook (emotional/narrative reference)
+bottom_text: str            # Payload (hard fact, max 10-12 words)
+footer: str                 # Source citation
+tone: ToneVariant           # WITTY, EMPATHIC, FACTUAL
+aspect_ratio: str           # "1:1" or "9:16"
+```
+
+### Quality Safeguards
+
+✅ **Allowed:**
+- Attack methods (cherrypicking, whataboutism)
+- Attack data inconsistencies
+- Use humor to expose logical fallacies
+
+❌ **Forbidden:**
+- Ad hominem attacks on individuals/parties
+- Cynicism toward victims
+- Tone-deaf humor on sensitive topics
+
+### Integration Points
+
+- **ClaimRouter** - Claim analysis for tone selection
+- **SourceRanker** - Source citations for footer
+- **GuardianBandit** - Tone variant optimization
+- **OCR Service** - Analyze competing memes
+
+### Planned API Endpoint
+
+```
+POST /api/v1/meme/generate
+- Input: narrative, fact_basis, sources
+- Output: meme_spec, image_url, claim_analysis
+```
+
+**Estimated Timeline:** 4-5 weeks for MVP (5 templates, basic API)
+
+**See:** `docs/MEME_GENERATOR_PLAN.md` for full implementation roadmap
 
 ---
 
