@@ -9,6 +9,8 @@ TruthShield provides an automated kinetic layer for the information space. It br
 
 **Current Focus:** TikTok social media prototype with Guardian Avatar for real-time counter-narrative intervention.
 
+📄 **[Read the Strategic Whitepaper](docs/STRATEGIC_WHITEPAPER.md)** for comprehensive positioning, competitive analysis, and roadmap.
+
 ## System Architecture
 
 ```
@@ -284,6 +286,7 @@ Dynamic fact-checker integration via web scraping (FactCheck.org, Snopes, Correc
 
 ## Documentation
 
+- **`docs/STRATEGIC_WHITEPAPER.md`** - Strategic positioning and competitive differentiation
 - `CLAUDE.md` - Full technical documentation
 - `README.md` - This file (overview)
 - `CHANGELOG.md` - Version history
