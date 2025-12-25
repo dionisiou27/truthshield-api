@@ -1,10 +1,23 @@
+# Load environment variables FIRST, before any other imports
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Force disable SSL warnings for development environments with proxies
+if os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true":
+    import ssl
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    # Set environment variables that some libraries respect
+    os.environ['CURL_CA_BUNDLE'] = ''
+    os.environ['REQUESTS_CA_BUNDLE'] = ''
+
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
-import os
 
 # Determine paths at module load
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -25,6 +38,7 @@ from src.api.monitoring import router as monitoring_router
 from src.api.content import router as content_router
 from src.api.compliance import router as compliance_router
 from src.api.ml import router as ml_router
+from src.api.ml_feedback import router as ml_feedback_router
 
 app = FastAPI(
     title="🛡️ TruthShield API",
@@ -59,6 +73,7 @@ app.include_router(monitoring_router)
 app.include_router(content_router)
 app.include_router(compliance_router)
 app.include_router(ml_router)
+app.include_router(ml_feedback_router)
 
 # Explicit image route (more reliable than StaticFiles mount on some platforms)
 @app.get("/images/{filename}")

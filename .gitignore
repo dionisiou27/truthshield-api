@@ -10,6 +10,10 @@ node_modules/
 .idea/
 .vscode/
 *.log
+# Generated files
+demo_data/ml/*.jsonl
+!demo_data/ml/.gitkeep
+truthshield_ml.db
 
 # Backup files
 *.backup
@@ -19,7 +23,3 @@ node_modules/
 # IDE
 *.swp
 *.swo
-
-# Local test outputs
-demo_data/ml/*.jsonl
-!demo_data/ml/.gitkeep
