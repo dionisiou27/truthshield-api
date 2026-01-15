@@ -573,3 +573,65 @@ POST /api/v1/meme/generate
 - Guardian Avatar behavioral rules: never debate, never ask questions, never use irony
 - Source ranking is **pure ranking** (no hard filters, only weighted scores)
 - RSS feeds respect robots.txt compliance (no HTML scraping for blocked sources)
+
+# Global CLAUDE.md
+
+## Identity & Accounts
+- GitHub: dionisiou27 (SSH key: ~/.ssh/id_ed25519)
+- Docker Hub: authenticated via ~/.docker/config.json
+- Deployment: Dokploy (API URL in ~/.env)
+
+## NEVER EVER DO (Security Gatekeeper)
+- NEVER commit .env files
+- NEVER hardcode credentials
+- NEVER publish secrets to git/npm/docker
+- NEVER skip .gitignore verification
+
+## New Project Setup (Scaffolding Rules)
+
+### Required Files
+- .env (NEVER commit)
+- .env.example (with placeholders)
+- .gitignore (with all required entries)
+- .dockerignore
+- README.md
+- CLAUDE.md
+
+### Required Structure
+project/
+├── src/
+├── tests/
+├── docs/
+├── .claude/commands/
+└── scripts/
+
+### Required .gitignore
+.env
+.env.*
+node_modules/
+dist/
+.claude/settings.local.json
+CLAUDE.local.md
+
+### Node.js Requirements
+- Error handlers in entry point
+- TypeScript strict mode
+- ESLint + Prettier configured
+
+### Quality Gates
+- No file > 300 lines
+- All tests must pass
+- No linter warnings
+- CI/CD workflow required
+
+## Framework-Specific Rules
+[Your framework patterns here]
+
+## Required MCP Servers
+- context7 (live documentation)
+- playwright (browser testing)
+
+## Global Commands
+- /new-project — Apply scaffolding rules
+- /security-check — Verify no secrets exposed
+- /pre-commit — Run all quality gates
