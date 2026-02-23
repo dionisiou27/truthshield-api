@@ -29,9 +29,9 @@ if not IMAGES_PATH.exists():
     IMAGES_PATH = Path(os.getcwd()) / "docs" / "images"
     DOCS_PATH = Path(os.getcwd()) / "docs"
 
-print(f"Images path: {IMAGES_PATH} (exists: {IMAGES_PATH.exists()})")
+print(f"📁 Images path: {IMAGES_PATH} (exists: {IMAGES_PATH.exists()})")
 if IMAGES_PATH.exists():
-    print(f"Images found: {list(IMAGES_PATH.glob('*.png'))}")
+    print(f"📁 Images found: {list(IMAGES_PATH.glob('*.png'))}")
 
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
@@ -59,9 +59,11 @@ origins = [
     "null",  # Allow file:// URLs for local development
 ]
 
+_cors_origins = ["*"] if os.getenv("ENVIRONMENT", "").lower() == "development" else origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,20 +94,21 @@ async def serve_image(filename: str):
         return FileResponse(image_file, media_type=media_types.get(image_file.suffix.lower(), 'image/png'))
     return Response(status_code=404, content=f"Image not found: {filename}")
 
-# Debug endpoint to check paths on Render
-@app.get("/debug/paths")
-async def debug_paths():
-    """Debug endpoint to check file paths"""
-    images = list(IMAGES_PATH.glob('*.png')) if IMAGES_PATH.exists() else []
-    return {
-        "project_root": str(PROJECT_ROOT),
-        "docs_path": str(DOCS_PATH),
-        "images_path": str(IMAGES_PATH),
-        "docs_exists": DOCS_PATH.exists(),
-        "images_exists": IMAGES_PATH.exists(),
-        "cwd": os.getcwd(),
-        "images_found": [img.name for img in images]
-    }
+# Debug endpoints — only available in development
+if os.getenv("ENVIRONMENT", "production").lower() == "development":
+    @app.get("/debug/paths")
+    async def debug_paths():
+        """Debug endpoint to check file paths (dev only)"""
+        images = list(IMAGES_PATH.glob('*.png')) if IMAGES_PATH.exists() else []
+        return {
+            "project_root": str(PROJECT_ROOT),
+            "docs_path": str(DOCS_PATH),
+            "images_path": str(IMAGES_PATH),
+            "docs_exists": DOCS_PATH.exists(),
+            "images_exists": IMAGES_PATH.exists(),
+            "cwd": os.getcwd(),
+            "images_found": [img.name for img in images]
+        }
 
 class HealthResponse(BaseModel):
     status: str
@@ -162,16 +165,16 @@ async def health_check():
         version="0.1.0"
     )
 
-@app.get("/debug/env")
-async def debug_environment():
-    """Debug endpoint to check if environment variables are loaded"""
-    import os
-    return {
-        "openai_key_exists": bool(os.getenv("OPENAI_API_KEY")),
-        "google_key_exists": bool(os.getenv("GOOGLE_API_KEY")),
-        "news_key_exists": bool(os.getenv("NEWS_API_KEY")),
-        "debug_info": "Check if environment variables are loaded on Render"
-    }
+if os.getenv("ENVIRONMENT", "production").lower() == "development":
+    @app.get("/debug/env")
+    async def debug_environment():
+        """Debug endpoint to check if environment variables are loaded (dev only)"""
+        import os
+        return {
+            "openai_key_exists": bool(os.getenv("OPENAI_API_KEY")),
+            "google_key_exists": bool(os.getenv("GOOGLE_API_KEY")),
+            "news_key_exists": bool(os.getenv("NEWS_API_KEY")),
+        }
 
 @app.get("/favicon.ico")
 async def favicon():

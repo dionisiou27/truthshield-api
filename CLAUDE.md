@@ -7,17 +7,16 @@ TruthShield is a FastAPI-based cognitive security platform for detecting disinfo
 
 ## Tech Stack
 - **Framework**: Python 3.11, FastAPI (async), Uvicorn
-- **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode), Thompson Sampling Bandit, LangChain, Transformers, PyTorch
+- **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode), Thompson Sampling Bandit (custom implementation)
 - **OCR/Vision**: EasyOCR, Pillow
-- **Data Processing**: Pandas, NumPy, Polars, PyArrow
-- **Database**: SQLAlchemy 2.0, SQLite (dev), Alembic migrations
+- **Data Processing**: NumPy
+- **Database**: SQLAlchemy 2.0, SQLite (dev)
 - **Infrastructure**: Docker, Redis (caching), HTTPX
 - **Testing**: pytest, black, flake8, mypy
 - **External APIs**: Google Fact Check, Google Custom Search, News API, ClaimBuster, MediaWiki
-- **Social Media**: Tweepy (Twitter/X), Instagrapi (Instagram)
+- **Social Media**: Tweepy (Twitter/X)
 - **RSS Feeds**: feedparser for compliance-safe source ingestion
 - **Web Scraping**: BeautifulSoup4 for fact-checker sites (FactCheck.org, Snopes, Correctiv)
-- **Statistics**: SciPy, Scikit-learn, Statsmodels
 
 ## Project Structure
 ```
