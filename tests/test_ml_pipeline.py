@@ -48,8 +48,7 @@ class TestClaimRouterClassification:
     # --- Hate / Dehumanization ---
     @pytest.mark.parametrize("text,expected", [
         ("These vermin need to be eliminated", ClaimType.HATE_OR_DEHUMANIZATION),
-        # NOTE: "Gesindel" alone doesn't match current patterns — marked as known gap
-        ("Alle Ausländer sind Gesindel und müssen entsorgt werden", ClaimType.HATE_OR_DEHUMANIZATION),
+        ("Dieses Gesindel muss entsorgt werden", ClaimType.HATE_OR_DEHUMANIZATION),
         ("All traitors should be deported", ClaimType.HATE_OR_DEHUMANIZATION),
     ])
     def test_hate_detection(self, router, text, expected):
@@ -68,8 +67,7 @@ class TestClaimRouterClassification:
     # --- Health Misinformation ---
     @pytest.mark.parametrize("text,expected", [
         ("The vaccine contains a microchip for tracking", ClaimType.HEALTH_MISINFORMATION),
-        # NOTE: "Impfung" doesn't match \b(impf)\b — needs \bimpf\w* (known regex gap)
-        ("Die mrna ist Gift und tödlich", ClaimType.HEALTH_MISINFORMATION),
+        ("Die Impfung macht unfruchtbar, das ist Gift", ClaimType.HEALTH_MISINFORMATION),
         ("5g causes cancer and corona", ClaimType.HEALTH_MISINFORMATION),
         ("Covid is a plandemic bioweapon", ClaimType.HEALTH_MISINFORMATION),
     ])
@@ -80,8 +78,7 @@ class TestClaimRouterClassification:
     # --- Conspiracy ---
     @pytest.mark.parametrize("text,expected", [
         ("Soros controls the media and the great reset is real", ClaimType.CONSPIRACY_THEORY),
-        # NOTE: "chemtrails" (plural) doesn't match \bchemtrail\b — known regex gap
-        ("The chemtrail conspiracy is poisoning us", ClaimType.CONSPIRACY_THEORY),
+        ("Chemtrails are poisoning us all", ClaimType.CONSPIRACY_THEORY),
         ("Die Illuminati und die neue Weltordnung", ClaimType.CONSPIRACY_THEORY),
     ])
     def test_conspiracy_detection(self, router, text, expected):

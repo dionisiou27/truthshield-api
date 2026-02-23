@@ -137,6 +137,7 @@ HATE_PATTERNS = {
         r"\b(entsorgen|ausrotten|vernichten|abschieben)\b",
         r"\b(volksverräter|lügenpresse|systemling)\b",
         r"\b(nicht.*mensch|untermenschen?)\b",
+        r"\b(gesindel|abschaum|pack|ungeziefer)\b.*\b(entsorg\w*|ausrott\w*|weg|raus)\b",
     ],
     "en": [
         r"\b(all|every|each)\s+\w+\s+(are|must|should)",
@@ -194,12 +195,12 @@ GENERALIZATION_PATTERNS = {
 
 HEALTH_MISINFO_PATTERNS = {
     "de": [
-        r"\b(impf|vakzin|mrna|biontech|pfizer|moderna|astrazeneca)\b.*\b(gift|tödlich|unfruchtbar|chip|microchip|nanobots?|magnetisch)\b",
+        r"\b(impf\w*|vakzin\w*|mrna|biontech|pfizer|moderna|astrazeneca)\b.*\b(gift|tödlich|unfruchtbar|chip|microchip|nanobots?|magnetisch)\b",
         r"\b(impf|vakzin)\w*\b.*\b(autis|krebs|steril|dna|genveränder)\b",
         r"\b(corona|covid)\b.*\b(lüge|fake|erfunden|plandemie|biowaffe)\b",
         r"\b(5g)\b.*\b(krank|krebs|corona|strahlung)\b",
         r"\b(heilung|heilt|kur)\b.*\b(krebs|diabetes|aids)\b",
-        r"\b(microchip|nanobots?|tracking)\b.*\b(impf|spritze|injektion)\b",
+        r"\b(microchip|nanobots?|tracking)\b.*\b(impf\w*|spritze|injektion)\b",
     ],
     "en": [
         r"\b(vaccine|vaccines|vax|mrna|pfizer|moderna|biontech|astrazeneca)\b.*\b(poison|deadly|infertile|chip|microchip|nanobots?|magnetic|tracking)\b",
@@ -215,14 +216,14 @@ CONSPIRACY_PATTERNS = {
     "de": [
         r"\b(rothschild|soros|gates|wef|bilderberg|illuminati|freimaurer)\b",
         r"\b(great\s*reset|neue\s*weltordnung|nwo|bevölkerungsreduktion)\b",
-        r"\b(chemtrail|haarp|wettermanipulation)\b",
+        r"\b(chemtrails?|haarp|wettermanipulation)\b",
         r"\b(flache\s*erde|mondlandung.*fake|reptilien)\b",
     ],
     "en": [
         r"\b(rothschild|soros|gates|wef|bilderberg|illuminati|freemasons?)\b",
         r"\b(great\s*reset|new\s*world\s*order|nwo|depopulation)\b",
-        r"\b(chemtrail|haarp|weather\s*control)\b",
-        r"\b(flat\s*earth|moon\s*landing.*fake|reptilian)\b",
+        r"\b(chemtrails?|haarp|weather\s*control)\b",
+        r"\b(flat\s*earth|moon\s*landing.*fake|reptilians?)\b",
     ]
 }
 
@@ -409,8 +410,13 @@ class ClaimRouter:
 
     def detect_language(self, text: str) -> str:
         """Simple language detection (DE vs EN)."""
-        text_lower = text.lower()
-        german_markers = [" der ", " die ", " das ", " nicht ", " ist ", " und ", " mit ", " für ", " oder "]
+        # Pad with spaces so markers at start/end of text are found
+        text_lower = f" {text.lower()} "
+        german_markers = [
+            " der ", " die ", " das ", " nicht ", " ist ", " und ", " mit ",
+            " für ", " oder ", " muss ", " werden ", " dieses ", " diese ",
+            " dieser ", " auch ", " noch ", " wird ", " sind ", " kann ",
+        ]
         german_count = sum(1 for marker in german_markers if marker in text_lower)
 
         if german_count >= 2 or any(c in text_lower for c in "äöüß"):
