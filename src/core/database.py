@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from src.core.config import settings
 from src.models.monitoring import Base
+import src.models.claims  # noqa: F401 — register claim tables with Base.metadata
 import logging
 
 logger = logging.getLogger(__name__)

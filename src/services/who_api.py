@@ -12,14 +12,17 @@ Alle APIs sind KOSTENLOS und brauchen keinen API-Key!
 
 import asyncio
 import logging
-import os
 import certifi
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import httpx
+from src.core.config import settings
 
-# Check if SSL verification should be disabled (for dev environments with proxies)
-DISABLE_SSL = os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
+# SSL disable only honored in development environment
+DISABLE_SSL = (
+    settings.disable_ssl_verify
+    and settings.environment.lower() == "development"
+)
 SSL_VERIFY = False if DISABLE_SSL else certifi.where()
 
 logger = logging.getLogger(__name__)

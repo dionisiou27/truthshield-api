@@ -3,14 +3,23 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# Force disable SSL warnings for development environments with proxies
-if os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true":
-    import ssl
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    # Set environment variables that some libraries respect
-    os.environ['CURL_CA_BUNDLE'] = ''
-    os.environ['REQUESTS_CA_BUNDLE'] = ''
+import logging
+from src.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+# Startup validation
+if not settings.openai_api_key:
+    logger.warning("OPENAI_API_KEY not set — AI features disabled")
+if settings.disable_ssl_verify:
+    if settings.environment.lower() != "development":
+        logger.error("DISABLE_SSL_VERIFY=true ignored outside development")
+    else:
+        logger.warning("SSL verification disabled — DEVELOPMENT ONLY")
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        os.environ['CURL_CA_BUNDLE'] = ''
+        os.environ['REQUESTS_CA_BUNDLE'] = ''
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,6 +48,7 @@ from src.api.content import router as content_router
 from src.api.compliance import router as compliance_router
 from src.api.ml import router as ml_router
 from src.api.ml_feedback import router as ml_feedback_router
+from src.core.database import init_database
 
 app = FastAPI(
     title="🛡️ TruthShield API",
@@ -59,7 +69,7 @@ origins = [
     "null",  # Allow file:// URLs for local development
 ]
 
-_cors_origins = ["*"] if os.getenv("ENVIRONMENT", "").lower() == "development" else origins
+_cors_origins = ["*"] if settings.environment.lower() == "development" else origins
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,6 +86,12 @@ app.include_router(content_router)
 app.include_router(compliance_router)
 app.include_router(ml_router)
 app.include_router(ml_feedback_router)
+
+
+@app.on_event("startup")
+async def startup():
+    await init_database()
+
 
 # Explicit image route (more reliable than StaticFiles mount on some platforms)
 @app.get("/images/{filename}")
@@ -95,7 +111,7 @@ async def serve_image(filename: str):
     return Response(status_code=404, content=f"Image not found: {filename}")
 
 # Debug endpoints — only available in development
-if os.getenv("ENVIRONMENT", "production").lower() == "development":
+if settings.environment.lower() == "development":
     @app.get("/debug/paths")
     async def debug_paths():
         """Debug endpoint to check file paths (dev only)"""
@@ -165,15 +181,14 @@ async def health_check():
         version="0.1.0"
     )
 
-if os.getenv("ENVIRONMENT", "production").lower() == "development":
+if settings.environment.lower() == "development":
     @app.get("/debug/env")
     async def debug_environment():
         """Debug endpoint to check if environment variables are loaded (dev only)"""
-        import os
         return {
-            "openai_key_exists": bool(os.getenv("OPENAI_API_KEY")),
-            "google_key_exists": bool(os.getenv("GOOGLE_API_KEY")),
-            "news_key_exists": bool(os.getenv("NEWS_API_KEY")),
+            "openai_key_exists": bool(settings.openai_api_key),
+            "google_key_exists": bool(settings.google_api_key),
+            "news_key_exists": bool(settings.news_api_key),
         }
 
 @app.get("/favicon.ico")
