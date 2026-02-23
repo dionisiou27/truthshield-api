@@ -21,31 +21,70 @@ TruthShield is a FastAPI-based cognitive security platform for detecting disinfo
 ## Project Structure
 ```
 src/
-├── api/           # FastAPI routes (detection, monitoring, content, compliance, ml, meme)
-├── core/          # Business logic (ai_engine, detection, threat_scoring, prioritization, virality)
-├── models/        # Pydantic models
-├── services/      # External integrations
-│   ├── rss_freshness.py      # RSS-based freshness checking for territorial claims
-│   ├── google_factcheck.py   # Google Fact Check API
-│   ├── google_custom_search.py  # Google Custom Search
-│   ├── claimbuster_api.py    # ClaimBuster API
-│   ├── wiki_api.py           # MediaWiki integration
-│   ├── news_api.py           # News API integration
-│   ├── web_scraper.py        # Web scraping for fact-checkers (FactCheck.org, Snopes, Correctiv)
-│   ├── social_monitor.py     # Twitter/social media monitoring with prioritization
-│   └── ocr_service.py        # EasyOCR text extraction from images
+├── api/           # FastAPI routes
+│   ├── main.py            # App entry, startup, CORS, debug gating
+│   ├── detection.py       # Detection endpoints
+│   ├── monitoring.py      # Monitoring & prioritization endpoints
+│   ├── content.py         # Content generation endpoints
+│   ├── compliance.py      # EU compliance endpoints
+│   ├── ml.py              # ML pipeline endpoints
+│   └── ml_feedback.py     # Bandit feedback endpoints
+├── core/          # Business logic
+│   ├── ai_engine.py           # Orchestrator (386 LOC) — delegates to:
+│   ├── prompt_builder.py      # Tone, opening, temporal, response mode instructions
+│   ├── source_aggregation.py  # Source search, prioritization, secondary sources
+│   ├── response_builder.py    # Single response generation with OpenAI
+│   ├── verdict.py             # Verdict determination + special case overrides
+│   ├── config.py              # Pydantic Settings singleton (all env access)
+│   ├── database.py            # Async SQLAlchemy engine, session factory
+│   ├── personas.py            # Company & avatar persona definitions
+│   ├── text_detection.py      # Astroturfing, contradiction detection
+│   ├── detection.py           # Content detection logic
+│   ├── coordinated_behavior.py # CIB detection
+│   ├── threat_scoring.py      # Threat level scoring
+│   ├── prioritization.py      # Content prioritization engine
+│   ├── virality.py            # Virality prediction
+│   ├── audit.py               # Audit logging
+│   ├── evidence.py            # Evidence aggregation
+│   ├── kpi.py                 # KPI tracking
+│   ├── qa.py                  # Quality assurance sampling
+│   ├── content_templates.py   # Response templates
+│   ├── playbooks.py           # Intervention playbooks
+│   ├── publish.py             # Publishing logic
+│   ├── ml_learning.py         # ML learning utilities
+│   └── watchlist.py           # Entity watchlists
+├── models/        # Database models (SQLAlchemy 2.0 DeclarativeBase)
+│   ├── monitoring.py      # MonitoredContent, MonitoringKeyword
+│   └── claims.py          # ClaimAnalysisRecord, BanditDecisionRecord, AuditLogEntry
+├── services/      # External integrations (15 API connectors)
+│   ├── rss_freshness.py       # RSS freshness (territorial claims)
+│   ├── rss_news.py            # RSS news aggregation
+│   ├── google_factcheck.py    # Google Fact Check API
+│   ├── google_custom_search.py # Google Custom Search
+│   ├── claimbuster_api.py     # ClaimBuster API
+│   ├── wiki_api.py            # MediaWiki
+│   ├── news_api.py            # News API
+│   ├── web_scraper.py         # Fact-checker scraping (FactCheck.org, Snopes, Correctiv)
+│   ├── social_monitor.py      # Twitter/social media monitoring
+│   ├── ocr_service.py         # EasyOCR text extraction
+│   ├── arxiv_api.py           # arXiv academic search
+│   ├── pubmed_api.py          # PubMed medical literature
+│   ├── semantic_scholar_api.py # Semantic Scholar
+│   ├── core_api.py            # CORE.ac.uk academic search
+│   └── who_api.py             # WHO health data API
 └── ml/            # Machine Learning Pipeline
-    ├── guardian/  # Claim Router, Source Ranker, Response Generator
-    ├── learning/  # Thompson Sampling Bandit, Feedback Collector, ML Logging
-    └── meme/      # Meme Generator (PLANNING PHASE)
-tests/             # pytest test files
+    ├── guardian/   # ClaimRouter, SourceRanker, ResponseGenerator
+    ├── learning/   # Thompson Sampling Bandit, Feedback, Logging, Scoreboard
+    └── meme/       # Meme Generator (PLANNING)
+tests/
+├── conftest.py            # Shared fixtures (router, bandit, ranker)
+├── test_ml_pipeline.py    # 81 unit tests (ClaimRouter, Bandit, SourceRanker, TextDetection)
+├── test_database.py       # 15 database tests (schema, CRUD)
+├── exploratory/           # Manual test scripts
+└── integration/           # Integration tests
 bench/             # Batch testing infrastructure
-├── batches/       # Test claim batches (euronews_v1, v2, starmer_china)
-├── run_batch.py   # Batch runner CLI
-└── replay.py      # Bandit replay testing
 configs/           # Configuration files
-demo_data/         # Demo/test data + ML logs + memes
-docs/              # Documentation, HTML demo, Meme Generator plan
+docs/              # Documentation, HTML demo
 ```
 
 ## Common Commands
@@ -53,14 +92,26 @@ docs/              # Documentation, HTML demo, Meme Generator plan
 ### Run Development Server
 ```bash
 uvicorn src.api.main:app --reload --port 8000
-# OR
-python main.py
 ```
 
 ### Run Tests
 ```bash
-pytest tests/
-pytest -v  # verbose
+pytest tests/ -v                          # All tests
+pytest tests/ -v --tb=short               # Short traceback
+pytest tests/ -v --ignore=tests/integration  # Skip integration tests
+pytest tests/test_ml_pipeline.py -v       # ML pipeline only
+pytest tests/test_database.py -v          # Database only
+```
+
+### Run CI Tests (without heavy deps)
+```bash
+pip install -r requirements-ci.txt
+pytest tests/ -v --tb=short --ignore=tests/integration
+```
+
+### Lint
+```bash
+flake8 src/ --max-line-length=120 --ignore=E501,W503
 ```
 
 ### Run Batch Tests
@@ -69,14 +120,17 @@ python bench/run_batch.py --input bench/batches/euronews_v1.json --output demo_d
 ```
 
 ## Environment Variables
+All variables accessed through `src/core/config.py` Settings singleton. Zero direct `os.getenv()` in codebase.
+
 Required in `.env`:
 ```
-OPENAI_API_KEY=        # OpenAI GPT-4-Turbo access (required)
+OPENAI_API_KEY=        # OpenAI GPT-4-Turbo (required)
 GOOGLE_API_KEY=        # Google Custom Search / Fact Check
 NEWS_API_KEY=          # News API integration
-HUGGINGFACE_API_KEY=   # HuggingFace models (optional)
-TWITTER_API_KEY=       # Twitter/X API (for social monitoring)
+TWITTER_API_KEY=       # Twitter/X API (social monitoring)
 TWITTER_API_SECRET=    # Twitter/X API secret
+ENVIRONMENT=development  # development | production (gates debug endpoints, CORS, SSL)
+DISABLE_SSL_VERIFY=false # Only effective when ENVIRONMENT=development
 ```
 
 ---
@@ -363,13 +417,28 @@ bench/batches/euronews_starmer_china_v2.json  # China/UK grey-zone (12 claims)
 
 ## Key Files
 
-### Core ML Pipeline
+### Core Engine (Modular)
+- `src/core/ai_engine.py` - Orchestrator (386 LOC) — delegates to modules below
+- `src/core/prompt_builder.py` - Tone, temporal, response mode prompt construction
+- `src/core/source_aggregation.py` - Source search, API integration, prioritization
+- `src/core/response_builder.py` - Single response generation with OpenAI
+- `src/core/verdict.py` - Verdict determination + special case overrides
+- `src/core/personas.py` - Company & avatar persona definitions
+- `src/core/text_detection.py` - Astroturfing and contradiction detection
+- `src/core/config.py` - Pydantic Settings singleton (all configuration)
+- `src/core/database.py` - Async SQLAlchemy engine, session factory
+
+### ML Pipeline
 - `src/ml/guardian/claim_router.py` - Claim analysis (type, risk, volatility, IO, response mode)
 - `src/ml/guardian/source_ranker.py` - Pure ranking source selection (75+ domain whitelist)
 - `src/ml/guardian/response_generator.py` - Pipeline orchestration
 - `src/ml/learning/bandit.py` - Thompson Sampling (4 tone buckets)
 - `src/ml/learning/feedback.py` - Engagement metrics collection
 - `src/ml/learning/scoreboard.py` - Quality metrics and boundary detection
+
+### Database Models
+- `src/models/monitoring.py` - MonitoredContent, MonitoringKeyword
+- `src/models/claims.py` - ClaimAnalysisRecord, BanditDecisionRecord, AuditLogEntry (AI Act Art. 14)
 
 ### Services
 - `src/services/rss_freshness.py` - RSS-based freshness checking
@@ -566,12 +635,20 @@ POST /api/v1/meme/generate
 ---
 
 ## Development Notes
-- All API routes are async
-- Pydantic v2 used for request/response validation
+- All API routes are async (FastAPI)
+- Pydantic v2 for request/response validation
+- Config via Pydantic Settings singleton — zero `os.getenv()` in `src/`
+- Database auto-initialized at startup via `init_database()`
+- SQLAlchemy 2.0 async with DeclarativeBase
+- CI pipeline: GitHub Actions (test + lint) on push/PR to main
+- 96 tests: 81 ML pipeline + 15 database
 - ML logs stored in `demo_data/ml/` (JSONL format)
 - Guardian Avatar behavioral rules: never debate, never ask questions, never use irony
 - Source ranking is **pure ranking** (no hard filters, only weighted scores)
 - RSS feeds respect robots.txt compliance (no HTML scraping for blocked sources)
+- Debug endpoints gated behind `ENVIRONMENT=development`
+- CORS restricted to defined origins (not wildcard)
+- SSL disable requires both `DISABLE_SSL_VERIFY=true` AND `ENVIRONMENT=development`
 
 # Global CLAUDE.md
 

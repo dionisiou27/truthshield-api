@@ -1,5 +1,74 @@
 # CHANGELOG
 
+## 2026-02-23
+
+### Repository Cleanup & Code Quality (P0–P3)
+
+Full code review and systematic cleanup across 4 priority tiers. All changes validated with 96 automated tests.
+
+#### P0 — Credibility Fixes
+- Removed 14 phantom dependencies from requirements.txt (langchain, torch, pandas, scipy, etc.)
+- Removed `__pycache__` from git tracking (8 .pyc files)
+- Corrected CLAUDE.md tech stack to match actual dependencies
+- Gated debug endpoints (`/debug/*`) behind `ENVIRONMENT=development`
+- Restricted CORS from wildcard `*` to defined origins list
+
+#### P1 — Code Organization
+- Moved root-level scripts to `scripts/` and `tests/exploratory/`
+- Extracted `personas.py` (155 LOC) and `text_detection.py` (226 LOC) from ai_engine.py
+- Removed 3.7 MB scraped competitor HTML from `docs/`
+- Removed `STRATEGY/` folder from git tracking (sensitive data)
+
+#### P2 — ML Pipeline Quality
+- Added 81 unit tests covering ClaimRouter, GuardianBandit, SourceRanker, TextDetection
+- Fixed 3 regex gaps: German compound words, English plurals, hate pattern combinations
+- Hardened SSL disable: requires both `DISABLE_SSL_VERIFY=true` AND `ENVIRONMENT=development`
+- Removed 4 dead modules (383 LOC): network.py, platform_config.py, stylometry.py, temporal.py
+
+#### P3 — Architecture
+- Split ai_engine.py monolith: 1774 → 386 LOC
+  - Extracted: prompt_builder.py (406), source_aggregation.py (~430), verdict.py (144), response_builder.py (751)
+- Added conftest.py + pytest.ini for shared test infrastructure
+- Consolidated all env access through Pydantic Settings singleton (zero `os.getenv()` in `src/`)
+- Added GitHub Actions CI (test + lint pipeline on push/PR to main)
+- Activated database layer: 5 tables, async startup init, SQLAlchemy 2.0, 15 DB tests
+- Added AI Act Art. 14 audit log table
+
+### Added
+- `src/core/prompt_builder.py` — Tone, temporal, response mode prompt instructions
+- `src/core/source_aggregation.py` — SourceAggregator class, API integrations
+- `src/core/response_builder.py` — ResponseBuilder class, single-response generation
+- `src/core/verdict.py` — Verdict determination + special case overrides
+- `src/core/personas.py` — Company & avatar persona definitions
+- `src/core/text_detection.py` — Astroturfing and contradiction detection
+- `src/models/claims.py` — ClaimAnalysisRecord, BanditDecisionRecord, AuditLogEntry
+- `tests/test_ml_pipeline.py` — 81 ML pipeline unit tests
+- `tests/test_database.py` — 15 database tests (schema + CRUD)
+- `tests/conftest.py` — Shared pytest fixtures (router, bandit, ranker)
+- `pytest.ini` — Test configuration with markers
+- `requirements-ci.txt` — CI dependencies (without PyTorch/easyocr)
+- `requirements-future.txt` — Roadmap dependencies
+- `.github/workflows/test.yml` — GitHub Actions test + lint pipeline
+
+### Removed
+- 14 phantom dependencies from requirements.txt
+- 4 dead modules: network.py, platform_config.py, stylometry.py, temporal.py (383 LOC total)
+- `docs/test.html` (3.7 MB scraped HTML)
+- `__pycache__/` from git tracking
+- `STRATEGY/` from git tracking (sensitive data)
+
+### Changed
+- `src/core/ai_engine.py`: 1774 → 386 LOC (orchestrator pattern)
+- `src/core/config.py`: Added `disable_ssl_verify`, `environment` fields
+- `src/core/database.py`: Registers claim models with Base.metadata
+- `src/api/main.py`: Settings singleton, startup DB init, debug/CORS/SSL hardening
+- `src/models/monitoring.py`: Migrated to SQLAlchemy 2.0 DeclarativeBase
+- `src/services/rss_news.py`: SSL via Settings + environment gate
+- `src/services/who_api.py`: SSL via Settings + environment gate
+- `src/ml/guardian/claim_router.py`: Regex fixes (compounds, plurals, hate combos)
+
+---
+
 ## 2025-12-18
 
 ### Added - Temporal Awareness, IO Detection & RSS Freshness
