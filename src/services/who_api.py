@@ -18,8 +18,11 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 import httpx
 
-# Check if SSL verification should be disabled (for dev environments with proxies)
-DISABLE_SSL = os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
+# SSL disable only honored in development environment
+DISABLE_SSL = (
+    os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true"
+    and os.getenv("ENVIRONMENT", "production").lower() == "development"
+)
 SSL_VERIFY = False if DISABLE_SSL else certifi.where()
 
 logger = logging.getLogger(__name__)

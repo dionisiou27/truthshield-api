@@ -5,7 +5,11 @@ load_dotenv()
 
 # Force disable SSL warnings for development environments with proxies
 if os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true":
-    import ssl
+    import logging
+    logging.getLogger(__name__).warning(
+        "SSL verification disabled — DEVELOPMENT ONLY. "
+        "Never use DISABLE_SSL_VERIFY=true in production."
+    )
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     # Set environment variables that some libraries respect
