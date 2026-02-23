@@ -48,6 +48,7 @@ from src.api.content import router as content_router
 from src.api.compliance import router as compliance_router
 from src.api.ml import router as ml_router
 from src.api.ml_feedback import router as ml_feedback_router
+from src.core.database import init_database
 
 app = FastAPI(
     title="🛡️ TruthShield API",
@@ -85,6 +86,12 @@ app.include_router(content_router)
 app.include_router(compliance_router)
 app.include_router(ml_router)
 app.include_router(ml_feedback_router)
+
+
+@app.on_event("startup")
+async def startup():
+    await init_database()
+
 
 # Explicit image route (more reliable than StaticFiles mount on some platforms)
 @app.get("/images/{filename}")
