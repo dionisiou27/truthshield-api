@@ -6,19 +6,15 @@ import logging
 
 from src.services.social_monitor import SocialMediaMonitor
 from src.core.config import settings
-from src.core.prioritization import PrioritizedItem
-from src.core.coordinated_behavior import CoordinatedBehaviorDetector, AstroScoreResult
+from src.core.coordinated_behavior import CoordinatedBehaviorDetector
 from src.core.evidence import EvidenceArchiver
 from src.core.playbooks import get_playbooks, get_playbook
 from src.core.threat_scoring import ThreatScoringEnsemble
 from src.core.watchlist import WatchlistStore
 from src.core.kpi import KPIDecider
 from src.core.qa import QASampler
-from src.core.coordinated_behavior import CoordinatedBehaviorDetector
 from src.core.publish import PublishQueue
-from src.core.config import settings
 from src.core.audit import AuditLog
-from random import random
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/monitor", tags=["Social Media Monitoring"])
@@ -34,10 +30,12 @@ qa_sampler = QASampler(kpi_decider)
 publisher = PublishQueue()
 auditor = AuditLog()
 
+
 class MonitoringRequest(BaseModel):
     company_name: str
     keywords: Optional[List[str]] = None
     limit: int = 10
+
 
 @router.get("/status")
 async def monitoring_status():
@@ -49,7 +47,8 @@ async def monitoring_status():
         "version": "0.1.0"
     }
 
-@router.get("/companies") 
+
+@router.get("/companies")
 async def get_supported_companies():
     """🏢 Get list of companies we can monitor"""
     companies = {
@@ -65,17 +64,19 @@ async def get_supported_companies():
         "details": companies
     }
 
+
 class CampaignMonitoringRequest(BaseModel):
     """Request for campaign monitoring"""
     client_name: str
     platforms: List[str] = ["twitter", "tiktok", "facebook"]
     monitoring_duration_hours: int = 24
-    
+
     @validator('client_name')
     def validate_client_name(cls, v):
         if len(v.strip()) < 2:
             raise ValueError('Client name must be at least 2 characters')
         return v.strip().lower()
+
 
 class PrioritizationItem(BaseModel):
     """Minimal schema for prioritization input (platform-agnostic)."""
@@ -91,12 +92,14 @@ class PrioritizationItem(BaseModel):
     follower_spike_24h: Optional[float] = 0.0
     coordination_score: Optional[float] = 0.0
 
+
 class PrioritizationResponse(BaseModel):
     priority: str
     watchlist: bool
     pools: Dict[str, bool]
     score_components: Dict[str, float]
     thresholds: Dict[str, float]
+
 
 class AstroSignals(BaseModel):
     # All signals optional; 0 default
@@ -117,10 +120,12 @@ class AstroSignals(BaseModel):
     recurring_token_signature: Optional[float] = 0.0
     unnatural_punctuation_ratio: Optional[float] = 0.0
 
+
 class AstroScoreResponse(BaseModel):
     score_0_10: float
     category_scores: Dict[str, float]
     notes: List[str]
+
 
 class PipelineItem(BaseModel):
     platform: Optional[str] = None
@@ -144,6 +149,7 @@ class PipelineItem(BaseModel):
     # Auto-post integration
     verified: Optional[bool] = None
 
+
 class RouteDecision(BaseModel):
     action: str  # ALERT_HITL | SEMI_HITL | ARCHIVE
     watchlist: bool
@@ -152,6 +158,7 @@ class RouteDecision(BaseModel):
     reasons: List[str]
     evidence: Optional[Dict] = None
     qa_selected: Optional[bool] = None
+
 
 @router.post("/start")
 async def start_monitoring(request: MonitoringRequest):
@@ -163,12 +170,13 @@ async def start_monitoring(request: MonitoringRequest):
         "message": "Mock monitoring active - real X/Twitter API integration coming next!"
     }
 
+
 @router.post("/campaigns/start")
 async def start_campaign_monitoring(request: CampaignMonitoringRequest, background_tasks: BackgroundTasks):
     """🚨 Start monitoring for coordinated campaigns against client"""
     try:
         logger.info(f"🔍 Starting campaign monitoring for {request.client_name}")
-        
+
         # Start background monitoring
         background_tasks.add_task(
             monitor_client_campaigns,
@@ -176,7 +184,7 @@ async def start_campaign_monitoring(request: CampaignMonitoringRequest, backgrou
             request.platforms,
             request.monitoring_duration_hours
         )
-        
+
         return {
             "success": True,
             "client_name": request.client_name,
@@ -185,10 +193,11 @@ async def start_campaign_monitoring(request: CampaignMonitoringRequest, backgrou
             "message": f"Campaign monitoring started for {request.client_name}",
             "started_at": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error starting campaign monitoring: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/campaigns/{client_name}")
 async def get_client_campaigns(client_name: str, days: int = 7):
@@ -207,10 +216,11 @@ async def get_client_campaigns(client_name: str, days: int = 7):
             "total_found": 0,
             "message": "Campaign detection integration in progress"
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting campaigns for {client_name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/campaigns/{client_name}/summary")
 async def get_campaign_summary(client_name: str):
@@ -227,18 +237,19 @@ async def get_campaign_summary(client_name: str):
             "last_updated": datetime.now().isoformat(),
             "message": "Campaign detection integration in progress"
         }
-        
+
         return summary
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/campaigns/analyze")
 async def analyze_content_batch(client_name: str, content_batch: List[Dict]):
     """🔍 Analyze batch of content for campaign detection (Mock Implementation)"""
     try:
         logger.info(f"🔍 Analyzing {len(content_batch)} items for {client_name}")
-        
+
         # Mock analysis for now
         return {
             "success": True,
@@ -249,10 +260,11 @@ async def analyze_content_batch(client_name: str, content_batch: List[Dict]):
             "analyzed_at": datetime.now().isoformat(),
             "message": "Campaign detection integration in progress"
         }
-        
+
     except Exception as e:
         logger.error(f"Error analyzing content batch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/prioritization/config")
 async def get_prioritization_config():
@@ -264,6 +276,7 @@ async def get_prioritization_config():
         "account_pool_min_follower_spike_24h": settings.account_pool_min_follower_spike_24h,
         "coordination_min_score": settings.coordination_min_score,
     }
+
 
 @router.post("/prioritization/prioritize", response_model=List[PrioritizationResponse])
 async def prioritize_items(items: List[PrioritizationItem]):
@@ -289,6 +302,7 @@ async def prioritize_items(items: List[PrioritizationItem]):
         logger.error(f"Prioritization error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/astro/score", response_model=List[AstroScoreResponse])
 async def astro_score_batch(items: List[AstroSignals]):
     """Score coordinated behavior (Astro-Score 0–10) for a batch of items."""
@@ -306,10 +320,12 @@ async def astro_score_batch(items: List[AstroSignals]):
         logger.error(f"Astro scoring error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 class RedTeamScenario(BaseModel):
     name: str
     description: str
     tactics: List[str]
+
 
 @router.get("/qa/redteam/scenarios", response_model=List[RedTeamScenario])
 async def redteam_scenarios():
@@ -340,6 +356,7 @@ async def pipeline_config():
         "virality_threshold": settings.virality_threshold,
     }
 
+
 @router.post("/pipeline/route", response_model=List[RouteDecision])
 async def pipeline_route(items: List[PipelineItem]):
     """Route items through pre-filter → astro score → action decision."""
@@ -353,7 +370,6 @@ async def pipeline_route(items: List[PipelineItem]):
         if pools.get("track_pool") or pools.get("account_pool"):
             watchlist = True
         # ROI scaling: if author/topic in client watchlist, scale threshold down
-        roi_scale = 1.0
         wl = None
         if item.author_username:
             wl = watchlists.get(item.author_username)
@@ -432,10 +448,12 @@ async def pipeline_route(items: List[PipelineItem]):
         ))
     return decisions
 
+
 @router.get("/playbooks")
 async def list_playbooks():
     """Return all staff playbooks (L1–L3)."""
     return get_playbooks()
+
 
 @router.get("/playbooks/{level}")
 async def get_playbook_by_level(level: int):
@@ -445,19 +463,25 @@ async def get_playbook_by_level(level: int):
     return get_playbook(level)
 
 # KPI configuration endpoints
+
+
 class HarmWeightUpsert(BaseModel):
     weight: float
+
 
 @router.post("/kpi/harm/{topic}")
 async def kpi_set_harm_weight(topic: str, body: HarmWeightUpsert):
     kpi_decider.set_harm_weight(topic, body.weight)
     return {"topic": topic, "weight": body.weight}
 
+
 @router.get("/kpi/harm")
 async def kpi_get_harm_weights():
     return {"harm_weights": kpi_decider.harm_weights}
 
 # QA endpoints
+
+
 @router.get("/qa/config")
 async def qa_config():
     return {
@@ -466,29 +490,35 @@ async def qa_config():
         "qa_high_spread_projected_reach": settings.qa_high_spread_projected_reach,
     }
 
+
 @router.get("/watchlists")
 async def list_watchlists():
     return watchlists.list()
+
 
 class WatchlistUpsert(BaseModel):
     topics: Optional[List[str]] = None
     accounts: Optional[List[str]] = None
     roi_threshold: Optional[float] = None
 
+
 @router.post("/watchlists/{client}")
 async def upsert_watchlist(client: str, body: WatchlistUpsert):
     wl = watchlists.upsert(client, {k: v for k, v in body.model_dump().items() if v is not None})
     return wl
+
 
 class ThreatScoreRequest(BaseModel):
     virality_score: float
     harm_potential: float
     astro_score: float
 
+
 class ThreatScoreResponse(BaseModel):
     score_0_10: float
     components: Dict[str, float]
     weights: Dict[str, float]
+
 
 @router.post("/threat/score", response_model=ThreatScoreResponse)
 async def threat_score(body: ThreatScoreRequest):
@@ -496,6 +526,8 @@ async def threat_score(body: ThreatScoreRequest):
     return ThreatScoreResponse(score_0_10=s.score_0_10, components=s.components, weights=s.weights)
 
 # Capacity estimation
+
+
 class CapacityEstimateRequest(BaseModel):
     items_per_day: int
     pct_alert: float = 0.1
@@ -505,10 +537,12 @@ class CapacityEstimateRequest(BaseModel):
     avg_seconds_l3: int = 900
     analyst_hours_per_day: float = 6.5
 
+
 class CapacityEstimateResponse(BaseModel):
     total_seconds: int
     analysts_needed: float
     breakdown: Dict[str, int]
+
 
 @router.post("/capacity/estimate", response_model=CapacityEstimateResponse)
 async def capacity_estimate(body: CapacityEstimateRequest):
@@ -528,6 +562,8 @@ async def capacity_estimate(body: CapacityEstimateRequest):
     )
 
 # Staff model suggestion
+
+
 @router.get("/staff/model")
 async def staff_model():
     return {
@@ -540,6 +576,8 @@ async def staff_model():
     }
 
 # Quick-triage UI endpoints
+
+
 class TriageItemRequest(BaseModel):
     content_id: str
     content_text: str
@@ -551,6 +589,7 @@ class TriageItemRequest(BaseModel):
     author_followers: Optional[int] = 0
     follower_spike_24h: Optional[float] = 0.0
     astro_signals: Optional[AstroSignals] = None
+
 
 class TriageItemResponse(BaseModel):
     content_id: str
@@ -565,6 +604,7 @@ class TriageItemResponse(BaseModel):
     suggested_templates: List[str]  # 1-click reply templates
     escalate_flag: bool = False
 
+
 class TriageActionRequest(BaseModel):
     content_id: str
     action: str  # approve | edit | escalate | archive
@@ -575,11 +615,13 @@ class TriageActionRequest(BaseModel):
     enqueue_avatar: Optional[bool] = True
     verified: Optional[bool] = True
 
+
 class TriageActionResponse(BaseModel):
     ok: bool
     queued: bool
     clipboard_text: Optional[str] = None
     audit_id: Optional[str] = None
+
 
 @router.post("/triage/item", response_model=TriageItemResponse)
 async def triage_item(body: TriageItemRequest):
@@ -587,16 +629,16 @@ async def triage_item(body: TriageItemRequest):
     base = body.model_dump()
     virality = social_monitor.virality_score(base)
     prioritized = social_monitor.prioritize_batch([base])[0]
-    
+
     # Compute astro score
     astro_score = 0.0
     if body.astro_signals:
         astro_result = astro_detector.score(body.astro_signals.model_dump())
         astro_score = astro_result.score_0_10
-    
+
     # Projected reach
     projected = kpi_decider.estimate_projected_reach_48h(base.get("views") or 0.0, base.get("growth_rate_24h") or 0.0)
-    
+
     # Network cluster (compact view - would fetch related items in real implementation)
     network_cluster = None
     if base.get("author_username"):
@@ -606,13 +648,13 @@ async def triage_item(body: TriageItemRequest):
             "cluster_id": "single",
             "note": "Full graph analysis requires batch of related items"
         }
-    
+
     # Suggested templates (from L1 playbook)
     templates = []
     playbook = get_playbook(1)
     if "templates" in playbook:
         templates = list(playbook["templates"].values())[:3]
-    
+
     # Verdict suggestion (based on scores)
     verdict = "unsupported"
     if astro_score >= 8.0:
@@ -621,7 +663,7 @@ async def triage_item(body: TriageItemRequest):
         verdict = "misleading"
     elif virality > 7.0:
         verdict = "misleading"
-    
+
     return TriageItemResponse(
         content_id=body.content_id,
         verdict=verdict,
@@ -636,10 +678,12 @@ async def triage_item(body: TriageItemRequest):
         escalate_flag=prioritized.priority == "high",
     )
 
+
 @router.post("/triage/batch", response_model=List[TriageItemResponse])
 async def triage_batch(items: List[TriageItemRequest]):
     """Batch triage for multiple items."""
     return [await triage_item(item) for item in items]
+
 
 @router.post("/triage/action", response_model=TriageActionResponse)
 async def triage_action(body: TriageActionRequest):
@@ -675,31 +719,29 @@ async def triage_action(body: TriageActionRequest):
 
 # === HELPER FUNCTIONS ===
 
+
 async def monitor_client_campaigns(client_name: str, platforms: List[str], duration_hours: int):
     """Background task to monitor client for campaigns"""
     try:
         logger.info(f"🔍 Background monitoring started for {client_name}")
-        
+
         # Get social media content for client
         content_batch = []
-        
+
         # Monitor Twitter/X
         if "twitter" in platforms:
             keywords = social_monitor.get_company_keywords(client_name)
             if keywords:
                 twitter_content = await social_monitor.scan_for_threats(client_name, limit=50)
                 content_batch.extend(twitter_content)
-        
+
         # Monitor TikTok (would integrate with TikTok scraper)
         if "tiktok" in platforms:
             # Placeholder for TikTok monitoring
             logger.info(f"TikTok monitoring for {client_name} - integration pending")
-        
+
         # Analyze + prioritize for watchlist + route decisions
         if content_batch:
-            prioritized = social_monitor.prioritize_batch(content_batch)
-            watchlist_items = [p for p in prioritized if p.watchlist]
-
             # Build pipeline items with minimal features; astro signals left empty for now
             pipeline_items = []
             for raw in content_batch:
@@ -724,8 +766,8 @@ async def monitor_client_campaigns(client_name: str, platforms: List[str], durat
                 f"📊 Routed {len(content_batch)} items for {client_name}: "
                 f"alerts={counts['ALERT_HITL']}, semi={counts['SEMI_HITL']}, archive={counts['ARCHIVE']}"
             )
-        
+
         logger.info(f"✅ Background monitoring completed for {client_name}")
-        
+
     except Exception as e:
         logger.error(f"Background monitoring error for {client_name}: {e}")

@@ -14,10 +14,11 @@ engine = create_async_engine(
 
 # Create session factory
 AsyncSessionLocal = sessionmaker(
-    engine, 
-    class_=AsyncSession, 
+    engine,
+    class_=AsyncSession,
     expire_on_commit=False
 )
+
 
 async def init_database():
     """Initialize database tables"""
@@ -27,6 +28,7 @@ async def init_database():
         logger.info("✅ Database initialized successfully")
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
+
 
 async def get_database():
     """Dependency to get database session"""

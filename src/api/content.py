@@ -115,9 +115,7 @@ async def publish_enqueue(body: PublishEnqueueRequest):
     entry = publish_queue.enqueue({"content": body.content, "verified": True})
     return {"queued": True, "entry": entry}
 
+
 @router.get("/publish/queue")
 async def publish_list():
     return {"items": publish_queue.list()}
-
-
-

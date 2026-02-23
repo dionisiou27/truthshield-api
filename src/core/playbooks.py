@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict
 
 
 def get_playbooks() -> Dict[str, Dict]:
@@ -53,6 +53,3 @@ def get_playbooks() -> Dict[str, Dict]:
 def get_playbook(level: int) -> Dict:
     mapping = {1: "level_1", 2: "level_2", 3: "level_3"}
     return get_playbooks()[mapping.get(level, "level_1")]
-
-
-

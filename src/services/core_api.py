@@ -12,6 +12,7 @@ from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class CoreAPI:
     """CORE.ac.uk API Integration for open access scientific papers"""
 
@@ -153,6 +154,7 @@ class CoreAPI:
 
 # Global instance
 core_api = CoreAPI()
+
 
 async def search_core(query: str, max_results: int = 5) -> List[Dict]:
     """Convenience function to search CORE"""

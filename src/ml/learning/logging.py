@@ -97,7 +97,7 @@ class LearningLogger:
         )
         self._write_event(event, self.event_file)
         logger.debug("Logged source_ranking: %s (%d/%d selected)",
-                    claim_id[:8], len(selected_sources), candidates_count)
+                     claim_id[:8], len(selected_sources), candidates_count)
 
     def log_bandit_decision(
         self,

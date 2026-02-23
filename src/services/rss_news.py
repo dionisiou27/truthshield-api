@@ -52,7 +52,12 @@ NEWS_FEEDS: Dict[str, List[RSSFeed]] = {
         RSSFeed("The Guardian - Europe", "https://www.theguardian.com/world/europe-news/rss", "en", "europe", 0.88),
         RSSFeed("NPR News", "https://feeds.npr.org/1001/rss.xml", "en", "general", 0.90),
         RSSFeed("NPR World", "https://feeds.npr.org/1004/rss.xml", "en", "world", 0.90),
-        RSSFeed("Reuters World", "https://www.reutersagency.com/feed/?taxonomy=best-regions&post_type=best", "en", "world", 0.94),
+        RSSFeed(
+            "Reuters World",
+            "https://www.reutersagency.com/feed/?taxonomy=best-regions&post_type=best",
+            "en",
+            "world",
+            0.94),
     ],
 
     # German

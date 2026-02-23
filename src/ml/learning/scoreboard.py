@@ -11,7 +11,7 @@ Metrics tracked:
 
 This is the "ehrlichste KPI" - honest quality tracking.
 """
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum

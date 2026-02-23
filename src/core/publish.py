@@ -46,5 +46,3 @@ class PublishQueue:
                 self._write(obj)
                 return True
         return False
-
-

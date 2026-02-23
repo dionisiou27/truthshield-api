@@ -34,5 +34,3 @@ class QASampler:
         for it, a in zip(items, astro_scores):
             out.append(self.evaluate(it, a))
         return out
-
-

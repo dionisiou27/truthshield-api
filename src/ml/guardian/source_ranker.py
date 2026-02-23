@@ -6,7 +6,7 @@ Topic-aware relevance boosting with soft diversity preferences.
 from enum import Enum
 from typing import List, Dict, Optional, Set
 from pydantic import BaseModel
-from datetime import datetime, date
+from datetime import date
 import math
 import logging
 
@@ -115,7 +115,7 @@ GUARDIAN_SOURCE_PROFILES: Dict[str, List[str]] = {
     "territorial_control": [
         "news.err.ee",          # ERR English - Baltic/Eastern European frontline coverage (Tier A)
         "euvsdisinfo.eu",       # IO pattern documentation (Tier A)
-        "understandingwar.org", # Institute for Study of War
+        "understandingwar.org",  # Institute for Study of War
         "reuters.com",
         "apnews.com",
         "newsukraine.rbc.ua",   # RBC-Ukraine (Tier B - fast freshness, needs corroboration)
@@ -436,11 +436,11 @@ class SourceRanker:
 
         # Final weighted score - NO thresholds applied here
         score = (
-            self.config.weight_relevance * relevance +
-            self.config.weight_authority * base_authority +
-            self.config.weight_topic_fit * topic_fit +
-            self.config.weight_recency * recency +
-            self.config.weight_prior * prior
+            self.config.weight_relevance * relevance
+            + self.config.weight_authority * base_authority
+            + self.config.weight_topic_fit * topic_fit
+            + self.config.weight_recency * recency
+            + self.config.weight_prior * prior
         ) * accessibility
 
         source.final_score = score
@@ -493,7 +493,7 @@ class SourceRanker:
 
         logger.info(f"Selected top {len(selected)} sources from {len(sources)} candidates")
         for i, s in enumerate(selected):
-            logger.info(f"  {i+1}. {self._extract_domain(s.url)} (score={s.final_score:.3f}, class={s.source_class.value})")
+            logger.info(f"  {i + 1}. {self._extract_domain(s.url)} (score={s.final_score:.3f}, class={s.source_class.value})")
 
         return selected
 

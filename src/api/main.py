@@ -1,23 +1,27 @@
 # Load environment variables FIRST, before any other imports
+from src.api.ml_feedback import router as ml_feedback_router
+from src.api.ml import router as ml_router
+from src.api.compliance import router as compliance_router
+from src.api.content import router as content_router
+from src.api.monitoring import router as monitoring_router
+from src.api.detection import router as detection_router
+from pydantic import BaseModel
+from pathlib import Path
+from fastapi.responses import HTMLResponse, Response, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 # Force disable SSL warnings for development environments with proxies
 if os.getenv("DISABLE_SSL_VERIFY", "false").lower() == "true":
-    import ssl
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     # Set environment variables that some libraries respect
     os.environ['CURL_CA_BUNDLE'] = ''
     os.environ['REQUESTS_CA_BUNDLE'] = ''
 
-from fastapi import FastAPI, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response, FileResponse
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-from pydantic import BaseModel
 
 # Determine paths at module load
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -33,12 +37,6 @@ print(f"📁 Images path: {IMAGES_PATH} (exists: {IMAGES_PATH.exists()})")
 if IMAGES_PATH.exists():
     print(f"📁 Images found: {list(IMAGES_PATH.glob('*.png'))}")
 
-from src.api.detection import router as detection_router
-from src.api.monitoring import router as monitoring_router
-from src.api.content import router as content_router
-from src.api.compliance import router as compliance_router
-from src.api.ml import router as ml_router
-from src.api.ml_feedback import router as ml_feedback_router
 
 app = FastAPI(
     title="🛡️ TruthShield API",
@@ -78,6 +76,8 @@ app.include_router(ml_router)
 app.include_router(ml_feedback_router)
 
 # Explicit image route (more reliable than StaticFiles mount on some platforms)
+
+
 @app.get("/images/{filename}")
 async def serve_image(filename: str):
     """Serve images from docs/images folder"""
@@ -110,10 +110,12 @@ if os.getenv("ENVIRONMENT", "production").lower() == "development":
             "images_found": [img.name for img in images]
         }
 
+
 class HealthResponse(BaseModel):
     status: str
     message: str
     version: str
+
 
 @app.get("/")
 async def root():
@@ -121,7 +123,7 @@ async def root():
         "message": "🛡️ TruthShield API - European Digital Shield",
         "features": [
             "🔍 AI Content Detection",
-            "📱 Social Media Monitoring", 
+            "📱 Social Media Monitoring",
             "🏢 Enterprise Protection",
             "🇪🇺 EU Compliance Ready"
         ],
@@ -137,6 +139,8 @@ async def root():
     }
 
 # HTML DEMO ROUTE
+
+
 @app.get("/demo", response_class=HTMLResponse)
 async def demo_page():
     """Serve the HTML demo page"""
@@ -157,6 +161,7 @@ async def demo_page():
         </html>
         """)
 
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     return HealthResponse(
@@ -175,6 +180,7 @@ if os.getenv("ENVIRONMENT", "production").lower() == "development":
             "google_key_exists": bool(os.getenv("GOOGLE_API_KEY")),
             "news_key_exists": bool(os.getenv("NEWS_API_KEY")),
         }
+
 
 @app.get("/favicon.ico")
 async def favicon():

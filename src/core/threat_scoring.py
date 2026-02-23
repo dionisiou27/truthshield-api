@@ -40,5 +40,3 @@ class ThreatScoringEnsemble:
             components={"virality": v, "harm": h, "astro": a},
             weights=self.weights,
         )
-
-

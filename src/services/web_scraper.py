@@ -5,8 +5,8 @@ Scrapes fact-checking and authoritative websites
 
 import asyncio
 import logging
-from typing import Dict, List, Optional
-from urllib.parse import quote, urlparse
+from typing import Dict, List
+from urllib.parse import quote
 import httpx
 from bs4 import BeautifulSoup
 
@@ -253,9 +253,9 @@ async def scrape_correctiv_search(query: str, limit: int = 3) -> List[Dict]:
 # Test function
 async def test_web_scraper():
     """Test web scraping functionality"""
-    print("="*80)
+    print("=" * 80)
     print("WEB SCRAPER TEST")
-    print("="*80)
+    print("=" * 80)
 
     test_queries = [
         ("COVID vaccines cause autism", "en"),
@@ -265,7 +265,7 @@ async def test_web_scraper():
 
     for query, lang in test_queries:
         print(f"\n\nQuery: '{query}' (lang={lang})")
-        print("-"*80)
+        print("-" * 80)
 
         if lang == "de":
             # Test Correctiv for German

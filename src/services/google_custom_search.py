@@ -11,6 +11,7 @@ from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class GoogleCustomSearchAPI:
     """Google Custom Search API for domain-specific searches"""
 
@@ -97,7 +98,8 @@ class GoogleCustomSearchAPI:
             logger.error(f"Custom Search API error: {e}")
             return []
 
-    async def _search_with_site_operator(self, query: str, site_restrict: str = None, num_results: int = 5) -> List[Dict]:
+    async def _search_with_site_operator(self, query: str, site_restrict: str = None,
+                                         num_results: int = 5) -> List[Dict]:
         """
         Fallback: Use site: operator in regular search
         Note: This uses the same API quota as Custom Search
@@ -109,12 +111,6 @@ class GoogleCustomSearchAPI:
             search_query = query
 
         try:
-            params = {
-                'key': self.api_key,
-                'q': search_query,
-                'num': min(num_results, 10)
-            }
-
             logger.info(f"Using site: operator fallback: '{search_query[:50]}...'")
 
             # Note: This endpoint doesn't exist - you MUST use Custom Search with CX
@@ -222,7 +218,7 @@ async def search_eu_sources(query: str) -> List[Dict]:
 async def test_custom_search():
     """Test Google Custom Search API"""
     print("TESTING GOOGLE CUSTOM SEARCH API")
-    print("="*80)
+    print("=" * 80)
 
     async with GoogleCustomSearchAPI() as api:
         print(f"API Key: {'YES' if api.api_key else 'NO'}")

@@ -8,9 +8,8 @@ import asyncio
 import logging
 from typing import Dict, List, Optional
 import httpx
-from datetime import datetime
-
 logger = logging.getLogger(__name__)
+
 
 class PubMedAPI:
     """PubMed/NCBI E-utilities API Integration for scientific fact-checking"""
@@ -200,6 +199,7 @@ class PubMedAPI:
 
 # Global instance
 pubmed_api = PubMedAPI()
+
 
 async def search_pubmed(query: str, max_results: int = 5) -> List[Dict]:
     """Convenience function to search PubMed"""

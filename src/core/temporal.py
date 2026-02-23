@@ -9,7 +9,7 @@ def text_signature(text: str, n: int = 5) -> str:
     if not t:
         return ""
     # Simple n-gram hashing for speed
-    grams = [t[i : i + n] for i in range(max(0, len(t) - n + 1))]
+    grams = [t[i: i + n] for i in range(max(0, len(t) - n + 1))]
     h = hashlib.sha256("|".join(grams).encode("utf-8")).hexdigest()
     return h[:16]
 
@@ -58,5 +58,3 @@ def temporal_cluster_same_text(
                     "window_minutes": window_minutes,
                 })
     return clusters
-
-

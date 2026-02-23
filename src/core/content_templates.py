@@ -100,11 +100,8 @@ def investigative_thread(
             header,
             *(key_findings[:4]),
             *(src_lines),
-            *( [astro_line] if astro_line else [] ),
+            *([astro_line] if astro_line else []),
             closing,
         ],
         "suggested_hashtags": ["#TruthShield", "#Investigation"],
     }
-
-
-

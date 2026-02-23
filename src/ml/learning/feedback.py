@@ -164,7 +164,7 @@ class FeedbackCollector:
             f.write(metrics.model_dump_json() + "\n")
 
         logger.info("Logged metrics for response %s: likes=%d, replies=%d",
-                   metrics.response_id[:8], metrics.likes, metrics.replies)
+                    metrics.response_id[:8], metrics.likes, metrics.replies)
 
     def calculate_derived_metrics(self, metrics: EngagementMetrics) -> Dict:
         """

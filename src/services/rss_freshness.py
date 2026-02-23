@@ -5,12 +5,10 @@ No HTML scraping - only RSS polling + link pinning.
 
 Primary Use Case: Territorial/frontline claims requiring LIVE verification.
 """
-import asyncio
 import logging
 from typing import Dict, List, Optional, Set
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-import hashlib
 import re
 
 import httpx
@@ -111,7 +109,7 @@ RSS_SOURCE_REGISTRY: Dict[str, RSSSourceConfig] = {
         # CRITICAL: Tier B = require second source for territorial claims
         corroboration_required_for=["territorial_control", "frontline_update"],
         trust_rationale="Large Ukrainian news agency; useful for fast recency signals. "
-                       "Not an official operational authority; treat frontline claims as corroboration-needed.",
+                        "Not an official operational authority; treat frontline claims as corroboration-needed.",
     ),
 }
 
