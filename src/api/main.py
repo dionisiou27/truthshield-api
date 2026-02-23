@@ -29,9 +29,9 @@ if not IMAGES_PATH.exists():
     IMAGES_PATH = Path(os.getcwd()) / "docs" / "images"
     DOCS_PATH = Path(os.getcwd()) / "docs"
 
-print(f"📁 Images path: {IMAGES_PATH} (exists: {IMAGES_PATH.exists()})")
+print(f"Images path: {IMAGES_PATH} (exists: {IMAGES_PATH.exists()})")
 if IMAGES_PATH.exists():
-    print(f"📁 Images found: {list(IMAGES_PATH.glob('*.png'))}")
+    print(f"Images found: {list(IMAGES_PATH.glob('*.png'))}")
 
 from src.api.detection import router as detection_router
 from src.api.monitoring import router as monitoring_router
