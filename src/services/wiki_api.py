@@ -195,4 +195,3 @@ async def _gather_mediawiki(query: str, language: str):
     wikidata_task = fetch_wikidata_entities(query, language)
     meta_task = fetch_meta_wiki_pages(query)
     return await wikipedia_task, await wikidata_task, await meta_task
-

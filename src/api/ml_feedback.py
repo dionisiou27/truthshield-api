@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 import logging
 
-from src.core.ml_learning import ml_system, update_engagement
+from src.core.ml_learning import ml_system
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ async def update_engagement_metrics(update: EngagementUpdate):
 
         # Calculate engagement score for response
         engagement_score = (update.likes * 1.0 + update.replies * 2.0 +
-                          update.shares * 3.0 + (10.0 if update.top_comment else 0)) / 16.0
+                            update.shares * 3.0 + (10.0 if update.top_comment else 0)) / 16.0
 
         # Determine learning signal
         if engagement_score > 0.7:
@@ -94,7 +94,7 @@ async def update_engagement_metrics(update: EngagementUpdate):
 
         return EngagementResponse(
             success=True,
-            message=f"Engagement metrics updated successfully",
+            message="Engagement metrics updated successfully",
             engagement_score=round(engagement_score, 3),
             learning_signal=learning_signal
         )

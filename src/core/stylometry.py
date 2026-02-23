@@ -1,12 +1,11 @@
 from typing import Dict
-import hashlib
 
 
 def ngram_shingle(text: str, n: int = 3) -> Dict[str, int]:
     t = (text or "").lower()
     shingles: Dict[str, int] = {}
     for i in range(max(0, len(t) - n + 1)):
-        g = t[i : i + n]
+        g = t[i: i + n]
         shingles[g] = shingles.get(g, 0) + 1
     return shingles
 
@@ -30,5 +29,3 @@ def cosine_similarity(a: Dict[str, int], b: Dict[str, int]) -> float:
 
 def stylometry_similarity(text_a: str, text_b: str, n: int = 3) -> float:
     return cosine_similarity(ngram_shingle(text_a, n), ngram_shingle(text_b, n))
-
-

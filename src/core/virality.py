@@ -24,5 +24,3 @@ class ViralityPredictor:
 
         score_0_1 = min(1.0, 0.5 * v_growth + 0.3 * v_views + 0.2 * v_followers)
         return round(score_0_1 * 10.0, 2)
-
-

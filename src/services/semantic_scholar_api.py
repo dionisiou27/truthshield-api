@@ -11,6 +11,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
 class SemanticScholarAPI:
     """Semantic Scholar API for scientific paper search with citation context"""
 
@@ -188,6 +189,7 @@ class SemanticScholarAPI:
 
 # Global instance
 semantic_scholar_api = SemanticScholarAPI()
+
 
 async def search_semantic_scholar(query: str, max_results: int = 5) -> List[Dict]:
     """Convenience function to search Semantic Scholar"""

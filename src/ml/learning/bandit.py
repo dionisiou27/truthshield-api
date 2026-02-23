@@ -32,11 +32,10 @@ This separation ensures Guardian cannot drift toward:
 =============================================================================
 """
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, Optional
 from pydantic import BaseModel
 from datetime import datetime
 import random
-import math
 import json
 import logging
 from pathlib import Path
@@ -252,7 +251,7 @@ class GuardianBandit:
             self._load_state()
 
         logger.info("GuardianBandit initialized with %d tone arms, %d source arms",
-                   len(self.tone_arms), len(self.source_arms))
+                    len(self.tone_arms), len(self.source_arms))
 
     def select_tone(self, context: Optional[BanditContext] = None) -> ToneVariant:
         """
@@ -436,7 +435,7 @@ class GuardianBandit:
         reward = max(0.0, min(1.0, reward))
 
         logger.debug("Calculated reward: %.3f (positive=%.3f, penalty=%.3f, metrics: %s)",
-                    reward, positive_reward, negative_penalty, metrics)
+                     reward, positive_reward, negative_penalty, metrics)
         return reward
 
     def update(self, decision_id: str, metrics: Dict) -> float:
@@ -490,7 +489,7 @@ class GuardianBandit:
             self._save_state()
 
         logger.info("Updated decision %s: reward=%.3f, tone=%s, source=%s",
-                   decision_id[:8], reward, decision.tone_variant, decision.source_mix)
+                    decision_id[:8], reward, decision.tone_variant, decision.source_mix)
 
         return reward
 

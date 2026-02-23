@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from collections import defaultdict
 
 
@@ -46,5 +46,3 @@ def connected_components(adj: Dict[str, Dict[str, int]], min_weight: int = 1) ->
                     stack.append(v)
         comps.append(comp)
     return comps
-
-

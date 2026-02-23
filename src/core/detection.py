@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 from pydantic import BaseModel
 import logging
 from datetime import datetime
@@ -9,6 +9,7 @@ from .coordinated_behavior import CoordinatedBehaviorDetector
 
 logger = logging.getLogger(__name__)
 
+
 class DetectionResult(BaseModel):
     """Enhanced detection result with fact-checking"""
     # Original fields
@@ -18,12 +19,13 @@ class DetectionResult(BaseModel):
     detection_method: str
     details: Dict
     timestamp: str
-    
+
     # NEW: Fact-checking fields
     request_id: str
     fact_check: Optional[AIFactCheckResult] = None
     ai_response: Optional[Union[AIInfluencerResponse, Dict[str, AIInfluencerResponse]]] = None
     processing_time_ms: int
+
 
 class CompanyFactCheckRequest(BaseModel):
     """Enhanced request model for company fact-checking"""
@@ -32,26 +34,27 @@ class CompanyFactCheckRequest(BaseModel):
     language: str = "de"
     generate_ai_response: bool = True
 
+
 class TruthShieldDetector:
     """Enhanced detector with real AI fact-checking"""
-    
+
     def __init__(self):
         self.ai_engine = ai_engine
         self.astro_detector = CoordinatedBehaviorDetector()
         logger.info("🛡️ TruthShield Detector initialized with AI engine")
-    
+
     async def detect_text(self, text: str) -> DetectionResult:
         """Basic text detection (legacy endpoint)"""
         start_time = datetime.now()
-        
+
         try:
             # Basic analysis
             word_count = len(text.split())
             char_count = len(text)
             confidence = min(0.8, max(0.2, word_count / 100))
-            
+
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             return DetectionResult(
                 content_type="text",
                 is_synthetic=confidence > 0.6,
@@ -66,18 +69,18 @@ class TruthShieldDetector:
                 request_id=str(uuid.uuid4()),
                 processing_time_ms=int(processing_time)
             )
-            
+
         except Exception as e:
             logger.error(f"Text detection error: {e}")
             raise
-    
+
     async def detect_image(self, image_path: str) -> DetectionResult:
         """Basic image detection (legacy endpoint)"""
         start_time = datetime.now()
-        
+
         try:
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             return DetectionResult(
                 content_type="image",
                 is_synthetic=False,
@@ -91,25 +94,25 @@ class TruthShieldDetector:
                 request_id=str(uuid.uuid4()),
                 processing_time_ms=int(processing_time)
             )
-            
+
         except Exception as e:
             logger.error(f"Image detection error: {e}")
             raise
-    
+
     async def fact_check_company_claim(self, request: CompanyFactCheckRequest) -> DetectionResult:
         """NEW: Complete fact-checking with AI response generation"""
         start_time = datetime.now()
         request_id = str(uuid.uuid4())
-        
+
         logger.info(f"🔍 Starting fact-check for {request.company}: {request.text[:50]}...")
-        
+
         try:
             # Step 1: AI Fact-checking
             fact_check_result = await self.ai_engine.fact_check_claim(
                 text=request.text,
                 company=request.company
             )
-            
+
             # Step 2: Generate AI brand response (if requested)
             ai_response = None
             ai_responses = None
@@ -122,9 +125,9 @@ class TruthShieldDetector:
                 )
                 # Get the response for the requested language
                 ai_response = ai_responses.get(request.language, ai_responses.get('en'))
-            
+
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             # Build verified sources: systematic selection from different source types
             def _domain(url: str) -> str:
                 try:
@@ -149,7 +152,7 @@ class TruthShieldDetector:
             picked = []
             seen_domains = set()
             source_types = {"static": 0, "factcheck": 0, "academic": 0, "news": 0, "other": 0}
-            
+
             # Systematic selection: prioritize static sources, then fact-checkers, then academic, then news
             for source_type in ["static", "factcheck", "academic", "news", "other"]:
                 for s in sorted_sources:
@@ -157,12 +160,12 @@ class TruthShieldDetector:
                         break
                     dom = _domain(s.url)
                     stype = _source_type(s.url)
-                    
+
                     if stype == source_type and dom not in seen_domains:
                         picked.append(s)
                         seen_domains.add(dom)
                         source_types[stype] += 1
-                        
+
             # Fallback: if we still need more sources, allow duplicates from different domains
             if len(picked) < 5:
                 for s in sorted_sources:
@@ -186,7 +189,8 @@ class TruthShieldDetector:
                     "language": request.language,
                     "category": fact_check_result.category,
                     "sources_found": len(fact_check_result.sources),
-                    "all_sources_checked": [s.model_dump() for s in (fact_check_result.sources or [])],  # All sources for Raw JSON
+                    # All sources for Raw JSON
+                    "all_sources_checked": [s.model_dump() for s in (fact_check_result.sources or [])],
                     "verified_sources": [s.model_dump() for s in picked],  # Curated selection for UI
                     "mediawiki_sources": getattr(self.ai_engine, "last_mediawiki_results", []),
                     "ai_response_generated": ai_response is not None,
@@ -204,19 +208,19 @@ class TruthShieldDetector:
                 ai_response=ai_response,  # Single response for requested language
                 processing_time_ms=int(processing_time)
             )
-            
+
             logger.info(f"✅ Fact-check complete [{request_id}]: "
-                       f"Fake={fact_check_result.is_fake} "
-                       f"Confidence={fact_check_result.confidence:.2f}")
-            
+                        f"Fake={fact_check_result.is_fake} "
+                        f"Confidence={fact_check_result.confidence:.2f}")
+
             return result
-            
+
         except Exception as e:
             logger.error(f"❌ Fact-checking failed [{request_id}]: {e}")
-            
+
             # Return safe fallback
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             return DetectionResult(
                 content_type="text",
                 is_synthetic=False,
@@ -231,44 +235,44 @@ class TruthShieldDetector:
                 request_id=request_id,
                 processing_time_ms=int(processing_time)
             )
-    
+
     async def universal_fact_check(self, request: CompanyFactCheckRequest) -> DetectionResult:
         """Universal Guardian Avatar - fact-checks any misinformation"""
         start_time = datetime.now()
         request_id = str(uuid.uuid4())
-        
+
         # Override company for universal avatar
         original_company = request.company
         request.company = "GuardianAvatar"  # This will use Guardian Avatar persona
-        
+
         logger.info(f"🛡️ Universal Guardian Avatar fact-check: {request.text[:50]}...")
-        
+
         try:
             # Use the existing fact-checking logic
             result = await self.fact_check_company_claim(request)
-            
+
             # Customize the response for Guardian Avatar
             if result.ai_response:
                 result.ai_response.bot_name = "Guardian Avatar 🛡️"
                 result.ai_response.bot_type = "universal_avatar"
-                
+
             # Update details to show it's from Guardian Avatar
             result.details.update({
                 "bot_type": "universal_avatar",
                 "original_company": original_company,
                 "guardian_avatar_mode": True
             })
-            
+
             logger.info(f"✅ Guardian Avatar check complete [{request_id}]")
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"❌ Guardian Avatar failed [{request_id}]: {e}")
-            
+
             # Fallback response
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             return DetectionResult(
                 content_type="text",
                 is_synthetic=False,
@@ -283,7 +287,7 @@ class TruthShieldDetector:
                 request_id=request_id,
                 processing_time_ms=int(processing_time)
             )
-    
+
     async def get_detection_stats(self) -> Dict:
         """Get detector statistics"""
         return {

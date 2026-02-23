@@ -61,7 +61,13 @@ class CoordinatedBehaviorDetector:
         notes: List[str] = []
         # Feature normalization helpers
         follower_spike_norm = self._clip01((signals.get("follower_spike_24h", 0.0) or 0.0) / 2.0)
-        fresh_spawn_activity = 1.0 if (signals.get("account_age_days", 365.0) or 365.0) < 30 and (signals.get("post_count_30d", 0.0) or 0.0) > 5 else 0.0
+        fresh_spawn_activity = 1.0 if (
+            signals.get(
+                "account_age_days",
+                365.0) or 365.0) < 30 and (
+            signals.get(
+                "post_count_30d",
+                0.0) or 0.0) > 5 else 0.0
         overlapping_hashtags_ratio = self._clip01(signals.get("overlapping_hashtags_ratio", 0.0) or 0.0)
         cross_post_clip_count_1h = min(1.0, (signals.get("cross_post_clip_count_1h", 0.0) or 0.0) / 3.0)
 
@@ -73,7 +79,8 @@ class CoordinatedBehaviorDetector:
         posting_time_sync_score = self._clip01(signals.get("posting_time_sync_score", 0.0) or 0.0)
         shared_ip_device_flag = 1.0 if (signals.get("shared_ip_device_flag", 0.0) or 0.0) else 0.0
 
-        comment_like_over_median_multiplier = max(0.0, (signals.get("comment_like_over_median_multiplier", 0.0) or 0.0) - 1.0)  # center at 1x
+        comment_like_over_median_multiplier = max(
+            0.0, (signals.get("comment_like_over_median_multiplier", 0.0) or 0.0) - 1.0)  # center at 1x
         like_view_sigma = max(0.0, (signals.get("like_view_sigma", 0.0) or 0.0))
 
         bad_domain_ratio = self._clip01(signals.get("bad_domain_ratio", 0.0) or 0.0)
@@ -131,5 +138,3 @@ class CoordinatedBehaviorDetector:
             signals={k: float(v) for k, v in {**signals, **feat}.items()},
             notes=notes,
         )
-
-

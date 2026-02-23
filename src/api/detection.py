@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel, validator
-from typing import Dict, List, Optional
+from typing import Optional
 import logging
 from datetime import datetime
 
@@ -39,18 +39,36 @@ def normalize_company(value: str) -> str:
 # Simple heuristic language hint
 def detect_language(text: str) -> str:
     text_lower = (text or "").lower()
-    german_markers = [" der ", " die ", " das ", " nicht ", " ist ", " und ", " mit ", "für", "oder", "kein", "hallo", "ß", "ä", "ö", "ü"]
+    german_markers = [
+        " der ",
+        " die ",
+        " das ",
+        " nicht ",
+        " ist ",
+        " und ",
+        " mit ",
+        "für",
+        "oder",
+        "kein",
+        "hallo",
+        "ß",
+        "ä",
+        "ö",
+        "ü"]
     if any(marker in text_lower for marker in german_markers):
         return "de"
     return "en"
+
 
 # Legacy request models (backward compatibility)
 class TextDetectionRequest(BaseModel):
     text: str
     language: str = "de"
 
+
 class ImageDetectionRequest(BaseModel):
     image_url: str
+
 
 # Enhanced request models
 class FactCheckRequest(BaseModel):
@@ -59,14 +77,14 @@ class FactCheckRequest(BaseModel):
     company: str = "BMW"
     language: str = "de"
     generate_ai_response: bool = True
-    
+
     @validator('company')
     def validate_company(cls, v):
         normalized = normalize_company(v)
         if normalized not in SUPPORTED_COMPANIES:
             raise ValueError(f'Company must be one of: {SUPPORTED_COMPANIES}')
         return normalized
-    
+
     @validator('text')
     def validate_text(cls, v):
         if len(v.strip()) < 10:
@@ -74,6 +92,7 @@ class FactCheckRequest(BaseModel):
         if len(v) > 1000:
             raise ValueError('Text must be less than 1000 characters')
         return v.strip()
+
 
 class QuickFactCheckRequest(BaseModel):
     """Quick fact-check without AI response"""
@@ -87,11 +106,12 @@ class QuickFactCheckRequest(BaseModel):
             raise ValueError(f'Company must be one of: {SUPPORTED_COMPANIES}')
         return normalized
 
+
 class UniversalFactCheckRequest(BaseModel):
     """Universal Guardian Avatar request"""
     text: str
     language: str = "de"
-    
+
     @validator('text')
     def validate_text(cls, v):
         if len(v.strip()) < 10:
@@ -100,15 +120,17 @@ class UniversalFactCheckRequest(BaseModel):
             raise ValueError('Text must be less than 1000 characters')
         return v.strip()
 
+
 class OCRExtractResponse(BaseModel):
     extracted_text: str
     language_hint: Optional[str] = None
+
 
 # === OCR & IMAGE WORKFLOW ENDPOINTS ===
 
 @router.post("/ocr", response_model=OCRExtractResponse)
 async def ocr_extract_text(file: UploadFile = File(...)):
-    """🖼️ Extract text from an uploaded image (OCR)"""
+    """Extract text from an uploaded image (OCR)"""
     try:
         file_bytes = await file.read()
         extracted_text = await extract_text_from_image(file_bytes)
@@ -133,7 +155,7 @@ async def fact_check_image_upload(
     language: Optional[str] = None,
     generate_ai_response: bool = True
 ):
-    """🧠 Upload an image, run OCR, then fact-check the extracted text"""
+    """Upload an image, run OCR, then fact-check the extracted text"""
     try:
         company = normalize_company(company)
         if company not in SUPPORTED_COMPANIES:
@@ -175,7 +197,7 @@ async def fact_check_image_upload(
 
 @router.post("/text", response_model=DetectionResult)
 async def detect_text(request: TextDetectionRequest):
-    """🔍 Basic text detection (legacy)"""
+    """Basic text detection (legacy)"""
     try:
         result = await detector.detect_text(request.text)
         return result
@@ -183,9 +205,10 @@ async def detect_text(request: TextDetectionRequest):
         logger.error(f"Text detection failed: {e}")
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
 
-@router.post("/image", response_model=DetectionResult)  
+
+@router.post("/image", response_model=DetectionResult)
 async def detect_image(request: ImageDetectionRequest):
-    """🖼️ Basic image detection (legacy)"""
+    """Basic image detection (legacy)"""
     try:
         result = await detector.detect_image(request.image_url)
         return result
@@ -193,35 +216,37 @@ async def detect_image(request: ImageDetectionRequest):
         logger.error(f"Image detection failed: {e}")
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
 
+
 # === NEW AI-POWERED ENDPOINTS ===
 
 @router.post("/fact-check", response_model=DetectionResult)
 async def fact_check_claim(request: FactCheckRequest):
-    """🧠 AI-powered fact-checking with brand response"""
+    """AI-powered fact-checking with brand response"""
     try:
-        logger.info(f"🎯 Fact-checking claim for {request.company}")
-        
+        logger.info(f"Fact-checking claim for {request.company}")
+
         company_request = CompanyFactCheckRequest(
             text=request.text,
             company=request.company,
             language=request.language,
             generate_ai_response=request.generate_ai_response
         )
-        
+
         result = await detector.fact_check_company_claim(company_request)
-        
-        logger.info(f"✅ Fact-check completed: {result.request_id}")
+
+        logger.info(f"Fact-check completed: {result.request_id}")
         return result
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Fact-checking failed: {e}")
+        logger.error(f"Fact-checking failed: {e}")
         raise HTTPException(status_code=500, detail=f"Fact-checking failed: {str(e)}")
+
 
 @router.post("/quick-check", response_model=DetectionResult)
 async def quick_fact_check(request: QuickFactCheckRequest):
-    """⚡ Quick fact-check without AI response generation"""
+    """Quick fact-check without AI response generation"""
     try:
         company_request = CompanyFactCheckRequest(
             text=request.text,
@@ -229,22 +254,23 @@ async def quick_fact_check(request: QuickFactCheckRequest):
             language="de",
             generate_ai_response=False
         )
-        
+
         result = await detector.fact_check_company_claim(company_request)
         return result
-        
+
     except Exception as e:
         logger.error(f"Quick fact-check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Quick check failed: {str(e)}")
+
 
 # === NEW: UNIVERSAL GUARDIAN AVATAR ENDPOINT ===
 
 @router.post("/universal", response_model=DetectionResult)
 async def universal_fact_check(request: UniversalFactCheckRequest):
-    """🛡️ Universal Guardian Avatar - fact-checks any misinformation"""
+    """Universal Guardian Avatar - fact-checks any misinformation"""
     try:
-        logger.info(f"🛡️ Guardian Avatar fact-checking: {request.text[:50]}...")
-        
+        logger.info(f"Guardian Avatar fact-checking: {request.text[:50]}...")
+
         # Create request with Guardian Avatar as company
         company_request = CompanyFactCheckRequest(
             text=request.text,
@@ -252,26 +278,27 @@ async def universal_fact_check(request: UniversalFactCheckRequest):
             language=request.language,
             generate_ai_response=True  # Always generate response for Guardian Avatar
         )
-        
+
         # Use the universal fact check method if it exists, otherwise use regular
         if hasattr(detector, 'universal_fact_check'):
             result = await detector.universal_fact_check(company_request)
         else:
             # Fallback: use regular fact-check with Guardian Avatar company
             result = await detector.fact_check_company_claim(company_request)
-        
-        logger.info(f"✅ Guardian Avatar check completed: {result.request_id}")
+
+        logger.info(f"Guardian Avatar check completed: {result.request_id}")
         return result
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Guardian Avatar failed: {e}")
+        logger.error(f"Guardian Avatar failed: {e}")
         raise HTTPException(status_code=500, detail=f"Guardian Avatar check failed: {str(e)}")
+
 
 @router.get("/status")
 async def detection_status():
-    """📊 Get enhanced detection engine status"""
+    """Get enhanced detection engine status"""
     try:
         stats = await detector.get_detection_stats()
         return {
@@ -302,24 +329,25 @@ async def detection_status():
         logger.error(f"Status check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
 
+
 @router.get("/health")
 async def health_check():
-    """🏥 Health check endpoint"""
+    """Health check endpoint"""
     try:
         stats = await detector.get_detection_stats()
-        
+
         # Determine overall health
         ai_available = stats["capabilities"]["ai_fact_checking"]
         guardian_available = stats["capabilities"].get("universal_guardian_avatar", False)
         health_status = "healthy" if ai_available else "degraded"
-        
+
         return {
             "status": health_status,
             "ai_available": ai_available,
             "guardian_avatar_available": guardian_available,
             "timestamp": datetime.now().isoformat(),
-            "message": "TruthShield Detection API operational" if ai_available 
-                      else "TruthShield running in limited mode (no OpenAI)",
+            "message": ("TruthShield Detection API operational" if ai_available
+                        else "TruthShield running in limited mode (no OpenAI)"),
             "capabilities": stats["capabilities"]
         }
     except Exception as e:
@@ -330,19 +358,20 @@ async def health_check():
             "timestamp": datetime.now().isoformat()
         }
 
+
 # === COMPANY-SPECIFIC ENDPOINTS ===
 
 @router.get("/companies")
 async def get_supported_companies():
-    """🏢 Get list of supported companies"""
+    """Get list of supported companies"""
     try:
         stats = await detector.get_detection_stats()
         companies = stats["supported_companies"]
-        
+
         # Separate Guardian Avatar from regular companies
         regular_companies = [c for c in companies if c != "GuardianAvatar"]
         has_guardian = "GuardianAvatar" in companies
-        
+
         return {
             "supported_companies": regular_companies,
             "universal_avatar": "GuardianAvatar" if has_guardian else None,
@@ -353,9 +382,10 @@ async def get_supported_companies():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/demo")
 async def demo_endpoint(background_tasks: BackgroundTasks):
-    """🎪 Demo endpoint with sample data"""
+    """Demo endpoint with sample data"""
     demo_requests = [
         {
             "endpoint": "/fact-check",
@@ -366,7 +396,7 @@ async def demo_endpoint(background_tasks: BackgroundTasks):
         {
             "endpoint": "/fact-check",
             "text": "Vodafone 5G network expansion continues in Germany",
-            "company": "Vodafone", 
+            "company": "Vodafone",
             "expected": "This should be marked as likely true"
         },
         {
@@ -375,12 +405,12 @@ async def demo_endpoint(background_tasks: BackgroundTasks):
             "expected": "Guardian Avatar will debunk this conspiracy theory"
         },
         {
-            "endpoint": "/universal", 
+            "endpoint": "/universal",
             "text": "Drinking water with lemon cures all diseases",
             "expected": "Guardian Avatar will fact-check this health misinformation"
         }
     ]
-    
+
     return {
         "demo_mode": True,
         "available_demos": demo_requests,
@@ -389,11 +419,12 @@ async def demo_endpoint(background_tasks: BackgroundTasks):
         "guardian_avatar": "Try /universal for general misinformation!"
     }
 
+
 # === GUARDIAN AVATAR SPECIAL ENDPOINTS ===
 
 @router.get("/guardian/examples")
 async def guardian_examples():
-    """🛡️ Get Guardian Avatar example queries"""
+    """Get Guardian Avatar example queries"""
     return {
         "guardian_avatar": {
             "description": "Universal fact-checker for any type of misinformation",

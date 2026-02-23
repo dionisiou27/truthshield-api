@@ -8,9 +8,9 @@ from datetime import datetime
 import logging
 
 from src.ml.guardian.claim_router import ClaimRouter, PolicyClaimRouter
-from src.ml.guardian.source_ranker import SourceRanker, SourceCandidate, SourceClass
-from src.ml.guardian.response_generator import get_generator, GuardianResponse
-from src.ml.learning.bandit import get_bandit, BanditContext
+from src.ml.guardian.source_ranker import SourceRanker, SourceCandidate
+from src.ml.guardian.response_generator import get_generator
+from src.ml.learning.bandit import get_bandit
 from src.ml.learning.feedback import get_collector, EngagementMetrics
 from src.ml.learning.logging import get_learning_logger
 

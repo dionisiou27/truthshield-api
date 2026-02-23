@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Dict
 from hashlib import sha256
 from datetime import datetime
@@ -31,5 +30,3 @@ class EvidenceArchiver:
         with open(path, "w", encoding="utf-8") as f:
             f.write(json.dumps({**payload, "sha256": content_hash}, ensure_ascii=False, indent=2))
         return {"sha256": content_hash, "path": str(path)}
-
-

@@ -47,7 +47,8 @@ class KPIDecider:
         r = max(0.0, float(growth_rate_24h))
         return min(1.0, r / 0.5)  # 50% growth ~ prob 1.0
 
-    def cost_per_reach(self, avg_analyst_seconds: float, salary_rate_per_hour: float, projected_reach: float) -> Optional[float]:
+    def cost_per_reach(self, avg_analyst_seconds: float, salary_rate_per_hour: float,
+                       projected_reach: float) -> Optional[float]:
         if projected_reach <= 0:
             return None
         hours = max(0.0, float(avg_analyst_seconds)) / 3600.0
@@ -98,5 +99,3 @@ class KPIDecider:
             client_max_cpr=client_max_cpr,
             reasons=reasons,
         )
-
-

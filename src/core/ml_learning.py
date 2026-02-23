@@ -14,11 +14,10 @@ import asyncio
 import logging
 import json
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 import sqlite3
 from collections import defaultdict
 
@@ -281,14 +280,14 @@ class InteractionLogger:
         return record.interaction_id
 
     def update_engagement(self, interaction_id: str, likes: int, replies: int,
-                         shares: int, top_comment: bool) -> None:
+                          shares: int, top_comment: bool) -> None:
         """Update engagement metrics for an interaction"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         # Calculate engagement score (weighted)
         engagement_score = (likes * 1.0 + replies * 2.0 + shares * 3.0 +
-                          (10.0 if top_comment else 0)) / 16.0  # Normalized to ~0-1
+                            (10.0 if top_comment else 0)) / 16.0  # Normalized to ~0-1
 
         # Update interaction
         cursor.execute("""
@@ -322,10 +321,11 @@ class InteractionLogger:
         conn.commit()
         conn.close()
 
-        logger.info(f"📊 Updated engagement for {interaction_id}: score={engagement_score:.2f}, signal={learning_signal}")
+        logger.info(
+            f"📊 Updated engagement for {interaction_id}: score={engagement_score:.2f}, signal={learning_signal}")
 
     def add_expert_feedback(self, interaction_id: str, is_correct: bool,
-                           correction: Optional[str] = None) -> None:
+                            correction: Optional[str] = None) -> None:
         """Add expert verification/correction"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -347,7 +347,7 @@ class InteractionLogger:
         logger.info(f"👨‍🔬 Expert feedback added for {interaction_id}: {'correct' if is_correct else 'corrected'}")
 
     def get_training_data(self, signal_filter: Optional[str] = None,
-                         limit: int = 1000) -> List[Dict]:
+                          limit: int = 1000) -> List[Dict]:
         """Get labeled training data"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -409,9 +409,9 @@ class PatternLearner:
         # Simple n-gram extraction (2-3 word phrases)
         keywords = []
         for i in range(len(words) - 1):
-            keywords.append(" ".join(words[i:i+2]))
+            keywords.append(" ".join(words[i:i + 2]))
         for i in range(len(words) - 2):
-            keywords.append(" ".join(words[i:i+3]))
+            keywords.append(" ".join(words[i:i + 3]))
 
         # Create pattern ID from keywords hash
         pattern_hash = hashlib.md5(" ".join(sorted(keywords[:5])).encode()).hexdigest()[:12]
@@ -581,16 +581,16 @@ class TruthShieldMLSystem:
         self.feature_extractor = FeatureExtractor()
 
     async def record_fact_check(self,
-                               claim: str,
-                               language: str,
-                               avatar: str,
-                               platform: str,
-                               is_fake: bool,
-                               confidence: float,
-                               astroturfing_score: float,
-                               sources: List[str],
-                               response: str,
-                               category: str = "unknown") -> str:
+                                claim: str,
+                                language: str,
+                                avatar: str,
+                                platform: str,
+                                is_fake: bool,
+                                confidence: float,
+                                astroturfing_score: float,
+                                sources: List[str],
+                                response: str,
+                                category: str = "unknown") -> str:
         """Record a fact-check interaction for learning"""
 
         # Generate interaction ID
@@ -638,8 +638,8 @@ class TruthShieldMLSystem:
         return interaction_id
 
     async def update_with_engagement(self, interaction_id: str,
-                                    likes: int, replies: int,
-                                    shares: int, top_comment: bool) -> None:
+                                     likes: int, replies: int,
+                                     shares: int, top_comment: bool) -> None:
         """Update learning with engagement metrics"""
         self.logger.update_engagement(interaction_id, likes, replies, shares, top_comment)
 
@@ -692,7 +692,7 @@ class TruthShieldMLSystem:
                 GROUP BY platform
             """)
             stats["by_platform"] = {row[0]: {"count": row[1], "avg_engagement": row[2]}
-                                   for row in cursor.fetchall()}
+                                    for row in cursor.fetchall()}
 
             # Total patterns learned
             cursor.execute("SELECT COUNT(*) FROM claim_patterns")
@@ -706,7 +706,7 @@ class TruthShieldMLSystem:
                 GROUP BY avatar_used
             """)
             stats["avatar_performance"] = {row[0]: {"avg_engagement": row[1], "count": row[2]}
-                                          for row in cursor.fetchall()}
+                                           for row in cursor.fetchall()}
 
         except sqlite3.OperationalError as e:
             stats["error"] = str(e)
@@ -720,8 +720,8 @@ ml_system = TruthShieldMLSystem()
 
 
 async def record_interaction(claim: str, language: str, avatar: str, platform: str,
-                            is_fake: bool, confidence: float, astroturfing_score: float,
-                            sources: List[str], response: str) -> str:
+                             is_fake: bool, confidence: float, astroturfing_score: float,
+                             sources: List[str], response: str) -> str:
     """Convenience function to record an interaction"""
     return await ml_system.record_fact_check(
         claim=claim,
@@ -737,7 +737,7 @@ async def record_interaction(claim: str, language: str, avatar: str, platform: s
 
 
 async def update_engagement(interaction_id: str, likes: int, replies: int,
-                           shares: int, top_comment: bool) -> None:
+                            shares: int, top_comment: bool) -> None:
     """Convenience function to update engagement"""
     await ml_system.update_with_engagement(interaction_id, likes, replies, shares, top_comment)
 

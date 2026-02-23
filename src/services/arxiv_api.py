@@ -8,10 +8,10 @@ import asyncio
 import logging
 from typing import Dict, List, Optional
 import httpx
-from datetime import datetime
 import re
 
 logger = logging.getLogger(__name__)
+
 
 class ArXivAPI:
     """arXiv API Integration for scientific preprint fact-checking"""
@@ -185,6 +185,7 @@ class ArXivAPI:
 
 # Global instance
 arxiv_api = ArXivAPI()
+
 
 async def search_arxiv(query: str, max_results: int = 5) -> List[Dict]:
     """Convenience function to search arXiv"""

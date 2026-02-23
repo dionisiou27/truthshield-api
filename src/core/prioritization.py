@@ -88,5 +88,3 @@ class PrioritizationEngine:
                 "coordination_min_score": float(self.coordination_min_score),
             },
         )
-
-

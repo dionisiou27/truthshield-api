@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import Dict
 
 from src.core.config import settings
 
@@ -48,5 +47,3 @@ async def dpa_clauses():
             "Audit and evidence preservation: hashed archives and export on request.",
         ],
     }
-
-
