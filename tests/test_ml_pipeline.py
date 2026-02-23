@@ -9,11 +9,6 @@ Tests cover:
 - text_detection: astroturfing, contradictions
 """
 import pytest
-import sys
-import os
-
-# Ensure src is importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.ml.guardian.claim_router import (
     ClaimRouter, ClaimType, RiskLevel, ClaimVolatility,
@@ -40,10 +35,6 @@ from src.core.text_detection import (
 
 class TestClaimRouterClassification:
     """Test claim type classification."""
-
-    @pytest.fixture
-    def router(self):
-        return ClaimRouter()
 
     # --- Hate / Dehumanization ---
     @pytest.mark.parametrize("text,expected", [
@@ -121,10 +112,6 @@ class TestClaimRouterClassification:
 class TestClaimRouterRisk:
     """Test risk level assessment."""
 
-    @pytest.fixture
-    def router(self):
-        return ClaimRouter()
-
     def test_critical_risk(self, router):
         assert router.assess_risk_level([ClaimType.THREAT_OR_INCITEMENT]) == RiskLevel.CRITICAL
 
@@ -159,10 +146,6 @@ class TestClaimRouterRisk:
 
 class TestClaimRouterTemporal:
     """Test temporal awareness (TikTok time-awareness)."""
-
-    @pytest.fixture
-    def router(self):
-        return ClaimRouter()
 
     def test_territorial_claim_detected(self, router):
         text = "Russia has captured Bakhmut and controls the frontline"
@@ -240,10 +223,6 @@ class TestBetaDistribution:
 class TestGuardianBandit:
     """Test bandit decision-making and reward calculation."""
 
-    @pytest.fixture
-    def bandit(self):
-        return GuardianBandit()
-
     def test_select_tone_returns_valid(self, bandit):
         tone = bandit.select_tone()
         assert isinstance(tone, ToneVariant)
@@ -285,10 +264,6 @@ class TestGuardianBandit:
 
 class TestBanditReward:
     """Test reward calculation and anti-gaming safeguards."""
-
-    @pytest.fixture
-    def bandit(self):
-        return GuardianBandit()
 
     def test_positive_reward(self, bandit):
         metrics = {
@@ -357,10 +332,6 @@ class TestImmutableConstraints:
 class TestBanditUpdate:
     """Test the full decision → update loop."""
 
-    @pytest.fixture
-    def bandit(self):
-        return GuardianBandit()
-
     def test_update_known_decision(self, bandit):
         ctx = BanditContext(claim_type="conspiracy_theory", risk_level="medium")
         decision = bandit.make_decision(ctx)
@@ -378,10 +349,6 @@ class TestBanditUpdate:
 
 class TestSourceRanker:
     """Test source classification and ranking."""
-
-    @pytest.fixture
-    def ranker(self):
-        return SourceRanker()
 
     # --- Classification ---
     @pytest.mark.parametrize("url,expected", [
