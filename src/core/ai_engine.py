@@ -1,4 +1,3 @@
-import os
 import asyncio
 import logging
 from typing import Dict, List, Optional, Tuple, Any
@@ -6,10 +5,6 @@ from datetime import datetime
 import json
 from urllib.parse import quote
 import unicodedata
-
-# ADD THESE LINES:
-from dotenv import load_dotenv
-load_dotenv()  # Force load .env file
 
 import httpx
 import openai
@@ -25,6 +20,7 @@ from src.ml.guardian.claim_router import (
 from src.ml.learning.bandit import (
     GuardianBandit, BanditContext, ToneVariant, SourceMixStrategy, get_bandit
 )
+from src.core.config import settings
 from src.core.personas import COMPANY_PERSONAS
 from src.core.source_aggregation import SourceAggregator, Source
 from src.core.verdict import determine_verdict, apply_special_case_overrides
@@ -86,7 +82,7 @@ class TruthShieldAI:
 
     def setup_openai(self):
         """Initialize OpenAI client"""
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = settings.openai_api_key
         if not api_key:
             logger.warning("⚠️ OPENAI_API_KEY not found - fact-checking will be limited")
             return

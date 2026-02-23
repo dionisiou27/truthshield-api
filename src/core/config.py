@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # Development
     debug: bool = True
     environment: str = "development"
+    disable_ssl_verify: bool = False
     
     # Prioritization thresholds (Reach-first / Risk-first)
     track_pool_min_views: int = 5000
