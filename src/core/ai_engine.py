@@ -1164,18 +1164,6 @@ The claim is part of a coordinated narrative campaign.
                 sources.append(secondary_source_map[source_type])
                 added_count += 1
 
-        # Special handling for Ursula von der Leyen legitimacy claims
-        if any(keyword in text_lower for keyword in ["ursula", "von der leyen", "leyen", "kommissionspräsidentin"]):
-            eu_parliament_source = Source(
-                url="https://www.europarl.europa.eu/news/de/press-room/20240710IPR22812/parlament-wahlt-ursula-von-der-leyen-erneut-zur-kommissionsprasidentin",
-                title="Europäisches Parlament wählt Ursula von der Leyen erneut zur Kommissionspräsidentin",
-                snippet="Am 18. Juli 2024 bestätigte das Europäische Parlament Ursula von der Leyen mit 401 Stimmen für eine zweite Amtszeit als EU-Kommissionspräsidentin.",
-                credibility_score=0.97,
-                date_published="2024-07-18"
-            )
-            if not any(src.url == eu_parliament_source.url for src in sources):
-                sources.append(eu_parliament_source)
-        
         return sources
 
     def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
