@@ -941,6 +941,19 @@ The claim is part of a coordinated narrative campaign.
             else:
                 logger.info(f"✅ Found {len(sources)} dynamic sources - no fallbacks needed")
             
+            # Deduplicate sources by normalized URL
+            original_count = len(sources)
+            seen_urls = set()
+            deduplicated = []
+            for src in sources:
+                normalized = src.url.rstrip('/').lower()
+                if normalized not in seen_urls:
+                    seen_urls.add(normalized)
+                    deduplicated.append(src)
+            sources = deduplicated
+            if original_count != len(sources):
+                logger.info(f"🔄 Deduplicated: {original_count} → {len(sources)} sources")
+
             logger.info(f"Final source count: {len(sources)}")
             self.last_api_usage = api_usage
             return sources
