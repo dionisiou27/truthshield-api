@@ -1698,7 +1698,7 @@ The claim is part of a coordinated narrative campaign.
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.85  # Increased from 0.7 to 0.85 for more diverse, creative responses
+                temperature=0.4  # Lowered: fact-checking accuracy > creative diversity
             )
             
             response_text = response.choices[0].message.content
