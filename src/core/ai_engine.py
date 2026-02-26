@@ -1511,69 +1511,33 @@ The claim is part of a coordinated narrative campaign.
                         "reporter-ohne-grenzen.de": "Reporter ohne Grenzen",
                     }
 
-                    # Claim-type-specific primary authorities
-                    primary_authorities_by_type = {
-                        "health_misinformation": ["WHO", "EMA", "RKI", "CDC", "FDA", "PubMed", "NIH"],
-                        "science_denial": ["IPCC", "Nature", "NASA", "PubMed", "Science"],
-                        "conspiracy_theory": ["EU", "Reuters", "AFP", "Correctiv", "bpb"],
-                        "hate_or_dehumanization": ["EU Grundrechteagentur", "UN Menschenrechte", "Amnesty", "bpb"],
-                        "foreign_influence": ["EU Außendienst", "EU", "Reuters", "AFP"],
-                        "delegitimization_frame": ["EU-Kommission", "Transparency Int.", "Reuters"],
-                        "economic_misinformation": ["EU-Kommission", "Reuters", "Zeit"],
-                    }
-
                     # Get the primary claim type
                     claim_type_str = claim_analysis.claim_types[0].value if claim_analysis.claim_types else "general"
-                    preferred_authorities = primary_authorities_by_type.get(claim_type_str, [])
 
-                    # Build source labels with deduplication and authority prioritization
+                    # Source labels: take top 3 from already-ranked sources
                     source_labels = []
                     seen_labels = set()
 
                     if fact_check.sources:
-                        # First pass: find preferred authorities
-                        for src in fact_check.sources:
-                            if len(source_labels) >= 3:
-                                break
-                            # Extract domain from URL
-                            url = src.url.lower()
-                            domain = None
-                            for d in domain_to_label.keys():
-                                if d in url:
-                                    domain = d
-                                    break
-
-                            if domain:
-                                label = domain_to_label[domain]
-                                # Prioritize if it's a preferred authority for this claim type
-                                if label in preferred_authorities and label not in seen_labels:
-                                    source_labels.insert(0, label)  # Add at front
-                                    seen_labels.add(label)
-
-                        # Second pass: fill remaining slots
-                        for src in fact_check.sources:
+                        for src in fact_check.sources[:5]:  # Check top 5, take first 3 unique
                             if len(source_labels) >= 3:
                                 break
                             url = src.url.lower()
-                            domain = None
-                            for d in domain_to_label.keys():
+                            label = None
+                            for d, l in domain_to_label.items():
                                 if d in url:
-                                    domain = d
+                                    label = l
                                     break
-
-                            if domain:
-                                label = domain_to_label[domain]
-                                if label not in seen_labels:
-                                    source_labels.append(label)
-                                    seen_labels.add(label)
-                            else:
-                                # Fallback: extract from title
+                            if label and label not in seen_labels:
+                                source_labels.append(label)
+                                seen_labels.add(label)
+                            elif not label:
                                 name = src.title.split(' - ')[0].split(' | ')[0][:20]
                                 if name and name not in seen_labels:
                                     source_labels.append(name)
                                     seen_labels.add(name)
 
-                    # Default fallbacks based on claim type
+                    # Fallback only if fewer than 3
                     defaults_by_type = {
                         "health_misinformation": ["WHO", "EMA", "RKI"],
                         "science_denial": ["IPCC", "NASA", "Nature"],
