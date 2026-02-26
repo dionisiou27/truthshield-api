@@ -941,6 +941,30 @@ The claim is part of a coordinated narrative campaign.
             else:
                 logger.info(f"✅ Found {len(sources)} dynamic sources - no fallbacks needed")
             
+            # Deduplicate sources by normalized URL
+            original_count = len(sources)
+            seen_urls = set()
+            deduplicated = []
+            for src in sources:
+                normalized = src.url.rstrip('/').lower()
+                if normalized not in seen_urls:
+                    seen_urls.add(normalized)
+                    deduplicated.append(src)
+            sources = deduplicated
+            if original_count != len(sources):
+                logger.info(f"🔄 Deduplicated: {original_count} → {len(sources)} sources")
+
+            # Re-rank sources using SourceRanker for context-aware ordering
+            try:
+                from src.core.source_adapter import rank_and_convert
+                claim_analysis = self.claim_router.analyze_claim(query)
+                ranking_keywords = claim_analysis.keywords if hasattr(claim_analysis, 'keywords') else []
+                claim_type = claim_analysis.claim_types[0].value if claim_analysis.claim_types else None
+                sources = rank_and_convert(sources, ranking_keywords, claim_type=claim_type)
+                logger.info(f"📊 Sources re-ranked by SourceRanker (keywords: {ranking_keywords[:5]})")
+            except Exception as e:
+                logger.warning(f"⚠️ SourceRanker failed, using original order: {e}")
+
             logger.info(f"Final source count: {len(sources)}")
             self.last_api_usage = api_usage
             return sources
@@ -1050,6 +1074,9 @@ The claim is part of a coordinated narrative campaign.
                            credibility_score=0.95, date_published="2024-01-01")
                 ],
                 "eu_primaries": [
+                    Source(url="https://www.europarl.europa.eu/", title="European Parliament",
+                           snippet="Official European Parliament legislative records, votes, and resolutions...",
+                           credibility_score=0.98, date_published="2024-01-01"),
                     Source(url="https://ec.europa.eu/", title="European Commission",
                            snippet="Official EU policies and legislative information...",
                            credibility_score=0.97, date_published="2024-01-01"),
@@ -1081,7 +1108,8 @@ The claim is part of a coordinated narrative campaign.
 
             # EU/political claim detection
             eu_keywords = ["eu", "europa", "commission", "kommission", "brüssel", "brussels",
-                           "merkel", "scholz", "macron", "von der leyen", "parliament", "parlam"]
+                           "merkel", "scholz", "macron", "von der leyen", "parliament", "parlam",
+                           "europarl", "parlament", "abgeordnete", "fraktion"]
             if any(kw in text_lower for kw in eu_keywords):
                 logger.info("🇪🇺 EU claim detected - adding EC/FRA as primary sources")
                 sources.extend(bot_config.get("eu_primaries", []))
@@ -1136,18 +1164,6 @@ The claim is part of a coordinated narrative campaign.
                 sources.append(secondary_source_map[source_type])
                 added_count += 1
 
-        # Special handling for Ursula von der Leyen legitimacy claims
-        if any(keyword in text_lower for keyword in ["ursula", "von der leyen", "leyen", "kommissionspräsidentin"]):
-            eu_parliament_source = Source(
-                url="https://www.europarl.europa.eu/news/de/press-room/20240710IPR22812/parlament-wahlt-ursula-von-der-leyen-erneut-zur-kommissionsprasidentin",
-                title="Europäisches Parlament wählt Ursula von der Leyen erneut zur Kommissionspräsidentin",
-                snippet="Am 18. Juli 2024 bestätigte das Europäische Parlament Ursula von der Leyen mit 401 Stimmen für eine zweite Amtszeit als EU-Kommissionspräsidentin.",
-                credibility_score=0.97,
-                date_published="2024-07-18"
-            )
-            if not any(src.url == eu_parliament_source.url for src in sources):
-                sources.append(eu_parliament_source)
-        
         return sources
 
     def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
@@ -1303,6 +1319,26 @@ The claim is part of a coordinated narrative campaign.
         
         return responses
 
+    def _extract_ground_truth(self, sources: List[Source]) -> str:
+        """Extract verifiable facts (dates, numbers, names) from source snippets."""
+        facts = []
+        for src in sources:
+            if src.credibility_score >= 0.95 and src.snippet:
+                has_numbers = any(char.isdigit() for char in src.snippet)
+                has_specific_date = any(month in src.snippet.lower() for month in
+                    ["january", "february", "march", "april", "may", "june",
+                     "july", "august", "september", "october", "november", "december",
+                     "januar", "februar", "märz", "april", "mai", "juni",
+                     "juli", "august", "september", "oktober", "november", "dezember"])
+
+                if has_numbers or has_specific_date:
+                    facts.append(f"[{src.title}]: {src.snippet}")
+
+        if not facts:
+            return ""
+
+        return "\n".join(facts)
+
     async def _generate_single_response(self,
                                       claim: str,
                                       fact_check: FactCheckResult,
@@ -1427,6 +1463,7 @@ The claim is part of a coordinated narrative campaign.
                         "pubmed.ncbi.nlm.nih.gov": "PubMed",
                         "ncbi.nlm.nih.gov": "PubMed",
                         # EU/UN Institutions
+                        "europarl.europa.eu": "Europäisches Parlament",
                         "ec.europa.eu": "EU-Kommission",
                         "europa.eu": "EU",
                         "fra.europa.eu": "EU Grundrechteagentur",
@@ -1462,69 +1499,33 @@ The claim is part of a coordinated narrative campaign.
                         "reporter-ohne-grenzen.de": "Reporter ohne Grenzen",
                     }
 
-                    # Claim-type-specific primary authorities
-                    primary_authorities_by_type = {
-                        "health_misinformation": ["WHO", "EMA", "RKI", "CDC", "FDA", "PubMed", "NIH"],
-                        "science_denial": ["IPCC", "Nature", "NASA", "PubMed", "Science"],
-                        "conspiracy_theory": ["EU", "Reuters", "AFP", "Correctiv", "bpb"],
-                        "hate_or_dehumanization": ["EU Grundrechteagentur", "UN Menschenrechte", "Amnesty", "bpb"],
-                        "foreign_influence": ["EU Außendienst", "EU", "Reuters", "AFP"],
-                        "delegitimization_frame": ["EU-Kommission", "Transparency Int.", "Reuters"],
-                        "economic_misinformation": ["EU-Kommission", "Reuters", "Zeit"],
-                    }
-
                     # Get the primary claim type
                     claim_type_str = claim_analysis.claim_types[0].value if claim_analysis.claim_types else "general"
-                    preferred_authorities = primary_authorities_by_type.get(claim_type_str, [])
 
-                    # Build source labels with deduplication and authority prioritization
+                    # Source labels: take top 3 from already-ranked sources
                     source_labels = []
                     seen_labels = set()
 
                     if fact_check.sources:
-                        # First pass: find preferred authorities
-                        for src in fact_check.sources:
-                            if len(source_labels) >= 3:
-                                break
-                            # Extract domain from URL
-                            url = src.url.lower()
-                            domain = None
-                            for d in domain_to_label.keys():
-                                if d in url:
-                                    domain = d
-                                    break
-
-                            if domain:
-                                label = domain_to_label[domain]
-                                # Prioritize if it's a preferred authority for this claim type
-                                if label in preferred_authorities and label not in seen_labels:
-                                    source_labels.insert(0, label)  # Add at front
-                                    seen_labels.add(label)
-
-                        # Second pass: fill remaining slots
-                        for src in fact_check.sources:
+                        for src in fact_check.sources[:5]:  # Check top 5, take first 3 unique
                             if len(source_labels) >= 3:
                                 break
                             url = src.url.lower()
-                            domain = None
-                            for d in domain_to_label.keys():
+                            label = None
+                            for d, l in domain_to_label.items():
                                 if d in url:
-                                    domain = d
+                                    label = l
                                     break
-
-                            if domain:
-                                label = domain_to_label[domain]
-                                if label not in seen_labels:
-                                    source_labels.append(label)
-                                    seen_labels.add(label)
-                            else:
-                                # Fallback: extract from title
+                            if label and label not in seen_labels:
+                                source_labels.append(label)
+                                seen_labels.add(label)
+                            elif not label:
                                 name = src.title.split(' - ')[0].split(' | ')[0][:20]
                                 if name and name not in seen_labels:
                                     source_labels.append(name)
                                     seen_labels.add(name)
 
-                    # Default fallbacks based on claim type
+                    # Fallback only if fewer than 3
                     defaults_by_type = {
                         "health_misinformation": ["WHO", "EMA", "RKI"],
                         "science_denial": ["IPCC", "NASA", "Nature"],
@@ -1571,6 +1572,17 @@ The claim is part of a coordinated narrative campaign.
                     else:
                         logger.info(f"🎯 Response mode (legacy): {claim_analysis.response_mode.value}")
 
+                    ground_truth = self._extract_ground_truth(fact_check.sources)
+                    ground_truth_block = ""
+                    if ground_truth:
+                        ground_truth_block = f"""
+                === VERIFIED FACTS (USE EXACTLY AS STATED – DO NOT MODIFY DATES OR NUMBERS) ===
+                {ground_truth}
+
+                CRITICAL: If a source states a specific date or number, you MUST use it exactly.
+                Never combine data from different events.
+                """
+
                     prompt = f"""
                 You are Guardian 🛡️ on TikTok. Fact-checker with personality.
                 {tiktok_rules}
@@ -1594,6 +1606,7 @@ The claim is part of a coordinated narrative campaign.
                 Verdict: {'FALSE' if fact_check.is_fake else 'MISLEADING'}
                 Key fact: {fact_check.explanation}
                 {sources_text}
+                {ground_truth_block}
 
                 === OUTPUT (TikTok Format) ===
                 1. HOOK (max 8 words): "{opening_style}" or your own punchy opener
@@ -1693,7 +1706,7 @@ The claim is part of a coordinated narrative campaign.
                 self.openai_client.chat.completions.create,
                 model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.85  # Increased from 0.7 to 0.85 for more diverse, creative responses
+                temperature=0.4  # Lowered: fact-checking accuracy > creative diversity
             )
             
             response_text = response.choices[0].message.content
