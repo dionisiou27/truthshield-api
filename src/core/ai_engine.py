@@ -1320,6 +1320,26 @@ The claim is part of a coordinated narrative campaign.
         
         return responses
 
+    def _extract_ground_truth(self, sources: List[Source]) -> str:
+        """Extract verifiable facts (dates, numbers, names) from source snippets."""
+        facts = []
+        for src in sources:
+            if src.credibility_score >= 0.95 and src.snippet:
+                has_numbers = any(char.isdigit() for char in src.snippet)
+                has_specific_date = any(month in src.snippet.lower() for month in
+                    ["january", "february", "march", "april", "may", "june",
+                     "july", "august", "september", "october", "november", "december",
+                     "januar", "februar", "märz", "april", "mai", "juni",
+                     "juli", "august", "september", "oktober", "november", "dezember"])
+
+                if has_numbers or has_specific_date:
+                    facts.append(f"[{src.title}]: {src.snippet}")
+
+        if not facts:
+            return ""
+
+        return "\n".join(facts)
+
     async def _generate_single_response(self,
                                       claim: str,
                                       fact_check: FactCheckResult,
@@ -1589,6 +1609,17 @@ The claim is part of a coordinated narrative campaign.
                     else:
                         logger.info(f"🎯 Response mode (legacy): {claim_analysis.response_mode.value}")
 
+                    ground_truth = self._extract_ground_truth(fact_check.sources)
+                    ground_truth_block = ""
+                    if ground_truth:
+                        ground_truth_block = f"""
+                === VERIFIED FACTS (USE EXACTLY AS STATED – DO NOT MODIFY DATES OR NUMBERS) ===
+                {ground_truth}
+
+                CRITICAL: If a source states a specific date or number, you MUST use it exactly.
+                Never combine data from different events.
+                """
+
                     prompt = f"""
                 You are Guardian 🛡️ on TikTok. Fact-checker with personality.
                 {tiktok_rules}
@@ -1612,6 +1643,7 @@ The claim is part of a coordinated narrative campaign.
                 Verdict: {'FALSE' if fact_check.is_fake else 'MISLEADING'}
                 Key fact: {fact_check.explanation}
                 {sources_text}
+                {ground_truth_block}
 
                 === OUTPUT (TikTok Format) ===
                 1. HOOK (max 8 words): "{opening_style}" or your own punchy opener
