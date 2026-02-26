@@ -954,6 +954,17 @@ The claim is part of a coordinated narrative campaign.
             if original_count != len(sources):
                 logger.info(f"🔄 Deduplicated: {original_count} → {len(sources)} sources")
 
+            # Re-rank sources using SourceRanker for context-aware ordering
+            try:
+                from src.core.source_adapter import rank_and_convert
+                claim_analysis = self.claim_router.analyze_claim(query)
+                ranking_keywords = claim_analysis.keywords if hasattr(claim_analysis, 'keywords') else []
+                claim_type = claim_analysis.claim_types[0].value if claim_analysis.claim_types else None
+                sources = rank_and_convert(sources, ranking_keywords, claim_type=claim_type)
+                logger.info(f"📊 Sources re-ranked by SourceRanker (keywords: {ranking_keywords[:5]})")
+            except Exception as e:
+                logger.warning(f"⚠️ SourceRanker failed, using original order: {e}")
+
             logger.info(f"Final source count: {len(sources)}")
             self.last_api_usage = api_usage
             return sources
