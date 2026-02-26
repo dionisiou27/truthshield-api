@@ -1050,6 +1050,9 @@ The claim is part of a coordinated narrative campaign.
                            credibility_score=0.95, date_published="2024-01-01")
                 ],
                 "eu_primaries": [
+                    Source(url="https://www.europarl.europa.eu/", title="European Parliament",
+                           snippet="Official European Parliament legislative records, votes, and resolutions...",
+                           credibility_score=0.98, date_published="2024-01-01"),
                     Source(url="https://ec.europa.eu/", title="European Commission",
                            snippet="Official EU policies and legislative information...",
                            credibility_score=0.97, date_published="2024-01-01"),
@@ -1081,7 +1084,8 @@ The claim is part of a coordinated narrative campaign.
 
             # EU/political claim detection
             eu_keywords = ["eu", "europa", "commission", "kommission", "brüssel", "brussels",
-                           "merkel", "scholz", "macron", "von der leyen", "parliament", "parlam"]
+                           "merkel", "scholz", "macron", "von der leyen", "parliament", "parlam",
+                           "europarl", "parlament", "abgeordnete", "fraktion"]
             if any(kw in text_lower for kw in eu_keywords):
                 logger.info("🇪🇺 EU claim detected - adding EC/FRA as primary sources")
                 sources.extend(bot_config.get("eu_primaries", []))
@@ -1427,6 +1431,7 @@ The claim is part of a coordinated narrative campaign.
                         "pubmed.ncbi.nlm.nih.gov": "PubMed",
                         "ncbi.nlm.nih.gov": "PubMed",
                         # EU/UN Institutions
+                        "europarl.europa.eu": "Europäisches Parlament",
                         "ec.europa.eu": "EU-Kommission",
                         "europa.eu": "EU",
                         "fra.europa.eu": "EU Grundrechteagentur",
