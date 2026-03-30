@@ -42,7 +42,6 @@ class Settings(BaseSettings):
     sentry_dsn: Optional[str] = None
     
     # Development
-    debug: bool = True
     environment: str = "development"
     
     # Prioritization thresholds (Reach-first / Risk-first)
