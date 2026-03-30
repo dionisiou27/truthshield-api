@@ -3,7 +3,7 @@
 ## Project Overview
 TruthShield is a FastAPI-based cognitive security platform for detecting disinformation and coordinated inauthentic behavior. It provides automated fact-checking, persona-driven counter-narratives, and compliance monitoring for digital information integrity.
 
-**Current Focus:** Social media counter-narrative prototype (Twitter/X active, TikTok planned) with Guardian Avatar for real-time intervention.
+**Current Focus:** TikTok offline prototype — manual claim input, full ML pipeline with active Thompson Sampling learning. API connections prepared but not live-deployed.
 
 ## Tech Stack
 - **Framework**: Python 3.11, FastAPI (async), Uvicorn
