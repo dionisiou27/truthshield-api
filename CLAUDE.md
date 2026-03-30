@@ -3,17 +3,17 @@
 ## Project Overview
 TruthShield is a FastAPI-based cognitive security platform for detecting disinformation and coordinated inauthentic behavior. It provides automated fact-checking, persona-driven counter-narratives, and compliance monitoring for digital information integrity.
 
-**Current Focus:** TikTok social media prototype with Guardian Avatar for real-time counter-narrative intervention.
+**Current Focus:** Social media counter-narrative prototype (Twitter/X active, TikTok planned) with Guardian Avatar for real-time intervention.
 
 ## Tech Stack
 - **Framework**: Python 3.11, FastAPI (async), Uvicorn
 - **AI/ML**: OpenAI GPT-4-Turbo (reasoning, JSON mode), Thompson Sampling Bandit (custom implementation)
 - **OCR/Vision**: EasyOCR, Pillow
 - **Data Processing**: NumPy
-- **Database**: SQLAlchemy 2.0, SQLite (dev)
-- **Infrastructure**: Docker, Redis (caching), HTTPX
+- **Database**: SQLAlchemy 2.0, SQLite + aiosqlite (dev)
+- **Infrastructure**: Docker, HTTPX (Redis planned, not yet active)
 - **Testing**: pytest, black, flake8, mypy
-- **External APIs**: Google Fact Check, Google Custom Search, News API, ClaimBuster, MediaWiki
+- **External APIs**: Google Fact Check, Google Custom Search, News API, ClaimBuster, MediaWiki, CORE.ac.uk
 - **Social Media**: Tweepy (Twitter/X)
 - **RSS Feeds**: feedparser for compliance-safe source ingestion
 - **Web Scraping**: BeautifulSoup4 for fact-checker sites (FactCheck.org, Snopes, Correctiv)
@@ -33,7 +33,12 @@ src/
 │   ├── news_api.py           # News API integration
 │   ├── web_scraper.py        # Web scraping for fact-checkers (FactCheck.org, Snopes, Correctiv)
 │   ├── social_monitor.py     # Twitter/social media monitoring with prioritization
-│   └── ocr_service.py        # EasyOCR text extraction from images
+│   ├── ocr_service.py        # EasyOCR text extraction from images
+│   ├── core_api.py           # CORE.ac.uk academic paper search
+│   ├── arxiv_api.py          # arXiv preprint search
+│   ├── pubmed_api.py         # PubMed biomedical literature search
+│   ├── semantic_scholar_api.py  # Semantic Scholar API
+│   └── who_api.py            # WHO API integration
 └── ml/            # Machine Learning Pipeline
     ├── guardian/  # Claim Router, Source Ranker, Response Generator
     ├── learning/  # Thompson Sampling Bandit, Feedback Collector, ML Logging
@@ -74,7 +79,8 @@ Required in `.env`:
 OPENAI_API_KEY=        # OpenAI GPT-4-Turbo access (required)
 GOOGLE_API_KEY=        # Google Custom Search / Fact Check
 NEWS_API_KEY=          # News API integration
-HUGGINGFACE_API_KEY=   # HuggingFace models (optional)
+CLAIMBUSTER_API_KEY=   # ClaimBuster claim detection (free)
+CORE_API_KEY=          # CORE.ac.uk academic papers (free)
 TWITTER_API_KEY=       # Twitter/X API (for social monitoring)
 TWITTER_API_SECRET=    # Twitter/X API secret
 ```
@@ -381,6 +387,11 @@ bench/batches/euronews_starmer_china_v2.json  # China/UK grey-zone (12 claims)
 - `src/services/web_scraper.py` - Web scraping for fact-checkers (FactCheck.org, Snopes, Correctiv)
 - `src/services/social_monitor.py` - Twitter/social media monitoring with prioritization engine
 - `src/services/ocr_service.py` - EasyOCR text extraction from images
+- `src/services/core_api.py` - CORE.ac.uk academic paper search
+- `src/services/arxiv_api.py` - arXiv preprint search
+- `src/services/pubmed_api.py` - PubMed biomedical literature search
+- `src/services/semantic_scholar_api.py` - Semantic Scholar API
+- `src/services/who_api.py` - WHO API integration
 
 ### API
 - `src/api/ml.py` - ML pipeline endpoints
@@ -493,75 +504,11 @@ results = await scrape_factcheckers("COVID vaccines autism", limit_per_site=2)
 
 ---
 
-## Meme Generator (PLANNING PHASE)
+## Meme Generator
 
-**Status:** 🚧 **Planning Phase** - Not yet implemented
+**Status:** NOT YET IMPLEMENTED - Only type definitions exist (`MemeSpec`, `TemplateMetadata` in `src/ml/meme/`). No pipeline code, no API endpoint.
 
-**Documentation:** `docs/MEME_GENERATOR_PLAN.md`
-
-### Overview
-
-**Concept:** "Inoculation Meme" (Impf-Meme) Generator - Transform factual debunks into viral, shareable memes.
-
-**Goal:** Build digital resilience through humor + facts, exposing disinformation methods without ad hominem attacks.
-
-### Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│         MEME GENERATOR PIPELINE             │
-├─────────────────────────────────────────────┤
-│  Claim → Concept (LLM) → Template → Render │
-└─────────────────────────────────────────────┘
-```
-
-**Components (Planned):**
-1. **MemeConceptGenerator** (`src/ml/meme/concept_generator.py`) - LLM-driven concept creation
-2. **TemplateSelector** (`src/ml/meme/template_selector.py`) - Meme format selection
-3. **ImageRenderer** (`src/ml/meme/image_renderer.py`) - Programmatic PNG generation with Pillow
-
-### Output Format
-
-**MemeSpec:**
-```python
-visual_template: str        # e.g., "Drake", "Panik/Kalm"
-top_text: str               # Hook (emotional/narrative reference)
-bottom_text: str            # Payload (hard fact, max 10-12 words)
-footer: str                 # Source citation
-tone: ToneVariant           # WITTY, EMPATHIC, FACTUAL
-aspect_ratio: str           # "1:1" or "9:16"
-```
-
-### Quality Safeguards
-
-✅ **Allowed:**
-- Attack methods (cherrypicking, whataboutism)
-- Attack data inconsistencies
-- Use humor to expose logical fallacies
-
-❌ **Forbidden:**
-- Ad hominem attacks on individuals/parties
-- Cynicism toward victims
-- Tone-deaf humor on sensitive topics
-
-### Integration Points
-
-- **ClaimRouter** - Claim analysis for tone selection
-- **SourceRanker** - Source citations for footer
-- **GuardianBandit** - Tone variant optimization
-- **OCR Service** - Analyze competing memes
-
-### Planned API Endpoint
-
-```
-POST /api/v1/meme/generate
-- Input: narrative, fact_basis, sources
-- Output: meme_spec, image_url, claim_analysis
-```
-
-**Estimated Timeline:** 4-5 weeks for MVP (5 templates, basic API)
-
-**See:** `docs/MEME_GENERATOR_PLAN.md` for full implementation roadmap
+**See:** `docs/MEME_GENERATOR_PLAN.md` for the full implementation roadmap.
 
 ---
 
