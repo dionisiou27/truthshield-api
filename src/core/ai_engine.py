@@ -1293,7 +1293,75 @@ The claim is part of a coordinated narrative campaign.
                 "confidence": max(verdict.get("confidence", 0.0), 0.95),
                 "explanation": "Offizielles Ergebnis des Europäischen Parlaments vom 18. Juli 2024: Ursula von der Leyen wurde mit 401 Stimmen zur Kommissionspräsidentin gewählt."
             })
-        
+
+        # Bucha massacre denial — recurring Russian disinformation narrative
+        bucha_terms = ["bucha", "butscha", "буча"]
+        bucha_denial_terms = [
+            "staged", "inszeniert", "inszenierung", "fake", "hoax",
+            "false flag", "false-flag", "fabricated", "fabriziert",
+            "ukrainian forces", "by ukraine", "by the ukrainians",
+            "ukrainische streitkrafte", "ukrainische streitkräfte",
+            "ukrainian provocation", "ukrainische provokation",
+        ]
+        if any(_contains(term) for term in bucha_terms) and \
+           any(_contains(term) for term in bucha_denial_terms):
+            bucha_sources = [
+                Source(
+                    url="https://www.ohchr.org/en/countries/ukraine",
+                    title="UN OHCHR — Situation of human rights in Ukraine",
+                    snippet=(
+                        "The UN Independent International Commission of Inquiry on "
+                        "Ukraine documented summary executions, torture, and unlawful "
+                        "killings of civilians by Russian armed forces in occupied "
+                        "areas including Bucha."
+                    ),
+                    credibility_score=0.98,
+                    date_published="2022-09-23",
+                ),
+                Source(
+                    url="https://www.icc-cpi.int/situations/ukraine",
+                    title="ICC — Situation in Ukraine",
+                    snippet=(
+                        "The International Criminal Court opened an investigation into "
+                        "alleged war crimes, crimes against humanity, and genocide "
+                        "committed on the territory of Ukraine, including events in "
+                        "Bucha during the Russian occupation in 2022."
+                    ),
+                    credibility_score=0.98,
+                    date_published="2022-03-02",
+                ),
+                Source(
+                    url="https://euvsdisinfo.eu/disinfo-cases/?text=bucha",
+                    title="EUvsDisinfo — Bucha disinformation tracker",
+                    snippet=(
+                        "EUvsDisinfo has catalogued the recurring Kremlin disinformation "
+                        "narrative claiming the Bucha killings were staged. The narrative "
+                        "contradicts verified satellite imagery (Maxar), on-the-ground "
+                        "reporting, and forensic evidence."
+                    ),
+                    credibility_score=0.95,
+                    date_published="2022-04-04",
+                ),
+            ]
+            for src in reversed(bucha_sources):
+                if not any(existing.url == src.url for existing in sources):
+                    sources.insert(0, src)
+
+            verdict.update({
+                "is_fake": True,
+                "category": "misinformation",
+                "confidence": max(verdict.get("confidence", 0.0), 0.97),
+                "explanation": (
+                    "The Bucha massacre is a documented war crime committed by Russian "
+                    "armed forces during the occupation of Bucha in February–March 2022. "
+                    "It is verified by the UN Independent International Commission of "
+                    "Inquiry on Ukraine (OHCHR), the International Criminal Court, "
+                    "satellite imagery (Maxar), and independent OSINT investigations. "
+                    "The 'staged by Ukrainian forces' framing is a Kremlin disinformation "
+                    "narrative tracked by EUvsDisinfo."
+                ),
+            })
+
         return verdict
     
     async def generate_brand_response(self, 
@@ -1339,35 +1407,92 @@ The claim is part of a coordinated narrative campaign.
 
         return "\n".join(facts)
 
+    def _build_degraded_fallback(self,
+                                 fact_check: FactCheckResult,
+                                 company: str,
+                                 language: str) -> AIInfluencerResponse:
+        """
+        Rule-compliant response when the LLM is unavailable. For Guardian Avatar
+        with a deterministic high-confidence misinformation verdict, render a
+        hard boundary using the verdict + top sources — never a placeholder
+        like "let me check the facts" that mimics a real Guardian statement.
+        """
+        persona = self.company_personas.get(
+            company,
+            self.company_personas.get("GuardianAvatar", {"emoji": "🛡️"}),
+        )
+        emoji = persona.get("emoji", "🛡️")
+
+        top_titles = [s.title for s in (fact_check.sources or [])[:3] if s.title]
+        sources_line = " | ".join(top_titles)
+
+        high_confidence_false = (
+            fact_check.category in ("misinformation", "likely_false")
+            and fact_check.confidence >= 0.85
+        )
+
+        if company == "GuardianAvatar" and high_confidence_false:
+            explanation = (fact_check.explanation or "").strip()
+            if language == "de":
+                parts = ["Diese Behauptung ist dokumentierte Desinformation."]
+                if explanation:
+                    parts.append(explanation)
+                if sources_line:
+                    parts.append(f"Quellen: {sources_line}")
+            else:
+                parts = ["This claim is documented disinformation."]
+                if explanation:
+                    parts.append(explanation)
+                if sources_line:
+                    parts.append(f"Sources: {sources_line}")
+            text = " ".join(parts)
+            tone = "firm"
+            engagement = 0.7
+        elif company in AVATAR_COMPANIES:
+            if language == "de":
+                text = (
+                    f"{emoji} Antwortgenerierung vorübergehend nicht verfügbar. "
+                    "Bitte später erneut versuchen."
+                )
+            else:
+                text = (
+                    f"{emoji} Response generation temporarily unavailable. "
+                    "Please retry shortly."
+                )
+            tone = "degraded"
+            engagement = 0.0
+        else:
+            if language == "de":
+                text = f"{company}: Antwortgenerierung vorübergehend nicht verfügbar."
+            else:
+                text = f"{company}: Response generation temporarily unavailable."
+            tone = "degraded"
+            engagement = 0.0
+
+        hashtags = (
+            ["#TruthShield", "#FactCheck", f"#{company}"]
+            if company in AVATAR_COMPANIES
+            else [f"#{company}Facts", "#TruthShield"]
+        )
+
+        return AIInfluencerResponse(
+            response_text=text,
+            tone=tone,
+            engagement_score=engagement,
+            hashtags=hashtags,
+            company_voice=company,
+        )
+
     async def _generate_single_response(self,
                                       claim: str,
                                       fact_check: FactCheckResult,
                                       company: str,
                                       language: str) -> AIInfluencerResponse:
         """Generate response in specific language"""
-        
+
         if not self.openai_client:
-            # Fallback responses
-            if company in AVATAR_COMPANIES:
-                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
-                fallback_texts = {
-                    "en": f"{company} here! {persona['emoji']} Let me fact-check this claim...",
-                    "de": f"{company} hier! {persona['emoji']} Lass mich diese Behauptung prüfen..."
-                }
-            else:
-                fallback_texts = {
-                    "en": f"As {company}, we take this claim seriously and verify all facts.",
-                    "de": f"Als {company} nehmen wir diese Behauptung ernst und prüfen alle Fakten."
-                }
-            
-            return AIInfluencerResponse(
-                response_text=fallback_texts.get(language, fallback_texts["en"]),
-                tone="professional",
-                engagement_score=0.6,
-                hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}Facts", "#TruthShield"],
-                company_voice=company
-            )
-        
+            return self._build_degraded_fallback(fact_check, company, language)
+
         try:
             persona = self.company_personas.get(company, self.company_personas["BMW"])
 
@@ -1727,25 +1852,7 @@ The claim is part of a coordinated narrative campaign.
             
         except Exception as e:
             logger.error(f"Brand response generation failed: {e}")
-            if company in AVATAR_COMPANIES:
-                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
-                fallback = {
-                    "en": f"{company} says: That's an interesting claim! Let me check the facts... {persona['emoji']}",
-                    "de": f"{company} sagt: Das ist eine interessante Behauptung! Lass mich die Fakten prüfen... {persona['emoji']}"
-                }
-            else:
-                fallback = {
-                    "en": f"We at {company} stand for facts and transparency.",
-                    "de": f"Wir bei {company} stehen für Fakten und Transparenz."
-                }
-            
-            return AIInfluencerResponse(
-                response_text=fallback.get(language, fallback["en"]),
-                tone="professional", 
-                engagement_score=0.5,
-                hashtags=["#TruthShield", "#FactCheck", f"#{company}"] if company in AVATAR_COMPANIES else [f"#{company}"],
-                company_voice=company
-            )
+            return self._build_degraded_fallback(fact_check, company, language)
 
     def translate_fact_check_result(self, result: FactCheckResult) -> Dict[str, str]:
         """Quick translation of fact check results for demo"""
