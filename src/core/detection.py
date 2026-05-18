@@ -134,6 +134,13 @@ class TruthShieldDetector:
 
             def _source_type(url: str) -> str:
                 dom = _domain(url)
+                if any(x in dom for x in [
+                    "ohchr.org", "un.org", "who.int", "icc-cpi.int",
+                    "europa.eu", "ec.europa.eu", "europarl.europa.eu",
+                    "eeas.europa.eu", "fra.europa.eu", "nato.int",
+                    "osce.org", "coe.int", "bpb.de",
+                ]):
+                    return "institution"
                 if any(x in dom for x in ["wikipedia.org", "wikidata.org", "dbpedia.org"]):
                     return "static"
                 elif any(x in dom for x in ["factcheck.org", "snopes.com", "politifact.com", "fullfact.org", "correctiv.org", "mimikama.org", "euvsdisinfo.eu"]):
@@ -148,10 +155,11 @@ class TruthShieldDetector:
             sorted_sources = sorted((fact_check_result.sources or []), key=lambda s: s.credibility_score, reverse=True)
             picked = []
             seen_domains = set()
-            source_types = {"static": 0, "factcheck": 0, "academic": 0, "news": 0, "other": 0}
-            
-            # Systematic selection: prioritize static sources, then fact-checkers, then academic, then news
-            for source_type in ["static", "factcheck", "academic", "news", "other"]:
+            source_types = {"institution": 0, "static": 0, "factcheck": 0, "academic": 0, "news": 0, "other": 0}
+
+            # Systematic selection: prioritize institutional sources (UN/ICC/EU),
+            # then static, then fact-checkers, then academic, then news
+            for source_type in ["institution", "static", "factcheck", "academic", "news", "other"]:
                 for s in sorted_sources:
                     if len(picked) >= 5:  # Increased to 5 sources
                         break
