@@ -123,7 +123,15 @@ class GoogleFactCheckAPI:
             
             # Determine verdict based on rating explanation
             verdict = self._determine_verdict(rating_explanation, rating_value)
-            
+
+            # Build snippet honestly: avoid an empty "Rated as '' by ..." construct
+            # when the publisher provided no textual rating.
+            rating_text = (rating_explanation or "").strip()
+            if rating_text:
+                snippet = f"Rated as '{rating_text}' by {publisher_name}"
+            else:
+                snippet = f"Fact-check by {publisher_name}"
+
             return {
                 'source': 'google_factcheck',
                 'claim_text': claim_text,
@@ -136,7 +144,7 @@ class GoogleFactCheckAPI:
                 'verdict': verdict,
                 'credibility_score': credibility_score,
                 'date_published': review.get('datePublished', ''),
-                'snippet': f"Rated as '{rating_explanation}' by {publisher_name}"
+                'snippet': snippet
             }
             
         except Exception as e:

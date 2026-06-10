@@ -14,7 +14,7 @@ class DetectionResult(BaseModel):
     # Original fields
     content_type: str
     is_synthetic: bool
-    confidence: float
+    confidence: Optional[float] = None
     detection_method: str
     details: Dict
     timestamp: str
@@ -188,8 +188,18 @@ class TruthShieldDetector:
                     "sources_found": len(fact_check_result.sources),
                     "all_sources_checked": [s.model_dump() for s in (fact_check_result.sources or [])],  # All sources for Raw JSON
                     "verified_sources": [s.model_dump() for s in picked],  # Curated selection for UI
+                    # Task 15: split claim-specific evidence from background institutions
+                    "claim_specific_evidence": [
+                        s.model_dump() for s in (fact_check_result.sources or []) if s.is_claim_specific
+                    ],
+                    "background_institutions": [
+                        s.model_dump() for s in (fact_check_result.sources or []) if not s.is_claim_specific
+                    ],
                     "mediawiki_sources": getattr(self.ai_engine, "last_mediawiki_results", []),
-                    "ai_response_generated": ai_response is not None,
+                    # Task 12: the flag is true ONLY when a real LLM generation happened.
+                    "ai_response_generated": ai_response is not None and not getattr(ai_response, "degraded", False),
+                    "degraded": bool(getattr(ai_response, "degraded", False)) if ai_response else False,
+                    "degradation_reason": getattr(ai_response, "degradation_reason", None) if ai_response else None,
                     "ai_responses": ai_responses if ai_responses else None,  # Include both language responses
                     "api_usage": getattr(self.ai_engine, "last_api_usage", None),
                     "astroturfing_analysis": {
