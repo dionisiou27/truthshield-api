@@ -215,9 +215,11 @@ class TruthShieldDetector:
                 processing_time_ms=int(processing_time)
             )
             
+            _conf = fact_check_result.confidence
+            _conf_str = f"{_conf:.2f}" if _conf is not None else "n/a"
             logger.info(f"✅ Fact-check complete [{request_id}]: "
                        f"Fake={fact_check_result.is_fake} "
-                       f"Confidence={fact_check_result.confidence:.2f}")
+                       f"Confidence={_conf_str}")
             
             return result
             

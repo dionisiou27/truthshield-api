@@ -977,5 +977,43 @@ class TestPayloadJsonHygiene:
         assert out["snippet"] == "Fact-check by FactCheck.org"
 
 
+class TestDegradedDetectionNoCrash:
+    """Regression: a null confidence (analysis_unavailable) must not crash the
+    detection flow (e.g. an f-string formatting None) and fall back to an error.
+    """
+
+    def test_company_factcheck_handles_null_confidence(self):
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        import asyncio
+        from src.core.detection import TruthShieldDetector, CompanyFactCheckRequest
+
+        detector = TruthShieldDetector()
+        # Force the degraded path: no LLM, no network source lookups.
+        detector.ai_engine.openai_client = None
+
+        async def _no_sources(*args, **kwargs):
+            return []
+
+        detector.ai_engine._search_sources = _no_sources
+
+        req = CompanyFactCheckRequest(
+            text="COVID vaccines contain microchips for tracking",
+            company="GuardianAvatar",
+            language="en",
+            generate_ai_response=True,
+        )
+        result = asyncio.run(detector.fact_check_company_claim(req))
+
+        # Must NOT crash into the error fallback...
+        assert result.detection_method == "ai_fact_checking"
+        assert "error" not in result.details
+        # ...and must honestly report the degraded state.
+        assert result.confidence is None
+        assert result.fact_check.category == "analysis_unavailable"
+        assert result.details["degraded"] is True
+        assert result.details["ai_response_generated"] is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
