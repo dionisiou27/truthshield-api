@@ -1,5 +1,61 @@
 # CHANGELOG
 
+## 2026-06-10
+
+### Paper-Code Alignment & Hygiene
+
+Triggered by an internal code-paper consistency audit (June 2026) ahead of the
+"Inverting the Machine" review. The code was brought up to the hard guarantees
+claimed in the paper and README; paper claims were not weakened to match code.
+
+#### Added
+- **`src/core/constraints.py`** — single source of truth for immutable safety
+  boundaries. `ImmutableConstraints` and `NegativeSignals` moved here and
+  hardened with an immutable metaclass (class-attribute reassignment/deletion
+  raises at runtime). Re-exported from `src/ml/learning/bandit.py` for
+  backwards-compatible imports.
+- **Source-weight integrity guard** — `verify_source_weights_integrity()`
+  checks a SHA256 of `SOURCE_CLASS_WEIGHTS` against a pinned hash at app
+  startup (`src/api/main.py`); CRITICAL log + startup abort on mismatch.
+- **Hard authority threshold** (`source_ranker.py`) — sources below
+  `MIN_SOURCE_AUTHORITY` (0.70 / REPUTABLE_MEDIA) are excluded from the citation
+  pool before ranking and marked `SourceUsageType.RETRIEVAL` (still usable for
+  discovery/context). Wikipedia and Unknown sources can no longer be cited.
+- **Hard diversity constraints** (`source_ranker.py`) — max one source per
+  domain and a minimum of two source classes per intervention. When
+  unsatisfiable, `diversity_constraint_unmet` is set and surfaced through
+  `GuardianResponse` into the `/prepare-guardian` API response for human review.
+- **AI disclosure** — `AI_DISCLOSURE_DE/EN` + idempotent, budget-safe
+  `append_ai_disclosure()`. Appended in all generation paths (`ai_engine`
+  LLM + degraded fallback, `content_templates`, surfaced via
+  `response_generator`).
+- **Runtime reward-weight validation** (`bandit.py`) — engagement weights are
+  validated against `MAX_ENGAGEMENT_WEIGHT` in `__init__` and on every
+  `calculate_reward()`; violations raise instead of silently optimizing.
+- **CI** — `.github/workflows/tests.yml` runs the ML pipeline tests and the
+  reward-poisoning/drift test on push/PR against `main`.
+- **`demo_data/legacy_brand_personas.py`** — archived B2B brand personas.
+- 26 new ML-pipeline unit tests covering the above.
+
+#### Changed
+- README: status corrected to TRL 4 (lab demonstration, no live platform
+  integration); benchmark corpus availability note added; Safety & Governance
+  section made code-accurate (authority threshold, diversity, disclosure,
+  startup integrity check, immutable optimization scope).
+- Legacy B2B brand personas removed from `src/core/personas.py`; engine and
+  request-model defaults switched from `"BMW"` to `"GuardianAvatar"`; the
+  legacy organisation fact-check prompt was genericized (no brand-specific
+  content remains in `src/core/`).
+- Bandit module docstring corrected to the actual tone variants
+  (empathic/witty/firm/spicy).
+
+#### Fixed
+- `bench/test_reward_poisoning.py` drift test no longer crashes with
+  `KeyError: 'boundary_strict'`; arm references use the current `ToneVariant`
+  enum (`SPICY`/`EMPATHIC`).
+- `response_generator.build_tone_prompt` and `source_ranker.get_rejection_reasons`
+  no longer reference removed enum members / non-existent config fields.
+
 ## 2025-12-18
 
 ### Added - Temporal Awareness, IO Detection & RSS Freshness

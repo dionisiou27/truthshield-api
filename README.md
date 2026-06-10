@@ -3,7 +3,7 @@
 **Cognitive Security Infrastructure for Democratic Information Spaces**
 
 Classification: Dual-Use / Defence Ready
-Status: Research Prototype (TRL 5-6)
+Status: Research Prototype (TRL 4 — components validated, laboratory demonstration; no live platform integration)
 Affiliation: Tomorrow University of Applied Sciences / TruthShield, Aachen
 
 ---
@@ -34,18 +34,18 @@ The pipeline integrates four operational layers:
 
 **Education** — Each intervention simultaneously functions as a micro-inoculation unit, exposing the underlying manipulation technique. Dedicated profile channels provide short-format explainer content for cumulative resilience building over time.
 
-**Evaluation** — Offline benchmarking against a corpus of 1,247 high-frequency claims (health, climate, politics). Mixed-effects regression models estimate predictors of engagement potential across persona types and claim categories.
+**Evaluation** — Offline benchmarking against a corpus of 1,247 high-frequency claims (health, climate, politics). Mixed-effects regression models estimate predictors of engagement potential across persona types and claim categories. Corpus and evaluation schema available to consortium partners and reviewers on request (see `docs/BENCHMARK_SCHEMA.md`).
 
 ## Safety and governance
 
 These principles are non-negotiable:
 
-- Human-in-the-loop validation for all interventions (median review time: 87 seconds)
-- Full transparency: every intervention is declared as AI-assisted and human-reviewed
-- Source-first methodology: traceable evidence chain for every factual claim
+- Human-in-the-loop validation for all interventions; interventions whose source-diversity constraints cannot be met are flagged for mandatory human review
+- Full transparency: every generated intervention carries an AI-assisted / human-reviewed disclosure in the generation pipeline
+- Source-first methodology: no source below a defined authority threshold (REPUTABLE_MEDIA) is cited, and citations enforce at most one source per domain with at least two source classes per intervention
 - EU AI Act Article 14 compliance (human oversight) with systematic audit logging
 - No covert operations, no astroturfing, no undisclosed automation
-- Optimization is limited to style and delivery; factual content is never algorithmically altered
+- Optimization is limited to style and delivery (tone variant, source-mix strategy); factual content, source authority weights, and boundary rules are immutable and integrity-checked at startup
 
 ## Documentation
 
