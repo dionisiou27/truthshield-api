@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.ml.learning.bandit import get_bandit, BanditContext, NegativeSignals
+from src.ml.learning.bandit import get_bandit, BanditContext, NegativeSignals, ToneVariant
 from src.ml.learning.feedback import EngagementMetrics
 
 
@@ -359,8 +359,9 @@ def test_bandit_no_drift():
         }
 
     # Simulate rounds
-    provocative_arm = "boundary_strict"  # Assume this gets gamed
-    clean_arm = "boundary_educational"
+    # SPICY is the most provocative arm; if penalties work it must NOT converge.
+    provocative_arm = ToneVariant.SPICY  # Assume this gets gamed
+    clean_arm = ToneVariant.EMPATHIC
 
     for round_num in range(50):
         # Provocative content: high engagement but toxic/reported
@@ -423,7 +424,7 @@ def test_bandit_no_drift():
             if drift > 0:
                 status = " [OK] Clean content preferred"
 
-        print(f"  {arm_name}:")
+        print(f"  {arm_name.value}:")
         print(f"    Initial: {initial_mean:.3f}")
         print(f"    Final:   {final_mean:.3f}")
         print(f"    Drift:   {drift:+.3f}{status}")

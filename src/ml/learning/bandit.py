@@ -10,7 +10,7 @@ Factual assertions, source classes, and boundary definitions are IMMUTABLE
 and excluded from optimization to prevent engagement-driven drift.
 
 LEARNABLE PARAMETERS (stylistic only):
-- Tone variant (strict/firm/educational) - HOW the message is framed
+- Tone variant (empathic/witty/firm/spicy) - HOW the message is framed
 - Source mix strategy - WHICH source class priority, not WHICH sources
 - Response length within constraints
 - Sentence structure order
