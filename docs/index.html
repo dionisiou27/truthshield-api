@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruthShield - AI-Powered Fact-Checking & Disinformation Detection</title>
-    <meta name="description" content="Protect your digital ecosystem with real-time fact-checking, disinformation detection, and cognitive security powered by advanced AI.">
+    <title>TruthShield - Cognitive Security for Democratic Information Spaces</title>
+    <meta name="description" content="Visible, source-backed counter-speech under human oversight. TruthShield detects disinformation and makes the human voice visible again.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -103,6 +103,30 @@
             .uc-card { min-width: 100%; }
             .uc-row { grid-template-columns: 1fr 1fr; }
         }
+
+        /* Pillars / manifesto language toggle (scoped, does not affect demo) */
+        .ts-de { display: none; }
+        body.lang-de .ts-en { display: none; }
+        body.lang-de .ts-de { display: revert; }
+        .ts-kicker { letter-spacing: .14em; text-transform: uppercase; font-size: 12px; font-weight: 700; }
+
+        /* Scroll-reveal for pillar blocks. Pure CSS, GPU-friendly.
+           Hidden state is applied ONLY when motion is allowed AND the browser
+           supports scroll-driven timelines, so every other case shows content fully. */
+        @keyframes ts-reveal-in {
+            from { opacity: 0; transform: translateY(26px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            @supports (animation-timeline: view()) {
+                #approach .ts-reveal {
+                    opacity: 0;
+                    animation: ts-reveal-in linear both;
+                    animation-timeline: view();
+                    animation-range: entry 0% entry 45%;
+                }
+            }
+        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -114,14 +138,20 @@
 <body class="bg-white text-secondary">
 
     <!-- Top Bar -->
-    <div class="bg-secondary text-white hidden lg:block">
+    <div class="bg-secondary text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-14 2xl:px-0">
-            <div class="flex justify-end gap-6 py-2">
+            <div class="flex items-center justify-between gap-6 py-2">
+                <div class="flex items-center gap-1">
+                    <button onclick="setLang('en')" id="lang-en" class="px-3 py-1 text-xs font-semibold rounded-full bg-white text-secondary">EN</button>
+                    <button onclick="setLang('de')" id="lang-de" class="px-3 py-1 text-xs font-semibold rounded-full bg-white/15 text-white hover:bg-white/25">DE</button>
+                </div>
+                <div class="hidden sm:flex items-center gap-6">
                 <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="text-sm hover:underline flex items-center gap-2">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                     GitHub
                 </a>
-                <a href="/docs" class="text-sm hover:underline">API Docs</a>
+                    <a href="/docs" class="text-sm hover:underline">API Docs</a>
+                </div>
             </div>
         </div>
     </div>
@@ -138,18 +168,18 @@
 
                 <!-- Desktop Nav -->
                 <div class="hidden lg:flex items-center gap-8">
-                    <a href="#features" class="text-primary font-medium hover:text-accent transition-colors">Features</a>
-                    <a href="#how-it-works" class="text-primary font-medium hover:text-accent transition-colors">How it Works</a>
-                    <a href="#use-cases" class="text-primary font-medium hover:text-accent transition-colors">Use Cases</a>
+                    <a href="#approach" class="text-primary font-medium hover:text-accent transition-colors"><span class="ts-en">Approach</span><span class="ts-de">Ansatz</span></a>
+                    <a href="#features" class="text-primary font-medium hover:text-accent transition-colors">Engine</a>
+                    <a href="#how-it-works" class="text-primary font-medium hover:text-accent transition-colors"><span class="ts-en">How it Works</span><span class="ts-de">Funktionsweise</span></a>
+                    <a href="#use-cases" class="text-primary font-medium hover:text-accent transition-colors"><span class="ts-en">Use Cases</span><span class="ts-de">Anwendungsfälle</span></a>
                     <a href="#faq" class="text-primary font-medium hover:text-accent transition-colors">FAQ</a>
-                    <a href="#api" class="text-primary font-medium hover:text-accent transition-colors">API</a>
-                    <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="text-primary font-medium hover:text-accent transition-colors">Documentation</a>
+                    <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="text-primary font-medium hover:text-accent transition-colors"><span class="ts-en">Documentation</span><span class="ts-de">Dokumentation</span></a>
                 </div>
 
                 <!-- CTA Button -->
                 <div class="flex items-center gap-4">
                     <a href="#demo" class="hidden sm:inline-flex px-6 py-3 bg-accent hover:bg-accent-dark text-white font-semibold rounded-full transition-all">
-                        Try Demo
+                        <span class="ts-en">Try Demo</span><span class="ts-de">Demo testen</span>
                     </a>
                     <!-- Mobile Menu Button -->
                     <button class="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
@@ -170,20 +200,20 @@
                 <div class="flex flex-col gap-6">
                     <div class="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent rounded-full text-sm font-medium w-fit">
                         <span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span>
-                        AI-Powered Cognitive Security
+                        <span class="ts-en">Cognitive Security for Democratic Information Spaces</span><span class="ts-de">Kognitive Sicherheit für demokratische Informationsräume</span>
                     </div>
                     <h1 class="text-4xl sm:text-5xl font-bold text-primary leading-tight">
-                        Detect, verify, and intervene — in real time
+                        <span class="ts-en">Detect, verify, and respond — visibly and with sources</span><span class="ts-de">Erkennen, verifizieren, antworten, sichtbar und mit Quellen</span>
                     </h1>
                     <p class="text-lg text-paragraph leading-relaxed">
-                        Protect your digital ecosystem with advanced AI that detects misinformation, identifies coordinated campaigns, and provides evidence-based counter-narratives in real-time.
+                        <span class="ts-en">Soon most content online will not come from humans. TruthShield detects coordinated disinformation and makes the human voice visible again, with evidence-based counter-speech that is source-backed and approved by a human before it appears.</span><span class="ts-de">Bald wird der Großteil der Inhalte im Netz nicht von Menschen stammen. TruthShield erkennt koordinierte Desinformation und macht die menschliche Stimme wieder sichtbar, mit evidenzbasierter Gegenrede, die quellenbasiert ist und von einem Menschen freigegeben wird, bevor sie erscheint.</span>
                     </p>
                     <div class="flex flex-wrap gap-4 mt-4">
-                        <a href="#demo" class="px-8 py-4 bg-primary hover:bg-primary-dark text-white font-semibold rounded-full transition-all">
-                            Try the API
+                        <a href="#approach" class="px-8 py-4 bg-primary hover:bg-primary-dark text-white font-semibold rounded-full transition-all">
+                            <span class="ts-en">Our Approach</span><span class="ts-de">Unser Ansatz</span>
                         </a>
                         <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="px-8 py-4 ring-2 ring-primary text-primary hover:bg-primary/5 font-semibold rounded-full transition-all">
-                            View on GitHub
+                            <span class="ts-en">View on GitHub</span><span class="ts-de">Auf GitHub ansehen</span>
                         </a>
                     </div>
                 </div>
@@ -202,20 +232,262 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
                     <div class="text-3xl font-bold text-primary">50+</div>
-                    <div class="text-paragraph mt-1">Verified Sources</div>
+                    <div class="text-paragraph mt-1"><span class="ts-en">Verified Sources</span><span class="ts-de">Verifizierte Quellen</span></div>
                 </div>
                 <div>
                     <div class="text-3xl font-bold text-primary">15+</div>
-                    <div class="text-paragraph mt-1">Claim Types</div>
+                    <div class="text-paragraph mt-1"><span class="ts-en">Claim Types</span><span class="ts-de">Claim-Typen</span></div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-primary">&lt;2s</div>
-                    <div class="text-paragraph mt-1">Response Time</div>
+                    <div class="text-3xl font-bold text-primary">100%</div>
+                    <div class="text-paragraph mt-1"><span class="ts-en">Human-Approved Responses</span><span class="ts-de">Antworten, vom Menschen freigegeben</span></div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-primary">94%</div>
-                    <div class="text-paragraph mt-1">Accuracy Rate</div>
+                    <div class="text-3xl font-bold text-primary">Art. 14</div>
+                    <div class="text-paragraph mt-1"><span class="ts-en">EU AI Act, by design</span><span class="ts-de">EU AI Act, by design</span></div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= APPROACH / PILLARS (bilingual) ================= -->
+    <section id="approach" class="ts-pillars py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6">
+            <!-- Section header + language toggle -->
+            <div class="flex items-start justify-between gap-4 mb-10">
+                <div>
+                    <div class="ts-kicker text-accent mb-2"><span class="ts-en">Our Approach</span><span class="ts-de">Unser Ansatz</span></div>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-primary leading-tight">
+                        <span class="ts-en">A movement begins with dissent</span>
+                        <span class="ts-de">Eine Bewegung beginnt mit Widerspruch</span>
+                    </h2>
+                </div>
+
+            </div>
+
+            <!-- Visible lead (the hook) -->
+            <div class="ts-reveal mb-10">
+                <div class="ts-en text-lg text-secondary leading-relaxed">
+                    <p>We make sure disinformation online does not go unchallenged, and we make the silent majority visible again. Social networks were built to connect people with people; that is no longer what we see. A minority produces the bulk of disinformation, and synthetic content is crowding out the real voices. Think of TruthShield as an exoskeleton that carries until human voices are louder than the artificial ones.</p>
+                </div>
+                <div class="ts-de text-lg text-secondary leading-relaxed">
+                    <p>Wir sorgen dafür, dass Desinformation online nicht unwidersprochen bleibt, und machen die schweigende Mehrheit wieder sichtbar. Soziale Netzwerke wurden gebaut, um Menschen mit Menschen zu verbinden; das ist nicht mehr, was wir sehen. Eine Minderheit erzeugt den Großteil der Desinformation, und synthetische Inhalte verdrängen die echten Stimmen. Seht TruthShield als Exoskelett, das trägt, bis die menschlichen Stimmen lauter sind als die künstlichen.</p>
+                </div>
+            </div>
+
+            <!-- Pillars as scannable accordion rows -->
+            <div class="space-y-3">
+
+                <!-- P1 Plato's Cave -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(1)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Plato's Cave</span><span class="ts-de">Platos Höhle</span></span>
+                            <span class="text-primary font-medium"><span class="ts-en">We go in and make the shadows visible as shadows.</span><span class="ts-de">Wir gehen rein und machen die Schatten als Schatten sichtbar.</span></span>
+                        </span>
+                        <svg id="pic-1" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-1" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">Plato's cave describes people who mistake shadows on a wall for reality. The classical answer is to lead them out. We do it differently. We go in and make the shadows visible as shadows. Those who stay inside at least see that what they are looking at are projections.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Platos Höhle beschreibt Menschen, die Schatten an einer Wand für die Wirklichkeit halten. Die klassische Antwort ist, sie herauszuführen. Wir machen es anders. Wir gehen rein und machen die Schatten als Schatten sichtbar. Wer drinnen bleibt, soll wenigstens erkennen, dass das, was er sieht, nur Projektionen sind.</p>
+                    </div>
+                </div>
+
+                <!-- P2 Funhouse Mirror -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(2)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1">Funhouse Mirror</span>
+                            <span class="text-primary font-medium"><span class="ts-en">A loud minority is mistaken for the majority. We break the silence that sustains it.</span><span class="ts-de">Eine laute Minderheit wird für die Mehrheit gehalten. Wir brechen die Stille, die das trägt.</span></span>
+                        </span>
+                        <svg id="pic-2" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-2" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">A loud minority is mistaken for the majority. Researchers describe this as a funhouse mirror, a distorting mirror. The mechanism behind it is called pluralistic ignorance: everyone believes everyone else believes it. The real majority stays silent because it thinks it is a minority. We make it visible by breaking the silence.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Eine laute Minderheit wird für die Mehrheit gehalten. Forscher beschreiben das als Funhouse Mirror, einen Zerrspiegel. Der Mechanismus dahinter heißt pluralistische Ignoranz: Jeder glaubt, alle anderen glaubten es. Die echte Mehrheit schweigt, weil sie sich für eine Minderheit hält. Wir machen sie sichtbar, indem wir die Stille brechen.</p>
+                    </div>
+                </div>
+
+                <!-- P3 Visibility Gap -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(3)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Visibility Gap</span><span class="ts-de">Sichtbarkeitslücke</span></span>
+                            <span class="text-primary font-medium"><span class="ts-en">The algorithm shows what gets attention, not what most people think. The deception lives in that gap.</span><span class="ts-de">Der Algorithmus zeigt, was Aufmerksamkeit erzeugt, nicht was die Mehrheit denkt. In dieser Lücke entsteht die Täuschung.</span></span>
+                        </span>
+                        <svg id="pic-3" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-3" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">What is visible is taken to be true, and to be widespread. But the algorithm does not show what the majority thinks, it shows what generates attention. Between what is actually prevalent and what is visible, a gap opens. The deception lives in that gap. We close it by bringing the invisible majority back into view.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Was sichtbar ist, gilt als wahr und als verbreitet. Der Algorithmus zeigt aber nicht, was die Mehrheit denkt, sondern was Aufmerksamkeit erzeugt. Zwischen dem, was wirklich verbreitet ist, und dem, was sichtbar ist, klafft eine Lücke. In dieser Lücke entsteht die Täuschung. Wir schließen sie, indem wir die unsichtbare Mehrheit zurück ins Bild holen.</p>
+                    </div>
+                </div>
+
+                <!-- P4 Bystander Effect Reversal -->
+                <div class="ts-reveal bg-primary/5 rounded-xl border border-primary/20 overflow-hidden">
+                    <button onclick="togglePillar(4)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-primary/10 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1">Bystander Effect Reversal</span>
+                            <span class="text-primary font-semibold"><span class="ts-en">A visible counter voice shows that dissent is possible, and the spiral of silence breaks.</span><span class="ts-de">Eine sichtbare Gegenstimme zeigt, dass Widerspruch möglich ist, und die Schweigespirale bricht.</span></span>
+                        </span>
+                        <svg id="pic-4" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-4" class="hidden px-5 pb-5">
+                        <p class="ts-en text-secondary leading-relaxed">The bystander effect explains why people do not help when others stand by in silence. The silence becomes a signal that nothing needs to be done. We reverse the signal. A visible counter voice shows that dissent is possible. The spiral of silence breaks, and other voices can follow.</p>
+                        <p class="ts-de text-secondary leading-relaxed">Der Bystander Effect erklärt, warum Menschen nicht helfen, wenn andere zusehen und schweigen. Die Stille der anderen wird zum Signal, dass nichts zu tun ist. Wir drehen das Signal um. Eine sichtbare Gegenstimme zeigt, dass Widerspruch möglich ist. Damit bricht die Schweigespirale, und andere Stimmen können folgen.</p>
+                    </div>
+                </div>
+
+                <!-- P5 Lighthouse -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(5)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Lighthouse</span><span class="ts-de">Leuchtturm</span></span>
+                            <span class="text-primary font-medium"><span class="ts-en">Not everywhere, but at the few points where one answer shifts an entire audience.</span><span class="ts-de">Nicht überall, sondern an den wenigen Stellen, an denen eine Antwort eine ganze Audience verschiebt.</span></span>
+                        </span>
+                        <svg id="pic-5" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-5" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">A minority produces the bulk of disinformation. A lighthouse does not light the whole ocean, it stands where the hazard is. We work the same way: not everywhere, but at the few visible points where a single answer shifts the perception of an entire audience.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Eine Minderheit erzeugt den Großteil der Desinformation. Ein Leuchtturm beleuchtet nicht den ganzen Ozean, er steht dort, wo die Gefahr ist. Genauso intervenieren wir nicht überall, sondern an den wenigen sichtbaren Stellen, an denen eine einzige Antwort die Wahrnehmung einer ganzen Audience verschiebt.</p>
+                    </div>
+                </div>
+
+                <!-- P6 Chronos and Kairos -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(6)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1">Chronos &amp; Kairos</span>
+                            <span class="text-primary font-medium"><span class="ts-en">Regulation works in slow time; disinformation works in the moment. We intervene in the moment.</span><span class="ts-de">Regulierung arbeitet in langsamer Zeit, Desinformation im Moment. Wir intervenieren im Moment.</span></span>
+                        </span>
+                        <svg id="pic-6" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-6" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">Regulation and media literacy work in Chronos. Linear time, cumulative, slow. Disinformation works in Kairos. The decisive moment, the right thread, before consensus hardens. We intervene in Kairos because no regulation is fast enough to catch a viral lie.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Regulierung und Medienkompetenz arbeiten in Chronos. Lineare Zeit, kumulativ, langsam. Desinformation arbeitet in Kairos. Im entscheidenden Moment, im richtigen Thread, bevor sich der Konsens verfestigt. Wir intervenieren im Kairos, weil keine Regulierung schnell genug ist, um eine virale Lüge einzuholen.</p>
+                    </div>
+                </div>
+
+                <!-- P7 POPINT -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(7)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1">POPINT</span>
+                            <span class="text-primary font-medium"><span class="ts-en">Don't watch the sender. Strengthen the audience being targeted.</span><span class="ts-de">Nicht den Sender beobachten. Das Publikum stärken, auf das gezielt wird.</span></span>
+                        </span>
+                        <svg id="pic-7" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-7" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">Classical intelligence focuses on the actor, such as SIGINT, the signal of the sender. Population intelligence, POPINT, focuses on the audience that is being targeted. Steve Tatham developed this from military practice. We build the operational layer for POPINT. Not watching the sender, but strengthening the audience.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Klassische Aufklärung richtet sich auf den Akteur, etwa SIGINT, das Signal des Senders. Population Intelligence, POPINT, richtet sich auf das Publikum, auf das gezielt wird. Steve Tatham hat das aus der militärischen Praxis entwickelt. Wir bauen die operative Schicht für POPINT. Nicht den Sender beobachten, sondern das Publikum stärken.</p>
+                    </div>
+                </div>
+
+                <!-- P8 Parasocial Bond -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(8)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Parasocial Bond</span><span class="ts-de">Parasoziale Bindung</span></span>
+                            <span class="text-primary font-medium"><span class="ts-en">A recurring, familiar figure gets heard where a one-off fact-check fades.</span><span class="ts-de">Eine wiederkehrende, vertraute Figur wird gehört, wo ein einmaliger Faktencheck verpufft.</span></span>
+                        </span>
+                        <svg id="pic-8" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-8" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">In 1956, Horton and Wohl described how people form a bond with a voice they encounter regularly, even one they never meet. A one-off fact-check fades. A recurring, familiar figure gets heard. That is why our avatars are not anonymous corrections, but characters with a face and a stance. Trust builds over time, and recognition is half the effect.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">1956 beschrieben Horton und Wohl, wie Menschen eine Bindung zu einer Stimme aufbauen, die ihnen regelmäßig begegnet, auch wenn sie sie nie treffen. Ein einmaliger Faktencheck verpufft. Eine wiederkehrende, vertraute Figur wird gehört. Deshalb sind unsere Avatare keine anonymen Korrekturen, sondern Charaktere mit Gesicht und Haltung. Vertrauen entsteht über Zeit, und Wiedererkennung ist die halbe Wirkung.</p>
+                    </div>
+                </div>
+
+                <!-- P9 Fact-Jitsu -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(9)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1">Fact-Jitsu</span>
+                            <span class="text-primary font-medium"><span class="ts-en">We don't meet force with force. We redirect the attack and target the claim, not the person.</span><span class="ts-de">Wir treffen Kraft nicht mit Gegenkraft. Wir lenken den Angriff um und treffen die Behauptung, nicht die Person.</span></span>
+                        </span>
+                        <svg id="pic-9" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-9" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">We do not meet force with force. Repeating a lie loudly in order to refute it only amplifies it. Fact-Jitsu uses the momentum of the attack and redirects it. We do not attack the person, we attack the structure of the claim. Calm, with minimal force, at the right leverage point. The attention the lie created becomes the stage for taking it apart.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Wir treffen Kraft nicht mit Gegenkraft. Wer eine Lüge laut wiederholt, um sie zu widerlegen, verstärkt sie. Fact-Jitsu nutzt die Bewegung des Angriffs und lenkt sie um. Wir greifen nicht die Person an, sondern die Struktur der Behauptung. Ruhig, mit minimaler Kraft, am richtigen Hebel. Die Aufmerksamkeit, die die Lüge erzeugt hat, wird zur Bühne ihrer Entkräftung.</p>
+                    </div>
+                </div>
+
+                <!-- P10 Inoculation -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(10)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1">Inoculation</span>
+                            <span class="text-primary font-medium"><span class="ts-en">Every response exposes the manipulation technique, so a correction becomes lasting protection.</span><span class="ts-de">Jede Antwort legt die Manipulationstechnik offen, so wird aus einer Korrektur ein bleibender Schutz.</span></span>
+                        </span>
+                        <svg id="pic-10" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-10" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">Refuting a lie cures one case. Showing the technique behind it inoculates against the next. The principle of vaccination carries over to the mind. Once someone has seen how a trick works, they fall for it less often. Every one of our responses does not only refute the claim, it exposes the pattern. A correction becomes a protection that lasts.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Eine Lüge zu widerlegen heilt einen Fall. Die Technik dahinter zu zeigen impft gegen den nächsten. Das Prinzip der Impfung überträgt sich auf den Geist. Wer einmal erkannt hat, wie ein Trick funktioniert, fällt seltener darauf herein. Jede unserer Antworten widerlegt nicht nur die Behauptung, sie legt das Muster offen. So wird aus einer Korrektur ein Schutz, der bleibt.</p>
+                    </div>
+                </div>
+
+                <!-- P11 Three Immutable Boundaries -->
+                <div class="ts-reveal bg-secondary rounded-xl overflow-hidden">
+                    <button onclick="togglePillar(11)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-secondary/90 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Three Immutable Boundaries</span><span class="ts-de">Drei unveränderliche Grenzen</span></span>
+                            <span class="text-white font-semibold"><span class="ts-en">The system learns how it delivers, never what. Every response is human-approved.</span><span class="ts-de">Das System lernt, wie es liefert, nie was. Jede Antwort wird vom Menschen freigegeben.</span></span>
+                        </span>
+                        <svg id="pic-11" class="w-5 h-5 text-white shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-11" class="hidden px-5 pb-5">
+                        <p class="ts-en text-gray-200 leading-relaxed">Our system learns many things, but three are immutable. Facts are not optimized. Source authority stays fixed. Escalation into aggression is ruled out. The system learns how it delivers, not what. And every response is approved by a human. That is human oversight in the sense of the AI Act, by design, not by policy.</p>
+                        <p class="ts-de text-gray-200 leading-relaxed">Unser System lernt vieles, aber drei Dinge sind unveränderlich. Fakten werden nicht optimiert. Quellen-Autorität bleibt fix. Eskalation in Aggressivität ist ausgeschlossen. Das System lernt, wie es liefert, nicht was. Und jede Antwort wird von einem Menschen freigegeben. Das ist menschliche Aufsicht im Sinne des AI Act, by design, nicht by policy.</p>
+                    </div>
+                </div>
+
+                <!-- P12 Digital Immune System -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(12)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Digital Immune System</span><span class="ts-de">Digitales Immunsystem</span></span>
+                            <span class="text-primary font-medium"><span class="ts-en">Detect, respond from verified sources, remember. Not censorship, but defense.</span><span class="ts-de">Erkennen, aus verifizierten Quellen antworten, sich erinnern. Keine Zensur, sondern Abwehr.</span></span>
+                        </span>
+                        <svg id="pic-12" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-12" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">A healthy body recognizes a pathogen before it takes over the organism, and responds in a targeted way. The information space has lost this immune system. We rebuild it. Detection of the pathogen, a response drawn from verified sources, and a memory that reacts faster next time. Not censorship, but defense. The body removes nothing, it responds.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Ein gesunder Körper erkennt einen Erreger, bevor er den Organismus übernimmt, und antwortet gezielt. Der Informationsraum hat dieses Immunsystem verloren. Wir bauen es zurück. Erkennung des Erregers, eine Antwort aus verifizierten Quellen, und ein Gedächtnis, das beim nächsten Mal schneller reagiert. Keine Zensur, sondern Abwehr. Der Körper entfernt nichts, er antwortet.</p>
+                    </div>
+                </div>
+
+                <!-- P13 Visible Intervention -->
+                <div class="ts-reveal bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button onclick="togglePillar(13)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">Visible Intervention</span><span class="ts-de">Sichtbare Intervention</span></span>
+                            <span class="text-primary font-medium"><span class="ts-en">Visible, source-based, human-approved, never covert. We remove nothing and hide nothing.</span><span class="ts-de">Sichtbar, quellenbasiert, vom Menschen freigegeben, niemals verdeckt. Wir entfernen nichts und verstecken nichts.</span></span>
+                        </span>
+                        <svg id="pic-13" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-13" class="hidden px-5 pb-5">
+                        <p class="ts-en text-paragraph leading-relaxed">Our response is visible, source-based and never covert. Every single one is approved by a human before it appears, and every one is labeled as AI-assisted. We do not decide covertly and in bulk where something shows up. The operator determines where their voice stands. We remove nothing and we hide nothing. We respond, openly and traceably.</p>
+                        <p class="ts-de text-paragraph leading-relaxed">Unsere Antwort ist sichtbar, quellenbasiert und niemals verdeckt. Jede einzelne wird von einem Menschen freigegeben, bevor sie erscheint, und jede ist als KI-Assistenz gekennzeichnet. Wir entscheiden nicht heimlich und massenhaft, wo etwas auftaucht. Der Betreiber bestimmt, wo seine Stimme steht. Wir entfernen nichts und wir verstecken nichts. Wir antworten, offen und nachvollziehbar.</p>
+                    </div>
+                </div>
+
+                <!-- P14 The Mesh -->
+                <div class="ts-reveal bg-primary/5 rounded-xl border border-primary/20 overflow-hidden">
+                    <button onclick="togglePillar(14)" class="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-primary/10 transition-colors">
+                        <span class="min-w-0">
+                            <span class="ts-kicker text-accent block mb-1"><span class="ts-en">The Mesh</span><span class="ts-de">Das Mesh</span></span>
+                            <span class="text-primary font-semibold"><span class="ts-en">Sovereign national defenders, culturally rooted. The mesh connects them, it does not command them.</span><span class="ts-de">Souveräne nationale Verteidiger, kulturell verwurzelt. Das Mesh verbindet sie, es befiehlt ihnen nicht.</span></span>
+                        </span>
+                        <svg id="pic-14" class="w-5 h-5 text-primary shrink-0 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="pil-14" class="hidden px-5 pb-5">
+                        <p class="ts-en text-secondary leading-relaxed">Disinformation respects borders, and defense should respect them too. A lie in Warsaw sounds different than in Bucharest or Berlin, and only those who carry the language and the culture can answer with credibility. So we do not build a central network, we build a mesh. Sovereign national defenders, culturally rooted, Guardian-DE, Guardian-PL, Guardian-RO. The mesh is the connective tissue between them, not their commander. Each node belongs where it has effect.</p>
+                        <p class="ts-de text-secondary leading-relaxed">Desinformation kennt Grenzen, Verteidigung sollte sie auch kennen. Eine Lüge in Warschau klingt anders als in Bukarest oder Berlin, und nur wer Sprache und Kultur trägt, kann glaubwürdig antworten. Deshalb bauen wir kein zentrales Netz, sondern ein Mesh. Souveräne nationale Verteidiger, kulturell verwurzelt, Guardian-DE, Guardian-PL, Guardian-RO. Das Mesh ist das verbindende Gewebe zwischen ihnen, nicht ihr Befehlshaber. Jeder Knoten gehört dorthin, wo er wirkt.</p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -224,9 +496,9 @@
     <section id="features" class="py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-14 2xl:px-0">
             <div class="text-center mb-16">
-                <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">Comprehensive Detection Capabilities</h2>
+                <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4"><span class="ts-en">Inside the Engine</span><span class="ts-de">Im Inneren der Engine</span></h2>
                 <p class="text-lg text-paragraph max-w-2xl mx-auto">
-                    Advanced AI-powered analysis across the full lifecycle of disinformation.
+                    <span class="ts-en">Advanced AI-powered analysis across the full lifecycle of disinformation, built under fixed governance constraints.</span><span class="ts-de">KI-gestützte Analyse über den gesamten Lebenszyklus von Desinformation, gebaut unter festen Governance-Grenzen.</span>
                 </p>
             </div>
 
@@ -238,8 +510,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-primary mb-3">Fact Verification</h3>
-                    <p class="text-paragraph">Cross-reference claims against 50+ trusted sources including Google Fact Check, ClaimBuster, and verified news APIs.</p>
+                    <h3 class="text-xl font-bold text-primary mb-3"><span class="ts-en">Fact Verification</span><span class="ts-de">Faktenverifikation</span></h3>
+                    <p class="text-paragraph"><span class="ts-en">Cross-reference claims against 50+ trusted sources including Google Fact Check, ClaimBuster, WHO, PubMed, and Semantic Scholar.</span><span class="ts-de">Abgleich von Behauptungen mit über 50 vertrauenswürdigen Quellen, darunter Google Fact Check, ClaimBuster, WHO, PubMed und Semantic Scholar.</span></p>
                 </div>
 
                 <!-- Feature Card 2 -->
@@ -249,8 +521,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-primary mb-3">IO Campaign Detection</h3>
-                    <p class="text-paragraph">Identify coordinated inauthentic behavior and information operations through pattern and network analysis.</p>
+                    <h3 class="text-xl font-bold text-primary mb-3"><span class="ts-en">IO Campaign Detection</span><span class="ts-de">Erkennung von IO-Kampagnen</span></h3>
+                    <p class="text-paragraph"><span class="ts-en">Identify coordinated inauthentic behavior and information operations through pattern, stylometry, and network analysis.</span><span class="ts-de">Erkennung koordinierten inauthentischen Verhaltens und von Informationsoperationen über Muster-, Stilometrie- und Netzwerkanalyse.</span></p>
                 </div>
 
                 <!-- Feature Card 3 -->
@@ -260,8 +532,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-primary mb-3">Counter-Narratives (Intervention)</h3>
-                    <p class="text-paragraph">Deploy evidence-based responses via the Guardian Avatar system — directly where narratives spread.</p>
+                    <h3 class="text-xl font-bold text-primary mb-3"><span class="ts-en">Counter-Speech (Intervention)</span><span class="ts-de">Gegenrede (Intervention)</span></h3>
+                    <p class="text-paragraph"><span class="ts-en">Visible, source-backed responses via the Guardian Avatar system. Every response is approved by a human, and the operator decides where its voice appears.</span><span class="ts-de">Sichtbare, quellenbasierte Antworten über das Guardian-Avatar-System. Jede Antwort wird von einem Menschen freigegeben, und der Betreiber entscheidet, wo seine Stimme erscheint.</span></p>
                 </div>
 
                 <!-- Feature Card 4 -->
@@ -271,8 +543,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-primary mb-3">Real-time Analysis</h3>
-                    <p class="text-paragraph">Sub-second detection with temporal awareness for breaking news and fast-moving situations.</p>
+                    <h3 class="text-xl font-bold text-primary mb-3"><span class="ts-en">Real-time Detection</span><span class="ts-de">Echtzeit-Erkennung</span></h3>
+                    <p class="text-paragraph"><span class="ts-en">Sub-second detection with temporal awareness for breaking news and fast-moving situations.</span><span class="ts-de">Erkennung im Sekundenbruchteil mit Zeitbewusstsein für Eilmeldungen und schnelllebige Lagen.</span></p>
                 </div>
 
                 <!-- Feature Card 5 -->
@@ -282,8 +554,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-primary mb-3">Adaptive Response Learning</h3>
-                    <p class="text-paragraph">Response strategies continuously optimized based on engagement and context feedback.</p>
+                    <h3 class="text-xl font-bold text-primary mb-3"><span class="ts-en">Constrained Adaptive Learning</span><span class="ts-de">Beschränktes adaptives Lernen</span></h3>
+                    <p class="text-paragraph"><span class="ts-en">The system learns how it delivers, never what. Facts and source authority stay fixed; only tone, structure, and delivery adapt, never the factual content.</span><span class="ts-de">Das System lernt, wie es liefert, nie was. Fakten und Quellenautorität bleiben fix; nur Ton, Struktur und Darbietung passen sich an, nie der faktische Inhalt.</span></p>
                 </div>
 
                 <!-- Feature Card 6 -->
@@ -293,8 +565,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-primary mb-3">Multi-Language</h3>
-                    <p class="text-paragraph">Support for English, German, and expandable language coverage with localized sources.</p>
+                    <h3 class="text-xl font-bold text-primary mb-3"><span class="ts-en">Multi-Language</span><span class="ts-de">Mehrsprachigkeit</span></h3>
+                    <p class="text-paragraph"><span class="ts-en">Support for English, German, and expandable language coverage with localized sources.</span><span class="ts-de">Unterstützung für Englisch, Deutsch und erweiterbare Sprachabdeckung mit lokalisierten Quellen.</span></p>
                 </div>
             </div>
         </div>
@@ -304,32 +576,32 @@
     <section id="how-it-works" class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-14 2xl:px-0">
             <div class="text-center mb-16">
-                <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">How TruthShield Works</h2>
+                <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4"><span class="ts-en">How TruthShield Works</span><span class="ts-de">So funktioniert TruthShield</span></h2>
                 <p class="text-lg text-paragraph max-w-2xl mx-auto">
-                    Our ML pipeline processes claims through multiple analysis stages for comprehensive assessment.
+                    <span class="ts-en">Our ML pipeline processes claims through multiple analysis stages for comprehensive assessment.</span><span class="ts-de">Unsere ML-Pipeline verarbeitet Behauptungen über mehrere Analysestufen für eine umfassende Bewertung.</span>
                 </p>
             </div>
 
             <div class="grid md:grid-cols-4 gap-8">
                 <div class="text-center">
                     <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">1</div>
-                    <h3 class="font-bold text-primary mb-2">Detect incoming claims</h3>
-                    <p class="text-paragraph text-sm">Text, links, or emerging narratives are ingested in real time via API or monitoring streams.</p>
+                    <h3 class="font-bold text-primary mb-2"><span class="ts-en">Detect incoming claims</span><span class="ts-de">Eingehende Behauptungen erkennen</span></h3>
+                    <p class="text-paragraph text-sm"><span class="ts-en">Text, links, or emerging narratives are ingested in real time via API or monitoring streams.</span><span class="ts-de">Texte, Links oder aufkommende Narrative werden in Echtzeit über API oder Monitoring-Streams erfasst.</span></p>
                 </div>
                 <div class="text-center">
                     <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">2</div>
-                    <h3 class="font-bold text-primary mb-2">Analyze risk and coordination</h3>
-                    <p class="text-paragraph text-sm">Claims are assessed for credibility, virality, and coordinated manipulation patterns.</p>
+                    <h3 class="font-bold text-primary mb-2"><span class="ts-en">Analyze risk and coordination</span><span class="ts-de">Risiko und Koordination analysieren</span></h3>
+                    <p class="text-paragraph text-sm"><span class="ts-en">Claims are assessed for credibility, virality, and coordinated manipulation patterns.</span><span class="ts-de">Behauptungen werden auf Glaubwürdigkeit, Viralität und koordinierte Manipulationsmuster geprüft.</span></p>
                 </div>
                 <div class="text-center">
                     <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">3</div>
-                    <h3 class="font-bold text-primary mb-2">Verify against trusted sources</h3>
-                    <p class="text-paragraph text-sm">Information is cross-checked against curated, transparent, and auditable evidence sources.</p>
+                    <h3 class="font-bold text-primary mb-2"><span class="ts-en">Verify against trusted sources</span><span class="ts-de">Gegen vertrauenswürdige Quellen verifizieren</span></h3>
+                    <p class="text-paragraph text-sm"><span class="ts-en">Information is cross-checked against curated, transparent, and auditable evidence sources.</span><span class="ts-de">Informationen werden mit kuratierten, transparenten und auditierbaren Evidenzquellen abgeglichen.</span></p>
                 </div>
                 <div class="text-center">
                     <div class="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">4</div>
-                    <h3 class="font-bold text-primary mb-2">Respond with evidence</h3>
-                    <p class="text-paragraph text-sm">A clear verdict and an evidence-based counter-narrative are generated for visible intervention.</p>
+                    <h3 class="font-bold text-primary mb-2"><span class="ts-en">Respond with evidence</span><span class="ts-de">Mit Evidenz antworten</span></h3>
+                    <p class="text-paragraph text-sm"><span class="ts-en">A clear verdict and a source-backed counter-narrative are generated, then approved by a human before publication.</span><span class="ts-de">Ein klares Urteil und ein quellenbasiertes Gegennarrativ werden erzeugt und vor der Veröffentlichung von einem Menschen freigegeben.</span></p>
                 </div>
             </div>
         </div>
@@ -339,45 +611,45 @@
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-14 2xl:px-0">
             <div class="text-center mb-16">
-                <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">Use Cases</h2>
+                <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4"><span class="ts-en">Use Cases</span><span class="ts-de">Anwendungsfälle</span></h2>
                 <p class="text-lg text-paragraph max-w-2xl mx-auto">
-                    Real-world applications of TruthShield across critical domains.
+                    <span class="ts-en">Real-world applications of TruthShield across critical domains.</span><span class="ts-de">Praxisanwendungen von TruthShield in kritischen Bereichen.</span>
                 </p>
             </div>
 
             <div class="grid lg:grid-cols-2 gap-8">
                 <!-- Use Case 1 -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8 flex flex-col">
-                    <h3 class="text-2xl font-bold text-primary mb-4">Use Case 1 – Elections & Democratic Processes</h3>
+                    <h3 class="text-2xl font-bold text-primary mb-4"><span class="ts-en">Use Case 1 – Elections &amp; Democratic Processes</span><span class="ts-de">Anwendungsfall 1 – Wahlen und demokratische Prozesse</span></h3>
                     <p class="text-paragraph mb-4">
-                        Monitor and counter disinformation during elections and referendums, where coordinated narratives can influence public perception within minutes.
+                        <span class="ts-en">Monitor and counter disinformation during elections and referendums, where coordinated narratives can influence public perception within minutes.</span><span class="ts-de">Desinformation bei Wahlen und Referenden überwachen und kontern, wo koordinierte Narrative die öffentliche Wahrnehmung binnen Minuten beeinflussen können.</span>
                     </p>
                     <img src="images/elections.png" alt="Elections & Democratic Processes" class="w-full h-64 object-cover rounded-xl mt-auto">
                 </div>
 
                 <!-- Use Case 2 -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8 flex flex-col">
-                    <h3 class="text-2xl font-bold text-primary mb-4">Use Case 2 – Crisis & Breaking News</h3>
+                    <h3 class="text-2xl font-bold text-primary mb-4"><span class="ts-en">Use Case 2 – Crisis &amp; Breaking News</span><span class="ts-de">Anwendungsfall 2 – Krisen und Eilmeldungen</span></h3>
                     <p class="text-paragraph mb-4">
-                        Respond to misinformation during crises and breaking news, where delayed verification amplifies panic, distrust, and real-world harm.
+                        <span class="ts-en">Respond to misinformation during crises and breaking news, where delayed verification amplifies panic, distrust, and real-world harm.</span><span class="ts-de">Auf Fehlinformation bei Krisen und Eilmeldungen reagieren, wo verzögerte Verifikation Panik, Misstrauen und realen Schaden verstärkt.</span>
                     </p>
                     <img src="images/crisis.png" alt="Crisis & Breaking News" class="w-full h-64 object-cover rounded-xl mt-auto">
                 </div>
 
                 <!-- Use Case 3 -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8 flex flex-col">
-                    <h3 class="text-2xl font-bold text-primary mb-4">Use Case 3 – Coordinated Influence Operations</h3>
+                    <h3 class="text-2xl font-bold text-primary mb-4"><span class="ts-en">Use Case 3 – Coordinated Influence Operations</span><span class="ts-de">Anwendungsfall 3 – Koordinierte Einflussoperationen</span></h3>
                     <p class="text-paragraph mb-4">
-                        Detect and analyze coordinated inauthentic behavior and influence operations across platforms before narratives fully take hold.
+                        <span class="ts-en">Detect and analyze coordinated inauthentic behavior and influence operations across platforms before narratives fully take hold.</span><span class="ts-de">Koordiniertes inauthentisches Verhalten und Einflussoperationen plattformübergreifend erkennen und analysieren, bevor sich Narrative festsetzen.</span>
                     </p>
                     <img src="images/coordinated.png" alt="Coordinated Influence Operations" class="w-full h-64 object-cover rounded-xl mt-auto">
                 </div>
 
                 <!-- Use Case 4 -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8 flex flex-col">
-                    <h3 class="text-2xl font-bold text-primary mb-4">Use Case 4 – Youth & Community Protection</h3>
+                    <h3 class="text-2xl font-bold text-primary mb-4"><span class="ts-en">Use Case 4 – Youth &amp; Community Protection</span><span class="ts-de">Anwendungsfall 4 – Schutz von Jugend und Communitys</span></h3>
                     <p class="text-paragraph mb-4">
-                        Protect online communities from harmful narratives and targeted harassment by intervening early and visibly in comment sections.
+                        <span class="ts-en">Protect online communities from harmful narratives and targeted harassment by responding early and visibly, with sources and human approval.</span><span class="ts-de">Online-Communitys vor schädlichen Narrativen und gezielter Belästigung schützen, durch frühes und sichtbares Antworten, mit Quellen und menschlicher Freigabe.</span>
                     </p>
                     <img src="images/youth.png" alt="Youth & Community Protection" class="w-full h-64 object-cover rounded-xl mt-auto">
                 </div>
@@ -467,7 +739,7 @@
             <div class="text-center mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-4">Try the API</h2>
                 <p class="text-lg text-paragraph max-w-2xl mx-auto">
-                    Submit a claim and see TruthShield in action.
+                    <span class="ts-en">Submit a claim and see TruthShield in action.</span><span class="ts-de">Reiche eine Behauptung ein und sieh TruthShield in Aktion.</span>
                 </p>
             </div>
 
@@ -516,10 +788,10 @@
                 </div>
 
                 <div class="mt-8 text-center">
-                    <p class="text-paragraph mb-4">Ready to integrate?</p>
+                    <p class="text-paragraph mb-4"><span class="ts-en">Ready to integrate?</span><span class="ts-de">Bereit zur Integration?</span></p>
                     <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="inline-flex items-center gap-2 text-accent hover:text-accent-dark font-medium">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                        View Documentation on GitHub
+                        <span class="ts-en">View Documentation on GitHub</span><span class="ts-de">Dokumentation auf GitHub ansehen</span>
                     </a>
                 </div>
             </div>
@@ -547,7 +819,7 @@
                 </div>
                 <div class="bg-white/5 rounded-xl p-6 text-center hover:bg-white/10 transition-colors">
                     <div class="text-2xl mb-2">🤖</div>
-                    <div class="font-medium">GPT-4 Turbo</div>
+                    <div class="font-medium">Model-agnostic LLM</div>
                 </div>
                 <div class="bg-white/5 rounded-xl p-6 text-center hover:bg-white/10 transition-colors">
                     <div class="text-2xl mb-2">🗄️</div>
@@ -570,9 +842,9 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-14 2xl:px-0">
             <!-- Header -->
             <div class="text-center mb-16">
-                <h2 class="text-4xl sm:text-5xl font-bold text-primary mb-4">Public FAQ</h2>
+                <h2 class="text-4xl sm:text-5xl font-bold text-primary mb-4"><span class="ts-en">Public FAQ</span><span class="ts-de">Öffentliche FAQ</span></h2>
                 <p class="text-xl text-paragraph max-w-2xl mx-auto">
-                    Clear. Firm. No smoke and mirrors.
+                    <span class="ts-en">Clear. Firm. No smoke and mirrors.</span><span class="ts-de">Klar. Bestimmt. Kein Blendwerk.</span>
                 </p>
             </div>
 
@@ -581,15 +853,16 @@
                 <!-- FAQ 1 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(1)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">What is TruthShield?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">What is TruthShield?</span><span class="ts-de">Was ist TruthShield?</span></span>
                         <svg id="icon-1" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-1" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            TruthShield is a digital counterforce against coordinated disinformation.<br>
-                            We intervene where lies originate and spread: in comment sections, feeds, and chats—in real-time.
+                            <span class="ts-en">TruthShield is a digital counterforce against coordinated disinformation.<br>
+                            We make visible, source-backed counter-speech possible where disinformation spreads. Every response is approved by a human before it appears.</span><span class="ts-de">TruthShield ist eine digitale Gegenkraft gegen koordinierte Desinformation.<br>
+                            Wir ermöglichen sichtbare, quellenbasierte Gegenrede dort, wo Desinformation sich verbreitet. Jede Antwort wird von einem Menschen freigegeben, bevor sie erscheint.</span>
                         </p>
                     </div>
                 </div>
@@ -597,15 +870,16 @@
                 <!-- FAQ 2 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(2)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Is TruthShield a fact-checking tool?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Is TruthShield a fact-checking tool?</span><span class="ts-de">Ist TruthShield ein Faktencheck-Tool?</span></span>
                         <svg id="icon-2" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-2" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            No.<br>
-                            Fact-checks usually come too late. TruthShield acts earlier: We interrupt manipulative narratives before they take hold.
+                            <span class="ts-en">Not only.<br>
+                            Fact-checks often come too late. TruthShield acts earlier: we make verified counter-speech visible before a manipulative narrative hardens.</span><span class="ts-de">Nicht nur.<br>
+                            Faktenchecks kommen oft zu spät. TruthShield handelt früher: Wir machen verifizierte Gegenrede sichtbar, bevor sich ein manipulatives Narrativ verfestigt.</span>
                         </p>
                     </div>
                 </div>
@@ -613,16 +887,18 @@
                 <!-- FAQ 3 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(3)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Who decides at TruthShield what is true?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Who decides at TruthShield what is true?</span><span class="ts-de">Wer entscheidet bei TruthShield, was wahr ist?</span></span>
                         <svg id="icon-3" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-3" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            No one by authority.<br>
+                            <span class="ts-en">No one by authority.<br>
                             TruthShield evaluates claims, not opinions—based on verifiable sources, transparency, and clear uncertainties.<br>
-                            Where facts are not solid, we do not intervene.
+                            Where facts are not solid, we do not intervene.</span><span class="ts-de">Niemand kraft Autorität.<br>
+                            TruthShield bewertet Behauptungen, nicht Meinungen, auf Basis überprüfbarer Quellen, Transparenz und klar benannter Unsicherheiten.<br>
+                            Wo Fakten nicht belastbar sind, greifen wir nicht ein.</span>
                         </p>
                     </div>
                 </div>
@@ -630,15 +906,16 @@
                 <!-- FAQ 4 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(4)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Does TruthShield use bots?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Does TruthShield use bots or automated accounts?</span><span class="ts-de">Nutzt TruthShield Bots oder automatisierte Accounts?</span></span>
                         <svg id="icon-4" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-4" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            Yes—visible, source-backed, and human-supervised.<br>
-                            Our avatars target patterns and campaigns, not individual persons.
+                            <span class="ts-en">No.<br>
+                            We use disclosed, AI-assisted avatars under human oversight. Every response is reviewed and approved by a person before it appears, and labeled as AI-assisted. Nothing posts automatically, and we work on patterns and campaigns, not individual persons.</span><span class="ts-de">Nein.<br>
+                            Wir nutzen offengelegte, KI-gestützte Avatare unter menschlicher Aufsicht. Jede Antwort wird von einem Menschen geprüft und freigegeben, bevor sie erscheint, und ist als KI-Assistenz gekennzeichnet. Nichts wird automatisch gepostet, und wir arbeiten an Mustern und Kampagnen, nicht an einzelnen Personen.</span>
                         </p>
                     </div>
                 </div>
@@ -646,18 +923,22 @@
                 <!-- FAQ 5 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(5)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Isn't this manipulation too?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Isn't this manipulation too?</span><span class="ts-de">Ist das nicht auch Manipulation?</span></span>
                         <svg id="icon-5" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-5" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            No. The difference is crucial:<br><br>
+                            <span class="ts-en">No. The difference is crucial:<br><br>
                             <strong>Manipulation works covertly and emotionally.</strong><br>
                             <strong>TruthShield works openly, cites sources, and invites verification.</strong><br><br>
                             We don't change convictions.<br>
-                            We make deception visible.
+                            We make deception visible.</span><span class="ts-de">Nein. Der Unterschied ist entscheidend:<br><br>
+                            <strong>Manipulation wirkt verdeckt und emotional.</strong><br>
+                            <strong>TruthShield wirkt offen, nennt Quellen und lädt zur Prüfung ein.</strong><br><br>
+                            Wir ändern keine Überzeugungen.<br>
+                            Wir machen Täuschung sichtbar.</span>
                         </p>
                     </div>
                 </div>
@@ -665,16 +946,18 @@
                 <!-- FAQ 6 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(6)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Does TruthShield target individual accounts or political groups?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Does TruthShield target individual accounts or political groups?</span><span class="ts-de">Zielt TruthShield auf einzelne Accounts oder politische Gruppen?</span></span>
                         <svg id="icon-6" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-6" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            No.<br>
+                            <span class="ts-en">No.<br>
                             No public shaming. No naming. No campaigns against individuals.<br>
-                            Our focus is on coordinated narratives, not people.
+                            Our focus is on coordinated narratives, not people.</span><span class="ts-de">Nein.<br>
+                            Kein Pranger. Keine Namensnennung. Keine Kampagnen gegen Einzelpersonen.<br>
+                            Unser Fokus liegt auf koordinierten Narrativen, nicht auf Personen.</span>
                         </p>
                     </div>
                 </div>
@@ -682,17 +965,20 @@
                 <!-- FAQ 7 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(7)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Is TruthShield politically neutral?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Is TruthShield politically neutral?</span><span class="ts-de">Ist TruthShield politisch neutral?</span></span>
                         <svg id="icon-7" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-7" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            Party-politically: yes.<br>
+                            <span class="ts-en">Party-politically: yes.<br>
                             Value-based: also yes.<br><br>
                             Non-negotiable: democracy, human dignity, and fact-based discourse.<br>
-                            We defend the framework, not parties.
+                            We defend the framework, not parties.</span><span class="ts-de">Parteipolitisch: ja.<br>
+                            Wertebasiert: ebenfalls ja.<br><br>
+                            Unverhandelbar: Demokratie, Menschenwürde und faktenbasierter Diskurs.<br>
+                            Wir verteidigen den Rahmen, nicht Parteien.</span>
                         </p>
                     </div>
                 </div>
@@ -700,16 +986,16 @@
                 <!-- FAQ 8 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(8)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Does TruthShield work for governments or intelligence agencies?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Does TruthShield work for governments or intelligence agencies?</span><span class="ts-de">Arbeitet TruthShield für Regierungen oder Nachrichtendienste?</span></span>
                         <svg id="icon-8" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-8" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            No.<br>
-                            No directive authority, no covert operations, no state control.<br>
-                            Cooperation is possible—subordination is not.
+                            <span class="ts-en">No directive authority, no covert operations, no state control.<br>
+                            Cooperation with public and democratic institutions is possible. Subordination is not.</span><span class="ts-de">Keine Weisungsbefugnis, keine verdeckten Operationen, keine staatliche Kontrolle.<br>
+                            Kooperation mit öffentlichen und demokratischen Institutionen ist möglich. Unterordnung nicht.</span>
                         </p>
                     </div>
                 </div>
@@ -717,16 +1003,18 @@
                 <!-- FAQ 9 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(9)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">Are NGOs, journalists, or activists at risk because of this?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">Are NGOs, journalists, or activists at risk because of this?</span><span class="ts-de">Sind NGOs, Journalisten oder Aktivisten dadurch gefährdet?</span></span>
                         <svg id="icon-9" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-9" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            No.<br>
+                            <span class="ts-en">No.<br>
                             TruthShield does not require real names, IDs, or create personal profiles.<br>
-                            Our approach protects visibility without exposing individuals.
+                            Our approach protects visibility without exposing individuals.</span><span class="ts-de">Nein.<br>
+                            TruthShield verlangt keine Klarnamen oder Ausweise und legt keine Personenprofile an.<br>
+                            Unser Ansatz schützt Sichtbarkeit, ohne Einzelne bloßzustellen.</span>
                         </p>
                     </div>
                 </div>
@@ -734,19 +1022,24 @@
                 <!-- FAQ 10 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <button onclick="toggleFAQ(10)" class="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <span class="font-semibold text-lg text-primary">What is TruthShield NOT?</span>
+                        <span class="font-semibold text-lg text-primary"><span class="ts-en">What is TruthShield NOT?</span><span class="ts-de">Was ist TruthShield NICHT?</span></span>
                         <svg id="icon-10" class="w-6 h-6 text-primary transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-10" class="hidden px-6 pb-5">
                         <p class="text-paragraph leading-relaxed">
-                            Not a censorship tool.<br>
+                            <span class="ts-en">Not a censorship tool.<br>
                             Not an opinion guardian.<br>
                             Not a propaganda instrument.<br>
                             Not a social scoring system.<br><br>
                             <strong class="text-primary">TruthShield does not replace democracy.<br>
-                            It protects its digital discourse.</strong>
+                            It protects its digital discourse.</strong></span><span class="ts-de">Kein Zensurwerkzeug.<br>
+                            Kein Meinungswächter.<br>
+                            Kein Propagandainstrument.<br>
+                            Kein Social-Scoring-System.<br><br>
+                            <strong class="text-primary">TruthShield ersetzt nicht die Demokratie.<br>
+                            Es schützt ihren digitalen Diskurs.</strong></span>
                         </p>
                     </div>
                 </div>
@@ -755,7 +1048,7 @@
             <!-- Closing Statement -->
             <div class="mt-12 text-center">
                 <p class="text-2xl font-medium text-primary italic">
-                    "Lies don't defeat truth.<br>Silence does."
+                    <span class="ts-en">"Lies don't defeat truth.<br>Silence does."</span><span class="ts-de">"Lügen besiegen die Wahrheit nicht.<br>Schweigen tut es."</span>
                 </p>
             </div>
         </div>
@@ -765,16 +1058,16 @@
     <section class="py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-14 2xl:px-0">
             <div class="bg-gradient-to-r from-primary to-primary-dark rounded-3xl p-12 text-center text-white">
-                <h2 class="text-3xl sm:text-4xl font-bold mb-4">Ready to protect your platform?</h2>
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4"><span class="ts-en">Work with us</span><span class="ts-de">Arbeite mit uns</span></h2>
                 <p class="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-                    Get started with TruthShield API and add cognitive security to your application.
+                    <span class="ts-en">For collaboration, consortium participation, or academic exchange around TruthShield.</span><span class="ts-de">Für Zusammenarbeit, Konsortiumsbeteiligung oder akademischen Austausch rund um TruthShield.</span>
                 </p>
                 <div class="flex flex-wrap justify-center gap-4">
                     <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-gray-100 transition-all">
-                        Get Started
+                        <span class="ts-en">View on GitHub</span><span class="ts-de">Auf GitHub ansehen</span>
                     </a>
                     <a href="mailto:contact@truthshield.ai" class="px-8 py-4 ring-2 ring-white text-white font-semibold rounded-full hover:bg-white/10 transition-all">
-                        Contact Us
+                        <span class="ts-en">Contact Us</span><span class="ts-de">Kontakt</span>
                     </a>
                 </div>
             </div>
@@ -791,12 +1084,12 @@
                 </div>
                 <div class="flex items-center gap-6 text-sm text-paragraph">
                     <a href="https://github.com/dionisiou27/truthshield-api" target="_blank" class="hover:text-primary">GitHub</a>
-                    <a href="#features" class="hover:text-primary">Features</a>
+                    <a href="#approach" class="hover:text-primary"><span class="ts-en">Approach</span><span class="ts-de">Ansatz</span></a>
                     <a href="#faq" class="hover:text-primary">FAQ</a>
                     <a href="#api" class="hover:text-primary">API</a>
                 </div>
                 <div class="text-sm text-paragraph">
-                    &copy; 2025 TruthShield.
+                    &copy; 2026 TruthShield.
                 </div>
             </div>
         </div>
@@ -1068,6 +1361,40 @@
             } else {
                 content.classList.add('hidden');
                 icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Pillars: expand/collapse a single row
+        function togglePillar(id) {
+            const c = document.getElementById('pil-' + id);
+            const i = document.getElementById('pic-' + id);
+            if (!c) return;
+            if (c.classList.contains('hidden')) {
+                c.classList.remove('hidden');
+                if (i) i.style.transform = 'rotate(180deg)';
+            } else {
+                c.classList.add('hidden');
+                if (i) i.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Global page language toggle (covers the whole page via body.lang-de)
+        function setLang(lang) {
+            const b = document.body;
+            const enBtn = document.getElementById('lang-en');
+            const deBtn = document.getElementById('lang-de');
+            const activeCls = 'px-3 py-1 text-xs font-semibold rounded-full bg-white text-secondary';
+            const idleCls = 'px-3 py-1 text-xs font-semibold rounded-full bg-white/15 text-white hover:bg-white/25';
+            if (lang === 'de') {
+                b.classList.add('lang-de');
+                document.documentElement.lang = 'de';
+                if (deBtn) deBtn.className = activeCls;
+                if (enBtn) enBtn.className = idleCls;
+            } else {
+                b.classList.remove('lang-de');
+                document.documentElement.lang = 'en';
+                if (enBtn) enBtn.className = activeCls;
+                if (deBtn) deBtn.className = idleCls;
             }
         }
     </script>
