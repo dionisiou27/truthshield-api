@@ -1,5 +1,7 @@
 from typing import List, Dict, Optional
 
+from src.core.constraints import get_ai_disclosure
+
 
 def claim_vs_proof_script(
     claim: str,
@@ -37,10 +39,13 @@ def claim_vs_proof_script(
         "de": "Teile Fakten. Markiere eine Person, die die Behauptung gesehen hat."
     }[language]
 
+    disclosure = get_ai_disclosure(language)
+
     return {
         "format": "claim_vs_proof",
         "language": language,
         "persona": persona,
+        "ai_disclosure": disclosure,
         "branding": {
             "co_brand": co_brand,
             "brand_name": brand_name,
@@ -51,6 +56,7 @@ def claim_vs_proof_script(
             {"type": "claim", "text": claim},
             {"type": "proofs", "lines": proof_lines},
             {"type": "cta", "text": closer},
+            {"type": "disclosure", "text": disclosure},
         ],
         "suggested_hashtags": ["#TruthShield", "#ClaimVsProof"],
     }
@@ -88,10 +94,13 @@ def investigative_thread(
         "de": "Wir laden zur unabhängigen Prüfung ein. Vollständige Evidenz archiviert."
     }[language]
 
+    disclosure = get_ai_disclosure(language)
+
     return {
         "format": "investigative_thread",
         "language": language,
         "persona": persona,
+        "ai_disclosure": disclosure,
         "branding": {
             "co_brand": co_brand,
             "brand_name": brand_name,
@@ -102,6 +111,7 @@ def investigative_thread(
             *(src_lines),
             *( [astro_line] if astro_line else [] ),
             closing,
+            disclosure,
         ],
         "suggested_hashtags": ["#TruthShield", "#Investigation"],
     }

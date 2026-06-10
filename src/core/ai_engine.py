@@ -26,6 +26,7 @@ from src.ml.learning.bandit import (
     GuardianBandit, BanditContext, ToneVariant, SourceMixStrategy, get_bandit
 )
 from src.core.personas import COMPANY_PERSONAS
+from src.core.constraints import append_ai_disclosure
 from src.core.text_detection import (
     detect_political_astroturfing,
     detect_astroturfing_indicators,
@@ -509,7 +510,7 @@ The claim is part of a coordinated narrative campaign.
             "en": "✅ Standard fact-check. Clear statements allowed."
         }.get(language, "en")
 
-    async def fact_check_claim(self, text: str, company: str = "BMW") -> FactCheckResult:
+    async def fact_check_claim(self, text: str, company: str = "GuardianAvatar") -> FactCheckResult:
         """Main fact-checking pipeline"""
         start_time = datetime.now()
         
@@ -559,7 +560,7 @@ The claim is part of a coordinated narrative campaign.
         """Detect logical contradictions in the text"""
         return detect_logical_contradictions(text)
     
-    async def _analyze_with_ai(self, text: str, company: str = "BMW") -> Dict:
+    async def _analyze_with_ai(self, text: str, company: str = "GuardianAvatar") -> Dict:
         """Enhanced AI analysis with better prompting for clear misinformation detection"""
         if not self.openai_client:
             return {"assessment": "limited", "reasoning": "No AI available"}
@@ -648,26 +649,19 @@ The claim is part of a coordinated narrative campaign.
                 Be confident - don't default to 50/50 for clearly false claims.
                 """
             else:
-                # Company-specific prompt (existing code)
-                persona = self.company_personas.get(company, self.company_personas["BMW"])
+                # Generic organisation-specific fact-check prompt (legacy path)
+                persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
                 prompt = f"""
-                You are an expert fact-checker specializing in {company} and German industry claims.
+                You are an expert fact-checker analyzing claims about {company}.
 
                 Analyze this claim for factual accuracy:
                 "{text}"
 
-                CONTEXT KNOWLEDGE for {company}:
-                - Electric vehicles (BMW i3, i4, iX) are extensively tested in extreme cold
-                - BMW conducts winter testing at -40°C in Arjeplog, Sweden annually
-                - EV batteries lose range in cold but DO NOT "explode"
-                - Thermal management systems prevent dangerous overheating/cooling
-                - No documented cases of EV explosions due to cold weather
-
                 ANALYSIS CRITERIA:
-                1. Does this contradict established facts about {company}?
+                1. Does this contradict established, verifiable facts about {company}?
                 2. Are there inflammatory/sensational terms without basis?
-                3. Does this spread unfounded fear about the technology?
-                4. Would this claim damage the company's reputation unfairly?
+                3. Does this spread unfounded fear about the technology or organisation?
+                4. Would this claim damage the organisation's reputation unfairly?
 
                 Respond with JSON:
                 {{
@@ -1367,7 +1361,7 @@ The claim is part of a coordinated narrative campaign.
     async def generate_brand_response(self, 
                                     claim: str, 
                                     fact_check: FactCheckResult,
-                                    company: str = "BMW",
+                                    company: str = "GuardianAvatar",
                                     language: str = "en") -> Dict[str, AIInfluencerResponse]:
         """Generate company-branded response in both languages"""
         
@@ -1475,6 +1469,9 @@ The claim is part of a coordinated narrative campaign.
             else [f"#{company}Facts", "#TruthShield"]
         )
 
+        # Every intervention is declared AI-assisted / human-reviewed.
+        text = append_ai_disclosure(text, language)
+
         return AIInfluencerResponse(
             response_text=text,
             tone=tone,
@@ -1494,7 +1491,7 @@ The claim is part of a coordinated narrative campaign.
             return self._build_degraded_fallback(fact_check, company, language)
 
         try:
-            persona = self.company_personas.get(company, self.company_personas["BMW"])
+            persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
 
             # Special handling for all bot personas
             if company in AVATAR_COMPANIES:
@@ -1835,13 +1832,16 @@ The claim is part of a coordinated narrative campaign.
             )
             
             response_text = response.choices[0].message.content
-            
+
+            # Every intervention is declared AI-assisted / human-reviewed.
+            response_text = append_ai_disclosure(response_text, language)
+
             # Determine hashtags
             if company in AVATAR_COMPANIES:
                 hashtags = ["#TruthShield", "#FactCheck", f"#{company}"]
             else:
                 hashtags = [f"#{company}Facts", "#TruthShield"]
-            
+
             return AIInfluencerResponse(
                 response_text=response_text,
                 tone=persona["tone"],

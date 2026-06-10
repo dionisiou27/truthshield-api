@@ -40,6 +40,12 @@ from src.api.compliance import router as compliance_router
 from src.api.ml import router as ml_router
 from src.api.ml_feedback import router as ml_feedback_router
 
+# Integrity guard: verify the immutable source authority weights have not been
+# tampered with. On mismatch this logs CRITICAL and raises, aborting startup.
+from src.core.constraints import verify_source_weights_integrity
+
+verify_source_weights_integrity()
+
 app = FastAPI(
     title="🛡️ TruthShield API",
     description="European AI Solution for Digital Information Integrity",

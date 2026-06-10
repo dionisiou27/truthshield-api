@@ -28,7 +28,7 @@ class DetectionResult(BaseModel):
 class CompanyFactCheckRequest(BaseModel):
     """Enhanced request model for company fact-checking"""
     text: str
-    company: str = "BMW"
+    company: str = "GuardianAvatar"
     language: str = "de"
     generate_ai_response: bool = True
 

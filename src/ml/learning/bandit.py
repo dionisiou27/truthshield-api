@@ -10,7 +10,7 @@ Factual assertions, source classes, and boundary definitions are IMMUTABLE
 and excluded from optimization to prevent engagement-driven drift.
 
 LEARNABLE PARAMETERS (stylistic only):
-- Tone variant (strict/firm/educational) - HOW the message is framed
+- Tone variant (empathic/witty/firm/spicy) - HOW the message is framed
 - Source mix strategy - WHICH source class priority, not WHICH sources
 - Response length within constraints
 - Sentence structure order
@@ -45,76 +45,14 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# IMMUTABLE CONSTRAINTS - Never subject to learning/optimization
+# IMMUTABLE CONSTRAINTS & NEGATIVE SIGNALS
 # =============================================================================
-
-class ImmutableConstraints:
-    """
-    Parameters that are NEVER subject to bandit optimization.
-    These represent epistemic and safety boundaries.
-    """
-    # Source authority weights are fixed
-    SOURCE_CLASS_WEIGHTS_FROZEN: bool = True
-
-    # Guardian behavioral rules are immutable
-    GUARDIAN_RULES_FROZEN: bool = True
-
-    # Claim classifications come from deterministic rules
-    CLAIM_CLASSIFICATION_FROZEN: bool = True
-
-    # Risk levels are policy-defined, not learned
-    RISK_LEVELS_FROZEN: bool = True
-
-    # Boundary definitions cannot be weakened
-    BOUNDARY_DEFINITIONS_FROZEN: bool = True
-
-    # Minimum source authority thresholds
-    MIN_SOURCE_AUTHORITY: float = 0.70  # No source below REPUTABLE_MEDIA
-
-    # Maximum engagement weight (prevents engagement > accuracy drift)
-    MAX_ENGAGEMENT_WEIGHT: float = 0.50
-
-    @classmethod
-    def validate_reward_weights(cls, weights: Dict[str, float]) -> bool:
-        """Ensure reward weights don't over-prioritize engagement."""
-        engagement_weights = weights.get("likes", 0) + weights.get("shares", 0)
-        return engagement_weights <= cls.MAX_ENGAGEMENT_WEIGHT
-
-
-# =============================================================================
-# NEGATIVE OPTIMIZATION SIGNALS - Anti-gaming measures
-# =============================================================================
-
-class NegativeSignals:
-    """
-    Signals that REDUCE reward, preventing gaming and drift.
-    These are explicitly documented for audit purposes.
-    """
-    # Platform moderation signals
-    REPORT_RATE_WEIGHT: float = -0.30        # Heavy penalty for reports
-    CONTENT_REMOVAL_PENALTY: float = -1.0    # Complete reward nullification
-    PLATFORM_FLAG_PENALTY: float = -0.50     # Moderation flags
-
-    # Toxicity amplification
-    TOXICITY_IN_REPLIES_WEIGHT: float = -0.15
-    REPLY_CHAIN_ESCALATION: float = -0.20    # Prevents provocation optimization
-
-    # Engagement gaming
-    BOT_ENGAGEMENT_PENALTY: float = -0.40    # Suspected inauthentic engagement
-    SPAM_PATTERN_PENALTY: float = -0.30      # Repetitive/spam patterns
-
-    @classmethod
-    def get_all_negative_weights(cls) -> Dict[str, float]:
-        """Return all negative signal weights for documentation."""
-        return {
-            "report_rate": cls.REPORT_RATE_WEIGHT,
-            "content_removal": cls.CONTENT_REMOVAL_PENALTY,
-            "platform_flag": cls.PLATFORM_FLAG_PENALTY,
-            "toxicity_in_replies": cls.TOXICITY_IN_REPLIES_WEIGHT,
-            "reply_chain_escalation": cls.REPLY_CHAIN_ESCALATION,
-            "bot_engagement": cls.BOT_ENGAGEMENT_PENALTY,
-            "spam_pattern": cls.SPAM_PATTERN_PENALTY,
-        }
+# These now live in src/core/constraints.py where they are hardened against
+# runtime mutation and enforced (source-weight integrity check at startup,
+# hard authority threshold in the ranker). Re-exported here so existing import
+# paths (`from src.ml.learning.bandit import ImmutableConstraints, ...`) keep
+# working.
+from src.core.constraints import ImmutableConstraints, NegativeSignals  # noqa: E402,F401
 
 
 class ToneVariant(str, Enum):
@@ -222,8 +160,19 @@ class GuardianBandit:
     - Cannot increase provocation
     """
 
+    # Engagement-direct reward weights (vanity metrics). These are the only
+    # components counted against ImmutableConstraints.MAX_ENGAGEMENT_WEIGHT.
+    # like_reply_ratio (0.15) + shares_proxy (0.10) = 0.25 <= 0.50.
+    ENGAGEMENT_WEIGHTS: Dict[str, float] = {"likes": 0.15, "shares": 0.10}
+
     def __init__(self, state_path: Optional[str] = None):
         self.state_path = Path(state_path) if state_path else None
+
+        # Active engagement-weight configuration, validated against the
+        # immutable engagement ceiling. Instance-level so a tampered config can
+        # be detected/raised rather than silently optimizing for engagement.
+        self.engagement_weights: Dict[str, float] = dict(self.ENGAGEMENT_WEIGHTS)
+        self._assert_reward_weights_valid()
 
         # Tone variant arms - 4 distinct buckets
         self.tone_arms: Dict[ToneVariant, BetaDistribution] = {
@@ -253,6 +202,19 @@ class GuardianBandit:
 
         logger.info("GuardianBandit initialized with %d tone arms, %d source arms",
                    len(self.tone_arms), len(self.source_arms))
+
+    def _assert_reward_weights_valid(self) -> None:
+        """Raise if the active engagement weights exceed the immutable ceiling.
+
+        Enforced at construction and on every reward calculation so the reward
+        function can never silently drift toward engagement > accuracy.
+        """
+        if not ImmutableConstraints.validate_reward_weights(self.engagement_weights):
+            raise ValueError(
+                "Reward weight configuration violates MAX_ENGAGEMENT_WEIGHT "
+                f"({ImmutableConstraints.MAX_ENGAGEMENT_WEIGHT}): "
+                f"{self.engagement_weights}"
+            )
 
     def select_tone(self, context: Optional[BanditContext] = None) -> ToneVariant:
         """
@@ -392,6 +354,10 @@ class GuardianBandit:
         Returns:
             Reward value 0-1 (clamped)
         """
+        # Re-validate the active weight configuration before every calculation;
+        # a tampered config must fail loudly, not silently optimize engagement.
+        self._assert_reward_weights_valid()
+
         # Check for content removal - complete reward nullification
         if metrics.get("content_removed", False) or metrics.get("deleted", False):
             logger.warning("Content removed - reward nullified")

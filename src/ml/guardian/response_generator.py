@@ -13,6 +13,7 @@ from .source_ranker import SourceRanker, SourceCandidate, SourceClass, RankerCon
 from ..learning.bandit import GuardianBandit, BanditContext, BanditDecision, ToneVariant, get_bandit
 from ..learning.feedback import FeedbackCollector, ResponseLog, get_collector
 from ..learning.logging import LearningLogger, get_learning_logger
+from src.core.constraints import get_ai_disclosure
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,13 @@ class GuardianResponse(BaseModel):
     response_text: str
     source_line: str
     constraints: Dict
+
+    # AI disclosure (every intervention is declared AI-assisted, human-reviewed)
+    ai_disclosure: str = ""
+
+    # Hard diversity constraint outcome — when True, min-2-classes / 1-per-domain
+    # could not be satisfied and the intervention requires human review.
+    diversity_constraint_unmet: bool = False
 
     # Learning
     learning_enabled: bool = True
@@ -162,20 +170,24 @@ class GuardianResponseGenerator:
         return None
 
     def build_tone_prompt(self, tone_variant: ToneVariant, language: str) -> str:
-        """Build tone-specific prompt modification."""
+        """Build tone-specific prompt modification (4 current tone variants)."""
         tone_prompts = {
-            ToneVariant.BOUNDARY_STRICT: {
-                "de": "Beginne mit einem klaren 'Stop.' oder 'Halt.' Sei direkt und unmissverständlich.",
-                "en": "Start with a clear 'Stop.' Be direct and unambiguous."
+            ToneVariant.EMPATHIC: {
+                "de": "Erkenne das Gefühl an, dann korrigiere sachlich. Bleibe ruhig und respektvoll.",
+                "en": "Acknowledge the feeling, then correct factually. Stay calm and respectful."
             },
-            ToneVariant.BOUNDARY_FIRM: {
+            ToneVariant.WITTY: {
+                "de": "Leichte, selbstbewusste Korrektur mit Persönlichkeit. Kurz und treffend.",
+                "en": "Light, confident correction with personality. Short and on point."
+            },
+            ToneVariant.FIRM: {
                 "de": "Sei bestimmt aber sachlich. Benenne klar die Falschaussage.",
                 "en": "Be firm but factual. Clearly name the false claim."
             },
-            ToneVariant.BOUNDARY_EDUCATIONAL: {
-                "de": "Erkläre sachlich, warum die Behauptung nicht stimmt. Biete Kontext.",
-                "en": "Explain factually why the claim is incorrect. Provide context."
-            }
+            ToneVariant.SPICY: {
+                "de": "Direkt und pointiert, aber faktenbasiert. Kein Spott, keine Eskalation.",
+                "en": "Bold and pointed, but factual. No mockery, no escalation."
+            },
         }
 
         return tone_prompts.get(tone_variant, {}).get(language, "")
@@ -258,12 +270,22 @@ class GuardianResponseGenerator:
         # Step 2: Rank sources
         selected_sources = self.rank_sources(source_candidates, claim_analysis)
 
+        # Capture hard-diversity outcome from the ranker for human-review routing.
+        diversity_unmet = self.source_ranker.diversity_constraint_unmet
+        if diversity_unmet:
+            logger.warning(
+                "Guardian response %s flagged: diversity constraint unmet — "
+                "human review required.",
+                response_id,
+            )
+
         # Step 3: Make bandit decision
         decision = self.make_bandit_decision(claim_analysis)
 
         # Step 4: Build response metadata
         source_line = self.format_source_line(selected_sources, claim_analysis.language)
         tone_prompt = self.build_tone_prompt(decision.tone_variant, claim_analysis.language)
+        ai_disclosure = get_ai_disclosure(claim_analysis.language)
 
         return GuardianResponse(
             response_id=response_id,
@@ -285,8 +307,11 @@ class GuardianResponseGenerator:
                 "sentences": 5,
                 "max_chars": 450,
                 "sources_required": 3,
-                "tone_prompt": tone_prompt
+                "tone_prompt": tone_prompt,
+                "ai_disclosure": ai_disclosure,
             },
+            ai_disclosure=ai_disclosure,
+            diversity_constraint_unmet=diversity_unmet,
             learning_enabled=True,
             variant_id=f"guardian_v1_{decision.tone_variant.value}"
         )
