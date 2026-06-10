@@ -62,7 +62,11 @@ async def fetch_wikipedia_pages(query: str, language: str = "de", limit: int = 5
                         "title": title,
                         "url": full_url,
                         "snippet": extract[:400] + ("…" if len(extract) > 400 else ""),
-                        "credibility": 0.82,
+                        # MediaWiki is retrieval/background only (Task 14): authority
+                        # is fixed by taxonomy (WIKIPEDIA = 0.40), never a higher
+                        # hardcoded "credibility" that would outrank institutions.
+                        "authority_score": 0.40,
+                        "usage_type": "RETRIEVAL",
                     }
                 )
             logger.info(f"📚 Wikipedia returned {len(results)} results for '{query[:60]}…'")
@@ -109,7 +113,8 @@ async def fetch_wikidata_entities(query: str, language: str = "de", limit: int =
                         "title": title,
                         "url": f"https://www.wikidata.org/wiki/{entity_id}",
                         "snippet": description or "Wikidata structured entity.",
-                        "credibility": 0.88,
+                        "authority_score": 0.40,
+                        "usage_type": "RETRIEVAL",
                     }
                 )
             logger.info(f"📘 Wikidata returned {len(results)} entities for '{query[:60]}…'")
@@ -159,7 +164,8 @@ async def fetch_meta_wiki_pages(query: str, limit: int = 5) -> List[Dict]:
                         "title": title,
                         "url": full_url,
                         "snippet": extract[:400] + ("…" if len(extract) > 400 else ""),
-                        "credibility": 0.8,
+                        "authority_score": 0.40,
+                        "usage_type": "RETRIEVAL",
                     }
                 )
             logger.info(f"📙 Meta-Wiki returned {len(results)} results for '{query[:60]}…'")

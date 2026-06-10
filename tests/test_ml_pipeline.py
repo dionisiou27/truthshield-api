@@ -821,5 +821,161 @@ class TestAIDisclosure:
         assert AI_DISCLOSURE_DE in de.response_text
 
 
+# ============================================================================
+# P0.5 — Demo hotfix block (Tasks 12–16)
+# ============================================================================
+
+class TestDegradedModeReporting:
+    """Task 12 & 13: honest degraded-mode flags and verdict abstinence."""
+
+    @pytest.fixture
+    def engine(self):
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        from src.core.ai_engine import TruthShieldAI
+        eng = TruthShieldAI()
+        eng.openai_client = None  # simulate LLM outage
+        return eng
+
+    def test_verdict_abstains_without_llm(self, engine):
+        verdict = engine._determine_verdict({"assessment": "limited", "llm_ran": False}, [])
+        assert verdict["category"] == "analysis_unavailable"
+        assert verdict["confidence"] is None
+        assert verdict["is_fake"] is False
+
+    def test_verdict_default_50_never_leaks(self, engine):
+        """A missing plausibility must not yield a needs_verification 0.6."""
+        verdict = engine._determine_verdict({"llm_ran": False}, [])
+        assert verdict["confidence"] is None
+        assert verdict["category"] != "needs_verification"
+
+    def test_degraded_fallback_flags(self, engine):
+        from src.core.ai_engine import FactCheckResult
+        from src.core.constraints import AI_DISCLOSURE_EN
+        fc = FactCheckResult(
+            is_fake=False, confidence=None, explanation="x",
+            category="analysis_unavailable", sources=[], processing_time_ms=1,
+        )
+        resp = engine._build_degraded_fallback(fc, "GuardianAvatar", "en",
+                                               degradation_reason="llm_unavailable")
+        assert resp.degraded is True
+        assert resp.degradation_reason == "llm_unavailable"
+        assert AI_DISCLOSURE_EN in resp.response_text  # disclosure still present
+
+    def test_real_response_not_degraded_flagged(self, engine):
+        """The honest API flag: degraded fallback => ai_response_generated false."""
+        from src.core.ai_engine import FactCheckResult
+        fc = FactCheckResult(
+            is_fake=False, confidence=None, explanation="x",
+            category="analysis_unavailable", sources=[], processing_time_ms=1,
+        )
+        resp = engine._build_degraded_fallback(fc, "GuardianAvatar", "en")
+        ai_response_generated = resp is not None and not resp.degraded
+        assert ai_response_generated is False
+
+    def test_degradation_reason_is_generic(self, engine):
+        """No provider/key/error detail leaks via degradation_reason."""
+        from src.core.ai_engine import FactCheckResult
+        fc = FactCheckResult(is_fake=False, confidence=None, explanation="x",
+                             category="analysis_unavailable", sources=[], processing_time_ms=1)
+        resp = engine._build_degraded_fallback(fc, "GuardianAvatar", "en",
+                                               degradation_reason="llm_error")
+        assert resp.degradation_reason in ("llm_unavailable", "llm_timeout", "llm_error")
+
+
+class TestSourceScoreSeparation:
+    """Task 14 & 15: authority vs. relevance; MediaWiki defused."""
+
+    @pytest.fixture
+    def engine(self):
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        from src.core.ai_engine import TruthShieldAI
+        return TruthShieldAI()
+
+    def test_who_authority_beats_wikipedia(self, engine):
+        from src.core.ai_engine import Source
+        who = Source(url="https://www.who.int/news/item/x", title="WHO", snippet="s",
+                     credibility_score=0.62, date_published="2024-01-01")
+        wiki = Source(url="https://en.wikipedia.org/wiki/Vaccine", title="Wiki", snippet="s",
+                      credibility_score=0.82, date_published="2024-01-01")
+        engine._finalize_sources([who, wiki])
+        assert who.authority_score == 1.00
+        assert wiki.authority_score == 0.40
+        assert who.authority_score > wiki.authority_score
+        # credibility is an alias of authority, never a blended/higher value
+        assert wiki.credibility_score == 0.40
+
+    def test_no_field_where_wikipedia_outranks_institution(self, engine):
+        from src.core.ai_engine import Source
+        who = Source(url="https://www.who.int/news/item/x", title="WHO", snippet="s",
+                     credibility_score=0.62)
+        wiki = Source(url="https://en.wikipedia.org/wiki/Vaccine", title="Wiki", snippet="s",
+                      credibility_score=0.82)
+        engine._finalize_sources([who, wiki])
+        for field in ("authority_score", "credibility_score"):
+            assert getattr(who, field) >= getattr(wiki, field)
+
+    def test_wikipedia_marked_retrieval(self, engine):
+        from src.core.ai_engine import Source
+        wiki = Source(url="https://en.wikipedia.org/wiki/Vaccine", title="Wiki",
+                      snippet="s", credibility_score=0.82)
+        engine._finalize_sources([wiki])
+        assert wiki.usage_type == "RETRIEVAL"
+
+    def test_homepage_not_claim_specific(self, engine):
+        from src.core.ai_engine import Source
+        home = Source(url="https://who.int/", title="WHO", snippet="s", credibility_score=0.9)
+        article = Source(url="https://factcheck.org/2021/05/microchip-claim/", title="FC",
+                         snippet="s", credibility_score=0.9)
+        engine._finalize_sources([home, article])
+        assert home.is_claim_specific is False
+        assert article.is_claim_specific is True
+
+    def test_placeholder_date_nulled(self, engine):
+        from src.core.ai_engine import Source
+        home = Source(url="https://who.int/", title="WHO", snippet="s",
+                      credibility_score=0.9, date_published="2024-01-01")
+        engine._finalize_sources([home])
+        assert home.date_published is None
+
+
+class TestPayloadJsonHygiene:
+    """Task 16: optional fields serialize as null; payload is json-parseable."""
+
+    def test_factcheck_result_serializes_null(self):
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        import json
+        from src.core.ai_engine import FactCheckResult, Source
+        fc = FactCheckResult(
+            is_fake=False, confidence=None, explanation="n/a",
+            category="analysis_unavailable",
+            sources=[Source(url="https://who.int/", title="WHO", snippet="s",
+                            credibility_score=1.0, date_published=None)],
+            processing_time_ms=1,
+        )
+        raw = fc.model_dump_json()
+        parsed = json.loads(raw)  # must not raise
+        assert parsed["confidence"] is None
+        assert parsed["sources"][0]["date_published"] is None
+
+    def test_google_factcheck_empty_rating_snippet(self):
+        from src.services.google_factcheck import GoogleFactCheckAPI
+        api = GoogleFactCheckAPI()
+        claim_data = {
+            "text": "some claim",
+            "claimReview": [{
+                "publisher": {"name": "FactCheck.org", "site": "factcheck.org"},
+                "reviewRating": {"ratingExplanation": ""},
+                "url": "https://factcheck.org/x",
+                "title": "t",
+            }],
+        }
+        out = api._format_claim(claim_data)
+        assert "Rated as ''" not in out["snippet"]
+        assert out["snippet"] == "Fact-check by FactCheck.org"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

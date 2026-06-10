@@ -25,6 +25,9 @@ from src.ml.guardian.claim_router import (
 from src.ml.learning.bandit import (
     GuardianBandit, BanditContext, ToneVariant, SourceMixStrategy, get_bandit
 )
+from src.ml.guardian.source_ranker import (
+    SourceRanker, SourceClass, SOURCE_CLASS_WEIGHTS, RETRIEVAL_ONLY_SOURCES,
+)
 from src.core.personas import COMPANY_PERSONAS
 from src.core.constraints import append_ai_disclosure
 from src.core.text_detection import (
@@ -40,15 +43,28 @@ class Source(BaseModel):
     url: str
     title: str
     snippet: str
+    # credibility_score is kept as a backwards-compatible ALIAS of authority_score
+    # (taxonomy-derived), never a blended/relevance value.
     credibility_score: float
     date_published: Optional[str] = None
+    # Score separation (P0.5 Task 14): authority is fixed by source class,
+    # relevance is variable, final_score is the blended ranking score.
+    authority_score: Optional[float] = None
+    relevance_score: Optional[float] = None
+    final_score: Optional[float] = None
+    # AUTHORITY = citable evidence, RETRIEVAL = discovery/background only.
+    usage_type: str = "AUTHORITY"
+    # Claim-specific evidence (has article path) vs. background institution (homepage).
+    is_claim_specific: bool = False
 
 class FactCheckResult(BaseModel):
     """Fact-checking analysis result"""
     is_fake: bool
-    confidence: float
+    # confidence is Optional: null means "no verdict issued" (e.g. analysis
+    # unavailable). 0.0 would wrongly mean "certainly false".
+    confidence: Optional[float] = None
     explanation: str
-    category: str  # "misinformation", "satire", "misleading", "true"
+    category: str  # "misinformation", "satire", "misleading", "true", "analysis_unavailable"
     sources: List[Source] = []
     processing_time_ms: int
 
@@ -61,6 +77,9 @@ class AIInfluencerResponse(BaseModel):
     company_voice: str
     bot_name: Optional[str] = None  # Added for Guardian Avatar
     bot_type: Optional[str] = None  # Added for Guardian Avatar
+    # P0.5 Task 12: honest degraded-mode reporting.
+    degraded: bool = False
+    degradation_reason: Optional[str] = None  # "llm_unavailable" | "llm_timeout" | "llm_error"
 
 AVATAR_COMPANIES = {"GuardianAvatar", "PolicyAvatar", "MemeAvatar", "EuroShieldAvatar", "ScienceAvatar"}
 
@@ -104,7 +123,58 @@ class TruthShieldAI:
 
         # Company-specific response templates
         self.company_personas = COMPANY_PERSONAS
-    
+
+        # Source classifier for taxonomy-derived authority scores (Task 14).
+        self._ranker = SourceRanker()
+
+        # Audit log for degraded-mode events (internal only, no external detail).
+        try:
+            from src.core.audit import AuditLog
+            self._audit = AuditLog()
+        except Exception:  # pragma: no cover - audit is best-effort
+            self._audit = None
+
+    def _authority_for_url(self, url: str) -> float:
+        """Taxonomy-derived authority weight for a URL (fixed by source class)."""
+        source_class = self._ranker.classify_source(url or "")
+        return SOURCE_CLASS_WEIGHTS.get(source_class, SOURCE_CLASS_WEIGHTS[SourceClass.UNKNOWN])
+
+    def _finalize_sources(self, sources: List["Source"]) -> List["Source"]:
+        """Normalize source scoring/metadata for an honest, taxonomy-consistent payload.
+
+        - authority_score: fixed, from SOURCE_CLASS_WEIGHTS (never below Wikipedia
+          for Wikipedia, never above PRIMARY_INSTITUTION for homepages).
+        - credibility_score: aliased to authority_score (no blended value leaks out).
+        - usage_type: RETRIEVAL for Wikipedia/Wikidata (background only), else AUTHORITY.
+        - is_claim_specific: True only when the URL has an article path (not a homepage).
+        - Placeholder dates ("2024-01-01") on static profile sources become null.
+        """
+        from urllib.parse import urlparse
+
+        for s in (sources or []):
+            authority = self._authority_for_url(s.url)
+            s.authority_score = authority
+            s.credibility_score = authority  # alias, never the blended score
+
+            domain = self._ranker._extract_domain(s.url)
+            is_retrieval_only = any(
+                domain == d or domain.endswith("." + d) for d in RETRIEVAL_ONLY_SOURCES
+            )
+            s.usage_type = "RETRIEVAL" if is_retrieval_only else "AUTHORITY"
+
+            # Claim-specific = has a non-empty URL path beyond the bare domain.
+            try:
+                path = urlparse(s.url).path.strip("/")
+            except Exception:
+                path = ""
+            s.is_claim_specific = bool(path)
+
+            # Drop placeholder publication dates on background/static sources.
+            if s.date_published in ("2024-01-01", ""):
+                s.date_published = None
+
+        return sources
+
     def setup_openai(self):
         """Initialize OpenAI client"""
         api_key = os.getenv("OPENAI_API_KEY")
@@ -518,15 +588,16 @@ The claim is part of a coordinated narrative campaign.
             # Step 1: Analyze claim with AI
             analysis = await self._analyze_with_ai(text, company)
             
-            # Step 2: Search for supporting sources  
+            # Step 2: Search for supporting sources
             sources = await self._search_sources(text, company)
-            
+            sources = self._finalize_sources(sources)
+
             # Step 3: Determine final verdict
             verdict = self._determine_verdict(analysis, sources)
             verdict = self._apply_special_case_overrides(text, sources, verdict)
-            
+
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             return FactCheckResult(
                 is_fake=verdict["is_fake"],
                 confidence=verdict["confidence"],
@@ -535,15 +606,15 @@ The claim is part of a coordinated narrative campaign.
                 sources=sources,
                 processing_time_ms=int(processing_time)
             )
-            
+
         except Exception as e:
             logger.error(f"Fact-checking failed: {e}")
-            # Return safe fallback
+            # Honest fallback: no verdict issued (null confidence, not a pseudo-score).
             return FactCheckResult(
                 is_fake=False,
-                confidence=0.3,
-                explanation="Unable to verify claim - analysis inconclusive",
-                category="unknown",
+                confidence=None,
+                explanation="Automated analysis temporarily unavailable. No verdict issued.",
+                category="analysis_unavailable",
                 sources=[],
                 processing_time_ms=1000
             )
@@ -563,7 +634,7 @@ The claim is part of a coordinated narrative campaign.
     async def _analyze_with_ai(self, text: str, company: str = "GuardianAvatar") -> Dict:
         """Enhanced AI analysis with better prompting for clear misinformation detection"""
         if not self.openai_client:
-            return {"assessment": "limited", "reasoning": "No AI available"}
+            return {"assessment": "limited", "reasoning": "No AI available", "llm_ran": False}
         
         # First check for logical contradictions and astroturfing
         contradiction_analysis = self._detect_logical_contradictions(text)
@@ -729,15 +800,18 @@ The claim is part of a coordinated narrative campaign.
                     result["reasoning"] = f"POLITICAL ASTROTURFING DETECTED: This appears to be coordinated disinformation targeting appointed officials with unsubstantiated corruption claims. Note: Appointed officials have less direct democratic legitimacy than elected politicians. {result.get('reasoning', '')}"
                 else:
                     result["reasoning"] = f"POLITICAL ASTROTURFING DETECTED: This appears to be coordinated disinformation targeting legitimate politicians with unsubstantiated corruption claims. {result.get('reasoning', '')}"
-            
+
+            result["llm_ran"] = True
             return result
-            
+
         except Exception as e:
+            # Full detail stays internal (ERROR log); never surfaced to the client.
             logger.error(f"AI analysis failed: {e}")
             return {
-                "assessment": "error", 
+                "assessment": "error",
                 "reasoning": str(e),
-                "plausibility_score": 50,
+                "llm_ran": False,
+                "llm_error": True,
                 "red_flags": [],
                 "misinformation_indicators": []
             }
@@ -848,7 +922,8 @@ The claim is part of a coordinated narrative campaign.
                             url=result["url"],
                             title=result["title"],
                             snippet=result.get("snippet", ""),
-                            credibility_score=result.get("credibility", 0.8),
+                            # MediaWiki authority is taxonomy-fixed; finalize re-derives it.
+                            credibility_score=result.get("authority_score", 0.40),
                             date_published=""
                         )
                         sources.append(source)
@@ -1163,6 +1238,16 @@ The claim is part of a coordinated narrative campaign.
     def _determine_verdict(self, ai_analysis: Dict, sources: List[Source]) -> Dict:
         """Enhanced verdict logic with clearer thresholds for better misinformation detection"""
         
+        # Verdict abstinence (Task 13): if the LLM analysis did not run, we issue
+        # NO verdict — null confidence, not a pseudo-score from a 50% default.
+        if not ai_analysis.get("llm_ran", True):
+            return {
+                "is_fake": False,
+                "confidence": None,
+                "explanation": "Automated analysis temporarily unavailable. Sources retrieved; no verdict issued.",
+                "category": "analysis_unavailable"
+            }
+
         # Default to uncertain
         verdict = {
             "is_fake": False,
@@ -1170,7 +1255,7 @@ The claim is part of a coordinated narrative campaign.
             "explanation": "Insufficient information to make determination",
             "category": "uncertain"
         }
-        
+
         try:
             plausibility = ai_analysis.get("plausibility_score", 50)
             red_flags = ai_analysis.get("red_flags", [])
@@ -1401,10 +1486,25 @@ The claim is part of a coordinated narrative campaign.
 
         return "\n".join(facts)
 
+    def _record_degradation(self, reason: str, company: str, detail: str) -> None:
+        """Record a degraded-mode event internally (full detail), never externally."""
+        if getattr(self, "_audit", None) is not None:
+            try:
+                self._audit.write({
+                    "event": "llm_degraded",
+                    "reason": reason,            # generic category, safe to keep
+                    "company": company,
+                    "detail": detail,            # internal-only diagnostic
+                    "timestamp": datetime.now().isoformat(),
+                })
+            except Exception:  # pragma: no cover - audit is best-effort
+                pass
+
     def _build_degraded_fallback(self,
                                  fact_check: FactCheckResult,
                                  company: str,
-                                 language: str) -> AIInfluencerResponse:
+                                 language: str,
+                                 degradation_reason: str = "llm_unavailable") -> AIInfluencerResponse:
         """
         Rule-compliant response when the LLM is unavailable. For Guardian Avatar
         with a deterministic high-confidence misinformation verdict, render a
@@ -1422,6 +1522,7 @@ The claim is part of a coordinated narrative campaign.
 
         high_confidence_false = (
             fact_check.category in ("misinformation", "likely_false")
+            and fact_check.confidence is not None
             and fact_check.confidence >= 0.85
         )
 
@@ -1478,6 +1579,8 @@ The claim is part of a coordinated narrative campaign.
             engagement_score=engagement,
             hashtags=hashtags,
             company_voice=company,
+            degraded=True,
+            degradation_reason=degradation_reason,
         )
 
     async def _generate_single_response(self,
@@ -1488,7 +1591,10 @@ The claim is part of a coordinated narrative campaign.
         """Generate response in specific language"""
 
         if not self.openai_client:
-            return self._build_degraded_fallback(fact_check, company, language)
+            self._record_degradation("llm_unavailable", company, "OpenAI client not configured")
+            return self._build_degraded_fallback(
+                fact_check, company, language, degradation_reason="llm_unavailable"
+            )
 
         try:
             persona = self.company_personas.get(company, self.company_personas["GuardianAvatar"])
@@ -1847,12 +1953,18 @@ The claim is part of a coordinated narrative campaign.
                 tone=persona["tone"],
                 engagement_score=0.85,
                 hashtags=hashtags,
-                company_voice=company
+                company_voice=company,
+                degraded=False,
             )
-            
+
         except Exception as e:
+            # Full error stays internal (log + audit); client sees a generic reason.
+            reason = "llm_timeout" if "timeout" in str(e).lower() else "llm_error"
             logger.error(f"Brand response generation failed: {e}")
-            return self._build_degraded_fallback(fact_check, company, language)
+            self._record_degradation(reason, company, str(e))
+            return self._build_degraded_fallback(
+                fact_check, company, language, degradation_reason=reason
+            )
 
     def translate_fact_check_result(self, result: FactCheckResult) -> Dict[str, str]:
         """Quick translation of fact check results for demo"""

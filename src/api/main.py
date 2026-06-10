@@ -117,9 +117,38 @@ if os.getenv("ENVIRONMENT", "production").lower() == "development":
         }
 
 class HealthResponse(BaseModel):
-    status: str
+    status: str            # "ok" | "degraded"
     message: str
     version: str
+    subsystems: dict
+
+
+def _subsystem_status() -> dict:
+    """Lightweight per-subsystem status. No secrets, key fragments, or quota detail.
+
+    LLM status is based on whether the API key is configured (no per-request
+    completion call). Result is cached for 60s to keep /health cheap.
+    """
+    import time
+
+    cache = getattr(_subsystem_status, "_cache", None)
+    now = time.time()
+    if cache and now - cache[0] < 60:
+        return cache[1]
+
+    def _configured(var: str) -> str:
+        return "ok" if os.getenv(var) else "unconfigured"
+
+    subsystems = {
+        "llm": "ok" if os.getenv("OPENAI_API_KEY") else "unavailable",
+        "google_fact_check": _configured("GOOGLE_API_KEY"),
+        "news_api": _configured("NEWS_API_KEY"),
+        "claimbuster": _configured("CLAIMBUSTER_API_KEY"),
+        "mediawiki": "ok",   # public API, no key required
+        "database": "ok",    # local SQLite (dev)
+    }
+    _subsystem_status._cache = (now, subsystems)
+    return subsystems
 
 @app.get("/")
 async def root():
@@ -165,10 +194,19 @@ async def demo_page():
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
+    subsystems = _subsystem_status()
+    # Overall status is "degraded" if the LLM (core analysis engine) is unavailable.
+    overall = "degraded" if subsystems.get("llm") != "ok" else "ok"
+    message = (
+        "All systems operational"
+        if overall == "ok"
+        else "Running in degraded mode — automated analysis unavailable"
+    )
     return HealthResponse(
-        status="healthy",
-        message="TruthShield API is running - All systems operational",
-        version="0.1.0"
+        status=overall,
+        message=message,
+        version="0.1.0",
+        subsystems=subsystems,
     )
 
 if os.getenv("ENVIRONMENT", "production").lower() == "development":
