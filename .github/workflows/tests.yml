@@ -21,7 +21,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pydantic numpy pyyaml httpx fastapi python-dotenv pydantic-settings
+          # openai + beautifulsoup4 are needed so the ai_engine generation-path
+          # tests run (not skipped) — both are core project dependencies.
+          pip install pytest pydantic numpy pyyaml httpx fastapi python-dotenv pydantic-settings openai beautifulsoup4
 
       # Integration tests (tests/integration/) are intentionally excluded:
       # they require live API keys and network access.

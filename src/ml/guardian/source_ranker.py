@@ -1,7 +1,17 @@
 """
-Guardian Source Ranker v2
-Pure ranking-based source selection. No hard filters, only weighted scoring.
-Topic-aware relevance boosting with soft diversity preferences.
+Guardian Source Ranker v3
+Weighted ranking with HARD safety constraints (paper-aligned).
+
+Two enforced constraints sit on top of the weighted scoring:
+  1. Authority threshold — no source below ImmutableConstraints.MIN_SOURCE_AUTHORITY
+     (0.70, i.e. REPUTABLE_MEDIA) may enter the CITATION pool. Such sources may
+     still be used for retrieval/discovery (SourceUsageType.RETRIEVAL).
+  2. Diversity — at most one source per domain, and at least two source classes
+     per intervention. If diversity cannot be met, the result is flagged
+     (diversity_constraint_unmet) for human review rather than silently violated.
+
+Within those hard rules, topic-aware relevance boosting and soft diversity
+preferences act only as tie-breakers.
 """
 from enum import Enum
 from typing import List, Dict, Optional, Set
@@ -9,6 +19,8 @@ from pydantic import BaseModel
 from datetime import datetime, date
 import math
 import logging
+
+from src.core.constraints import ImmutableConstraints
 
 logger = logging.getLogger(__name__)
 
@@ -293,6 +305,10 @@ class SourceCandidate(BaseModel):
     paywalled: bool = False
     retrieval_rank: int = 0
 
+    # Whether this source may be cited as evidence (AUTHORITY) or is only valid
+    # for discovery/context (RETRIEVAL). Set by the hard authority filter.
+    usage_type: "SourceUsageType" = SourceUsageType.AUTHORITY
+
     # Computed scores
     relevance_score: float = 0.0
     authority_score: float = 0.0
@@ -314,15 +330,17 @@ class RankerConfig(BaseModel):
     weight_recency: float = 0.10        # Freshness
     weight_prior: float = 0.05          # Retrieval rank signal
 
-    # NO hard thresholds - pure ranking
-    # min_relevance: REMOVED
-    # min_final_score: REMOVED
+    # HARD authority filter (paper-aligned): any source whose class weight is
+    # below ImmutableConstraints.MIN_SOURCE_AUTHORITY (0.70) is excluded from the
+    # CITATION pool before ranking. It remains usable for retrieval/discovery.
+    # This is enforced in rank_sources(), not configurable here.
 
-    # Soft penalties (reduce score, don't exclude)
+    # Soft penalties (reduce score, don't exclude) — tie-breakers only
     paywall_penalty: float = 0.15
     unknown_source_penalty: float = 0.20  # For non-whitelisted sources
 
-    # Soft diversity preferences
+    # Soft diversity preferences — tie-breakers WITHIN the hard diversity rules
+    # (max 1 source per domain, min 2 source classes enforced in select_top_n)
     same_domain_diminish: float = 0.30   # Reduce score for 2nd source from same domain
     prefer_class_diversity: float = 0.10  # Bonus for new source class
 
@@ -332,9 +350,11 @@ class RankerConfig(BaseModel):
 
 class SourceRanker:
     """
-    Guardian Source Ranker v2
-    Pure ranking - no gates, only weighted scores.
-    All sources compete, best ones float to top.
+    Guardian Source Ranker v3
+    Weighted ranking under two HARD constraints (paper-aligned):
+      - authority threshold: sources below MIN_SOURCE_AUTHORITY cannot be cited
+      - diversity: max 1 source per domain, min 2 source classes per intervention
+    Soft scores only break ties within those hard rules.
     """
 
     def __init__(self, config: Optional[RankerConfig] = None):
@@ -343,7 +363,14 @@ class SourceRanker:
         self.domain_whitelist = DOMAIN_WHITELIST
         self.source_profiles = GUARDIAN_SOURCE_PROFILES
         self.current_claim_type: Optional[str] = None
-        logger.info("SourceRanker v2 initialized (pure ranking, no hard filters)")
+        # Set by select_top_n: True when the min-2-classes diversity rule could
+        # not be satisfied, forcing human review instead of a silent violation.
+        self.diversity_constraint_unmet: bool = False
+        logger.info(
+            "SourceRanker v3 initialized (hard authority threshold=%.2f, "
+            "max 1/domain, min 2 classes)",
+            ImmutableConstraints.MIN_SOURCE_AUTHORITY,
+        )
 
     def classify_source(self, url: str) -> SourceClass:
         """Classify a source URL by its domain."""
@@ -482,16 +509,67 @@ class SourceRanker:
 
     def select_top_n(self, sources: List[SourceCandidate]) -> List[SourceCandidate]:
         """
-        Select top N sources. Pure ranking, no hard exclusions.
-        Just take the best scored sources after soft diversity adjustments.
+        Select top N sources under HARD diversity constraints:
+          - at most ONE source per domain (hard dedupe, not a score malus)
+          - at least TWO distinct source classes per intervention
+
+        If two classes cannot be reached (too few valid sources), the result is
+        flagged via self.diversity_constraint_unmet to force human review.
+
+        Inputs are expected to already be citation-eligible (authority filter
+        applied in rank_sources) and diversity-adjusted for tie-breaking.
         """
-        # Sort by final score (already adjusted for diversity)
-        sorted_sources = sorted(sources, key=lambda s: s.final_score, reverse=True)
+        n = self.config.select_top_n
+        ordered = sorted(sources, key=lambda s: s.final_score, reverse=True)
 
-        # Take top N
-        selected = sorted_sources[:self.config.select_top_n]
+        selected: List[SourceCandidate] = []
+        used_domains: Set[str] = set()
+        used_classes: Set[SourceClass] = set()
 
-        logger.info(f"Selected top {len(selected)} sources from {len(sources)} candidates")
+        # First pass: best-scored, hard max one per domain
+        for s in ordered:
+            if len(selected) >= n:
+                break
+            domain = self._extract_domain(s.url)
+            if domain in used_domains:
+                logger.info(
+                    "Diversity: dropping duplicate-domain source %s (1/domain rule)",
+                    domain,
+                )
+                continue
+            selected.append(s)
+            used_domains.add(domain)
+            used_classes.add(s.source_class)
+
+        # Enforce minimum two source classes: pull in the best different-class,
+        # different-domain candidate, swapping out the weakest pick if full.
+        self.diversity_constraint_unmet = False
+        if len(used_classes) < 2:
+            for s in ordered:
+                domain = self._extract_domain(s.url)
+                if s.source_class in used_classes or domain in used_domains:
+                    continue
+                if len(selected) >= n:
+                    removed = selected.pop()  # weakest (list is score-descending)
+                    used_domains.discard(self._extract_domain(removed.url))
+                selected.append(s)
+                used_domains.add(domain)
+                used_classes.add(s.source_class)
+                break
+
+        if len(used_classes) < 2:
+            self.diversity_constraint_unmet = True
+            logger.warning(
+                "Diversity constraint UNMET: only %d source class(es) available "
+                "among %d candidates — flagging for human review.",
+                len(used_classes), len(sources),
+            )
+
+        logger.info(
+            f"Selected {len(selected)} sources from {len(sources)} citation-eligible "
+            f"candidates (classes={len(used_classes)}, "
+            f"diversity_unmet={self.diversity_constraint_unmet})"
+        )
         for i, s in enumerate(selected):
             logger.info(f"  {i+1}. {self._extract_domain(s.url)} (score={s.final_score:.3f}, class={s.source_class.value})")
 
@@ -504,14 +582,17 @@ class SourceRanker:
         claim_type: Optional[str] = None
     ) -> List[SourceCandidate]:
         """
-        Full ranking pipeline v2 - NO hard filters:
+        Full ranking pipeline v3 with HARD constraints:
         1. Classify sources
-        2. Score each source (with topic-fit boost)
-        3. Apply soft diversity adjustments
-        4. Return top N (pure ranking)
+        2. HARD authority filter — exclude sub-threshold sources from citation
+           (they remain available for retrieval/discovery)
+        3. Score each citation-eligible source (with topic-fit boost)
+        4. Apply soft diversity adjustments (tie-breaking)
+        5. Select top N under hard diversity rules (1/domain, min 2 classes)
         """
         logger.info(f"Ranking {len(candidates)} source candidates (claim_type={claim_type})")
         self.current_claim_type = claim_type
+        self.diversity_constraint_unmet = False
 
         if not candidates:
             return []
@@ -521,14 +602,43 @@ class SourceRanker:
             if source.source_class == SourceClass.UNKNOWN:
                 source.source_class = self.classify_source(source.url)
 
-        # Step 2: Score all sources (with topic-fit)
+        # Step 2: HARD authority filter — split citation pool from retrieval-only
+        threshold = ImmutableConstraints.MIN_SOURCE_AUTHORITY
+        citation_pool: List[SourceCandidate] = []
         for source in candidates:
+            weight = self.source_class_weights.get(source.source_class, 0.0)
+            if weight < threshold:
+                source.usage_type = SourceUsageType.RETRIEVAL
+                logger.info(
+                    "Excluded from citation pool: %s (class=%s, weight=%.2f < %.2f) "
+                    "— retained for retrieval/context only",
+                    self._extract_domain(source.url),
+                    source.source_class.value,
+                    weight,
+                    threshold,
+                )
+            else:
+                source.usage_type = SourceUsageType.AUTHORITY
+                citation_pool.append(source)
+
+        if not citation_pool:
+            # No citable evidence — diversity can never be met.
+            self.diversity_constraint_unmet = True
+            logger.warning(
+                "No citation-eligible sources after authority filter "
+                "(%d candidates) — flagging for human review.",
+                len(candidates),
+            )
+            return []
+
+        # Step 3: Score citation-eligible sources (with topic-fit)
+        for source in citation_pool:
             self.score_source(source, claim_keywords, claim_type=claim_type)
 
-        # Step 3: Apply soft diversity adjustments (no exclusions)
-        adjusted = self.apply_soft_diversity(candidates)
+        # Step 4: Apply soft diversity adjustments (tie-breaking only)
+        adjusted = self.apply_soft_diversity(citation_pool)
 
-        # Step 4: Select top N (pure ranking, no gates)
+        # Step 5: Select top N under hard diversity constraints
         selected = self.select_top_n(adjusted)
 
         return selected
@@ -538,27 +648,28 @@ class SourceRanker:
         candidates: List[SourceCandidate],
         selected: List[SourceCandidate]
     ) -> List[Dict]:
-        """Get rejection reasons for non-selected sources (for logging)."""
+        """Get rejection reasons for non-selected sources (for audit logging)."""
         selected_urls = {s.url for s in selected}
+        threshold = ImmutableConstraints.MIN_SOURCE_AUTHORITY
         rejections = []
 
         for source in candidates:
             if source.url in selected_urls:
                 continue
 
-            reason = "unknown"
-            if source.relevance_score < self.config.min_relevance:
-                reason = "low_relevance"
+            weight = self.source_class_weights.get(source.source_class, 0.0)
+            if getattr(source, "usage_type", SourceUsageType.AUTHORITY) == SourceUsageType.RETRIEVAL \
+                    or weight < threshold:
+                reason = "below_authority_threshold"
             elif source.source_class == SourceClass.UNKNOWN:
                 reason = "unknown_source"
-            elif source.final_score < self.config.min_final_score:
-                reason = "low_score"
             else:
-                reason = "diversity_limit"
+                reason = "diversity_or_rank_limit"
 
             rejections.append({
                 "url": source.url,
                 "reason": reason,
+                "source_class": source.source_class.value,
                 "final_score": source.final_score
             })
 

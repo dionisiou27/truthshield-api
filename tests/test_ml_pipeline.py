@@ -25,13 +25,21 @@ from src.ml.learning.bandit import (
 )
 from src.ml.guardian.source_ranker import (
     SourceRanker, SourceClass, SourceCandidate, RankerConfig,
-    SOURCE_CLASS_WEIGHTS,
+    SOURCE_CLASS_WEIGHTS, SourceUsageType,
 )
 from src.core.text_detection import (
     detect_political_astroturfing,
     detect_astroturfing_indicators,
     detect_logical_contradictions,
 )
+from src.core.constraints import (
+    ImmutableConstraints as CoreImmutableConstraints,
+    NegativeSignals as CoreNegativeSignals,
+    AI_DISCLOSURE_DE, AI_DISCLOSURE_EN,
+    get_ai_disclosure, append_ai_disclosure,
+    verify_source_weights_integrity, compute_source_weights_hash,
+)
+from src.core.content_templates import claim_vs_proof_script, investigative_thread
 
 
 # ============================================================================
@@ -556,6 +564,261 @@ class TestPipelineIntegration:
         risk = router.assess_risk_level(types)
         assert risk == RiskLevel.LOW
         assert not router.should_guardian_respond(risk, types)
+
+
+# ============================================================================
+# P1 — Paper-Code Alignment: Immutable Constraints (runtime enforcement)
+# ============================================================================
+
+class TestConstraintsRuntimeImmutability:
+    """ImmutableConstraints / NegativeSignals cannot be mutated at runtime."""
+
+    def test_reassign_min_authority_raises(self):
+        with pytest.raises(AttributeError):
+            CoreImmutableConstraints.MIN_SOURCE_AUTHORITY = 0.5
+
+    def test_reassign_max_engagement_raises(self):
+        with pytest.raises(AttributeError):
+            CoreImmutableConstraints.MAX_ENGAGEMENT_WEIGHT = 0.99
+
+    def test_delete_attribute_raises(self):
+        with pytest.raises(AttributeError):
+            del CoreImmutableConstraints.MIN_SOURCE_AUTHORITY
+
+    def test_negative_signal_reassign_raises(self):
+        with pytest.raises(AttributeError):
+            CoreNegativeSignals.CONTENT_REMOVAL_PENALTY = 0.0
+
+    def test_bandit_reexports_same_objects(self):
+        """Backwards-compatible import path points at the core classes."""
+        assert ImmutableConstraints is CoreImmutableConstraints
+        assert NegativeSignals is CoreNegativeSignals
+
+
+class TestSourceWeightsIntegrity:
+    """SHA256 integrity guard on the immutable authority weights."""
+
+    def test_integrity_passes_unmodified(self):
+        assert verify_source_weights_integrity() is True
+
+    def test_hash_matches_pinned_value(self):
+        assert compute_source_weights_hash() == CoreImmutableConstraints.SOURCE_WEIGHTS_SHA256
+
+
+# ============================================================================
+# P1 — Task 5/6: Hard authority threshold + hard diversity constraints
+# ============================================================================
+
+class TestSourceRankerHardConstraints:
+    """Hard citation filter and diversity rules (paper-aligned)."""
+
+    @pytest.fixture
+    def ranker(self):
+        return SourceRanker()
+
+    def _cand(self, url, snippet="policy eu", source_class=SourceClass.UNKNOWN, rank=0):
+        return SourceCandidate(
+            url=url, title=url, snippet=snippet,
+            source_class=source_class, retrieval_rank=rank,
+        )
+
+    def test_unknown_source_never_cited(self, ranker):
+        cands = [
+            self._cand("https://random-blog.example.com/p", rank=0),
+            self._cand("https://ec.europa.eu/r", rank=1),
+            self._cand("https://reuters.com/a", rank=2),
+        ]
+        selected = ranker.rank_sources(cands, ["policy", "eu"])
+        assert all(s.source_class != SourceClass.UNKNOWN for s in selected)
+        assert not any("random-blog" in s.url for s in selected)
+
+    def test_wikipedia_never_cited(self, ranker):
+        cands = [
+            self._cand("https://en.wikipedia.org/wiki/X", rank=0),
+            self._cand("https://ec.europa.eu/r", rank=1),
+            self._cand("https://reuters.com/a", rank=2),
+        ]
+        selected = ranker.rank_sources(cands, ["policy", "eu"])
+        assert all(s.source_class != SourceClass.WIKIPEDIA for s in selected)
+        assert not any("wikipedia" in s.url for s in selected)
+
+    def test_reputable_media_passes_threshold(self, ranker):
+        """REPUTABLE_MEDIA (0.70) is exactly at the threshold and must pass."""
+        cands = [
+            self._cand("https://reuters.com/a", rank=0),
+            self._cand("https://ec.europa.eu/r", rank=1),
+        ]
+        selected = ranker.rank_sources(cands, ["policy", "eu"])
+        assert any(s.source_class == SourceClass.REPUTABLE_MEDIA for s in selected)
+
+    def test_excluded_marked_retrieval(self, ranker):
+        cands = [
+            self._cand("https://en.wikipedia.org/wiki/X", rank=0),
+            self._cand("https://ec.europa.eu/r", rank=1),
+            self._cand("https://reuters.com/a", rank=2),
+        ]
+        ranker.rank_sources(cands, ["policy", "eu"])
+        wiki = next(c for c in cands if "wikipedia" in c.url)
+        assert wiki.usage_type == SourceUsageType.RETRIEVAL
+
+    def test_one_source_per_domain(self, ranker):
+        cands = [
+            self._cand("https://ec.europa.eu/a", source_class=SourceClass.PRIMARY_INSTITUTION, rank=0),
+            self._cand("https://ec.europa.eu/b", source_class=SourceClass.PRIMARY_INSTITUTION, rank=1),
+            self._cand("https://reuters.com/c", source_class=SourceClass.REPUTABLE_MEDIA, rank=2),
+        ]
+        selected = ranker.rank_sources(cands, ["policy", "eu"])
+        domains = [s.url.split("/")[2] for s in selected]
+        assert len(domains) == len(set(domains)), f"Duplicate domain in {domains}"
+
+    def test_min_two_classes_when_available(self, ranker):
+        cands = [
+            self._cand("https://ec.europa.eu/a", source_class=SourceClass.PRIMARY_INSTITUTION, rank=0),
+            self._cand("https://consilium.europa.eu/b", source_class=SourceClass.PRIMARY_INSTITUTION, rank=1),
+            self._cand("https://reuters.com/c", source_class=SourceClass.REPUTABLE_MEDIA, rank=2),
+        ]
+        selected = ranker.rank_sources(cands, ["policy", "eu"])
+        classes = {s.source_class for s in selected}
+        assert len(classes) >= 2
+        assert ranker.diversity_constraint_unmet is False
+
+    def test_diversity_flag_when_single_class(self, ranker):
+        cands = [
+            self._cand("https://reuters.com/a", source_class=SourceClass.REPUTABLE_MEDIA, rank=0),
+        ]
+        selected = ranker.rank_sources(cands, ["policy"])
+        assert len(selected) == 1
+        assert ranker.diversity_constraint_unmet is True
+
+    def test_diversity_flag_when_no_citable(self, ranker):
+        cands = [
+            self._cand("https://en.wikipedia.org/wiki/X", rank=0),
+            self._cand("https://random-blog.example.com/p", rank=1),
+        ]
+        selected = ranker.rank_sources(cands, ["policy"])
+        assert selected == []
+        assert ranker.diversity_constraint_unmet is True
+
+
+class TestDiversityFlagReachesResponse:
+    """Task 6 (c): the diversity flag must reach the API response layer."""
+
+    def test_flag_in_guardian_response(self, tmp_path):
+        from src.ml.guardian.response_generator import GuardianResponseGenerator
+        gen = GuardianResponseGenerator(
+            bandit_state_path=str(tmp_path / "bandit.json"),
+            feedback_dir=str(tmp_path),
+            log_dir=str(tmp_path / "logs"),
+        )
+        # Only a single citable class available → flag must be set and surfaced.
+        candidates = [
+            SourceCandidate(
+                url="https://reuters.com/a", title="R", snippet="vaccine microchip",
+                source_class=SourceClass.REPUTABLE_MEDIA, retrieval_rank=0,
+            ),
+        ]
+        resp = gen.prepare_response(
+            claim_text="The vaccine contains a microchip for tracking",
+            source_candidates=candidates,
+        )
+        # The endpoint serializes this object, so the field reaching it == the
+        # field reaching the API response.
+        assert resp.diversity_constraint_unmet is True
+
+
+# ============================================================================
+# P1 — Task 8: Runtime reward-weight validation
+# ============================================================================
+
+class TestRewardWeightRuntimeValidation:
+
+    def test_hardcoded_engagement_within_ceiling(self):
+        """The shipped engagement weights must respect the immutable ceiling."""
+        assert ImmutableConstraints.validate_reward_weights(
+            GuardianBandit.ENGAGEMENT_WEIGHTS
+        )
+        total = sum(GuardianBandit.ENGAGEMENT_WEIGHTS.values())
+        assert total <= ImmutableConstraints.MAX_ENGAGEMENT_WEIGHT
+
+    def test_manipulated_weights_raise_on_calculate(self):
+        bandit = GuardianBandit()
+        bandit.engagement_weights = {"likes": 0.4, "shares": 0.3}  # 0.70 > 0.50
+        with pytest.raises(ValueError):
+            bandit.calculate_reward({"top_comment_proxy": 0.9})
+
+    def test_manipulated_weights_clean_config_ok(self):
+        bandit = GuardianBandit()
+        # Sanity: normal calculation still works with valid config.
+        reward = bandit.calculate_reward({"top_comment_proxy": 0.9})
+        assert 0.0 <= reward <= 1.0
+
+
+# ============================================================================
+# P1 — Task 7: AI disclosure across all generation paths
+# ============================================================================
+
+class TestAIDisclosure:
+
+    def test_helper_language_select(self):
+        assert get_ai_disclosure("de") == AI_DISCLOSURE_DE
+        assert get_ai_disclosure("en") == AI_DISCLOSURE_EN
+        assert get_ai_disclosure("de-DE") == AI_DISCLOSURE_DE
+
+    def test_append_idempotent(self):
+        once = append_ai_disclosure("Hello.", "en")
+        twice = append_ai_disclosure(once, "en")
+        assert once == twice
+        assert once.count(AI_DISCLOSURE_EN) == 1
+
+    def test_append_protects_disclosure_under_budget(self):
+        long_body = "x" * 1000
+        out = append_ai_disclosure(long_body, "en", max_chars=60)
+        assert AI_DISCLOSURE_EN in out
+        assert len(out) <= 60
+
+    def test_content_template_claim_vs_proof(self):
+        s = claim_vs_proof_script("claim", [{"title": "T", "url": "u"}], language="en")
+        assert s["ai_disclosure"] == AI_DISCLOSURE_EN
+        assert AI_DISCLOSURE_EN in str(s["beats"])
+
+    def test_content_template_investigative_thread(self):
+        t = investigative_thread("topic", ["f1"], [{"title": "T", "url": "u"}], language="de")
+        assert t["ai_disclosure"] == AI_DISCLOSURE_DE
+        assert AI_DISCLOSURE_DE in t["thread"]
+
+    def test_response_generator_carries_disclosure(self, tmp_path):
+        from src.ml.guardian.response_generator import GuardianResponseGenerator
+        gen = GuardianResponseGenerator(
+            bandit_state_path=str(tmp_path / "bandit.json"),
+            feedback_dir=str(tmp_path),
+            log_dir=str(tmp_path / "logs"),
+        )
+        resp = gen.prepare_response(
+            claim_text="Die Impfung enthält einen Mikrochip",
+            source_candidates=[
+                SourceCandidate(url="https://ec.europa.eu/r", title="EU", snippet="x",
+                                source_class=SourceClass.PRIMARY_INSTITUTION),
+            ],
+        )
+        assert resp.ai_disclosure in (AI_DISCLOSURE_DE, AI_DISCLOSURE_EN)
+        assert resp.constraints["ai_disclosure"] == resp.ai_disclosure
+
+    def test_ai_engine_degraded_fallback_has_disclosure(self):
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        from src.core.ai_engine import TruthShieldAI, FactCheckResult, Source
+        engine = TruthShieldAI()
+        engine.openai_client = None  # force degraded path
+        fc = FactCheckResult(
+            is_fake=True, confidence=0.95, explanation="Documented disinformation.",
+            category="misinformation",
+            sources=[Source(url="https://x", title="Src", snippet="s", credibility_score=0.95)],
+            processing_time_ms=1,
+        )
+        en = engine._build_degraded_fallback(fc, "GuardianAvatar", "en")
+        de = engine._build_degraded_fallback(fc, "GuardianAvatar", "de")
+        assert AI_DISCLOSURE_EN in en.response_text
+        assert AI_DISCLOSURE_DE in de.response_text
 
 
 if __name__ == "__main__":

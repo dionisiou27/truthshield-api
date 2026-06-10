@@ -193,6 +193,9 @@ async def prepare_guardian_response(request: GuardianPrepareRequest):
             },
             "selected_sources": response.selected_sources[:3],
             "source_line": response.source_line,
+            "ai_disclosure": response.ai_disclosure,
+            "diversity_constraint_unmet": response.diversity_constraint_unmet,
+            "requires_human_review": response.diversity_constraint_unmet,
             "constraints": response.constraints,
             "learning_enabled": response.learning_enabled
         }

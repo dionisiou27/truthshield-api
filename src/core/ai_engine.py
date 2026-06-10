@@ -26,6 +26,7 @@ from src.ml.learning.bandit import (
     GuardianBandit, BanditContext, ToneVariant, SourceMixStrategy, get_bandit
 )
 from src.core.personas import COMPANY_PERSONAS
+from src.core.constraints import append_ai_disclosure
 from src.core.text_detection import (
     detect_political_astroturfing,
     detect_astroturfing_indicators,
@@ -1475,6 +1476,9 @@ The claim is part of a coordinated narrative campaign.
             else [f"#{company}Facts", "#TruthShield"]
         )
 
+        # Every intervention is declared AI-assisted / human-reviewed.
+        text = append_ai_disclosure(text, language)
+
         return AIInfluencerResponse(
             response_text=text,
             tone=tone,
@@ -1835,13 +1839,16 @@ The claim is part of a coordinated narrative campaign.
             )
             
             response_text = response.choices[0].message.content
-            
+
+            # Every intervention is declared AI-assisted / human-reviewed.
+            response_text = append_ai_disclosure(response_text, language)
+
             # Determine hashtags
             if company in AVATAR_COMPANIES:
                 hashtags = ["#TruthShield", "#FactCheck", f"#{company}"]
             else:
                 hashtags = [f"#{company}Facts", "#TruthShield"]
-            
+
             return AIInfluencerResponse(
                 response_text=response_text,
                 tone=persona["tone"],
