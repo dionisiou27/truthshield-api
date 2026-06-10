@@ -1015,5 +1015,164 @@ class TestDegradedDetectionNoCrash:
         assert result.details["ai_response_generated"] is False
 
 
+# ============================================================================
+# P0.6 — LLM migration & degraded-mode repair (Tasks 19–21)
+# ============================================================================
+
+class TestModelConfig:
+    """Task 19: model ids are env-configurable, not hardcoded."""
+
+    def test_generation_default_present(self):
+        from src.core.config import settings
+        assert settings.openai_model_generation  # non-empty
+
+    def test_classification_falls_back_to_generation(self):
+        from src.core.config import Settings
+        s = Settings(openai_model_generation="gen-x", openai_model_classification=None)
+        assert s.classification_model == "gen-x"
+
+    def test_classification_used_when_set(self):
+        from src.core.config import Settings
+        s = Settings(openai_model_generation="gen-x", openai_model_classification="cls-y")
+        assert s.classification_model == "cls-y"
+
+
+class TestDegradedSourcesAndOverrides:
+    """Task 20: degraded mode must not crash and must still return sources."""
+
+    @pytest.fixture
+    def engine(self):
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        from src.core.ai_engine import TruthShieldAI
+        eng = TruthShieldAI()
+        eng.openai_client = None  # LLM unavailable
+        return eng
+
+    def test_vdl_override_survives_null_confidence(self, engine):
+        """Regression for max(None, 0.95): von der Leyen claim in degraded mode."""
+        import asyncio
+
+        async def _no_sources(*a, **k):
+            return []
+
+        engine._search_sources = _no_sources
+        res = asyncio.run(engine.fact_check_claim(
+            "Ursula von der Leyen was not elected and has no democratic legitimacy",
+            "GuardianAvatar",
+        ))
+        # Deterministic civic override still fires; no TypeError crash.
+        assert res.category == "misinformation"
+        assert res.confidence == 0.95
+        assert any("europarl" in s.url for s in res.sources)
+
+    def test_sources_populate_in_degraded_mode(self, engine):
+        """Retrieval is decoupled from the LLM: sources fill even with no verdict."""
+        import asyncio
+        from src.core.ai_engine import Source
+
+        async def _sources(*a, **k):
+            return [Source(
+                url="https://www.factcheck.org/2021/05/microchip-claim/",
+                title="FactCheck", snippet="microchip claim debunked",
+                credibility_score=0.9,
+            )]
+
+        engine._search_sources = _sources
+        res = asyncio.run(engine.fact_check_claim(
+            "vaccines contain microchips for tracking", "GuardianAvatar",
+        ))
+        assert res.category == "analysis_unavailable"
+        assert res.confidence is None
+        assert len(res.sources) >= 1  # retrieved despite no verdict
+
+
+class TestLLMHealth:
+    """Task 21: precise degradation diagnostics + model validation."""
+
+    def test_classify_model_not_found(self):
+        from src.core.llm_health import classify_llm_error
+
+        class ModelErr(Exception):
+            status_code = 404
+            body = {"error": {"code": "model_not_found"}}
+
+        assert classify_llm_error(ModelErr("model does not exist")) == "llm_misconfigured"
+
+    def test_classify_auth(self):
+        from src.core.llm_health import classify_llm_error
+
+        class AuthErr(Exception):
+            status_code = 401
+            body = {"error": {"code": "invalid_api_key"}}
+
+        assert classify_llm_error(AuthErr("bad key")) == "llm_auth"
+
+    def test_classify_quota(self):
+        from src.core.llm_health import classify_llm_error
+
+        class RateErr(Exception):
+            status_code = 429
+
+        assert classify_llm_error(RateErr("rate limit reached")) == "llm_quota"
+
+    def test_classify_timeout(self):
+        from src.core.llm_health import classify_llm_error
+
+        class APITimeoutError(Exception):
+            pass
+
+        assert classify_llm_error(APITimeoutError("request timed out")) == "llm_timeout"
+
+    def test_classify_generic(self):
+        from src.core.llm_health import classify_llm_error
+        assert classify_llm_error(ValueError("weird")) == "llm_error"
+
+    def test_validate_model_ok(self):
+        from src.core.llm_health import validate_llm_model
+        status = validate_llm_model("gpt-5.1", "sk-x",
+                                    fetcher=lambda: {"gpt-5.1", "gpt-5.4-nano"})
+        assert status == "ok"
+
+    def test_validate_model_misconfigured_logs_critical(self, caplog):
+        import logging
+        from src.core.llm_health import validate_llm_model
+        with caplog.at_level(logging.CRITICAL):
+            status = validate_llm_model("gpt-4-turbo-preview", "sk-x",
+                                        fetcher=lambda: {"gpt-5.1"})
+        assert status == "misconfigured"
+        assert any("not available" in r.getMessage().lower() for r in caplog.records)
+
+    def test_validate_model_no_key_unknown(self):
+        from src.core.llm_health import validate_llm_model
+        assert validate_llm_model("gpt-5.1", None) == "unknown"
+
+    def test_generation_maps_model_not_found_to_misconfigured(self):
+        """End-to-end: a 404 model error surfaces as degradation_reason."""
+        pytest.importorskip("openai")
+        pytest.importorskip("bs4")
+        import asyncio
+        import types
+        from src.core.ai_engine import TruthShieldAI, FactCheckResult
+
+        def _raise(*a, **k):
+            raise type("ModelNotFound", (Exception,), {
+                "status_code": 404, "body": {"error": {"code": "model_not_found"}},
+            })("model does not exist")
+
+        eng = TruthShieldAI()
+        eng.openai_client = types.SimpleNamespace(
+            chat=types.SimpleNamespace(
+                completions=types.SimpleNamespace(create=_raise)
+            )
+        )
+        fc = FactCheckResult(is_fake=False, confidence=None, explanation="x",
+                             category="analysis_unavailable", sources=[],
+                             processing_time_ms=1)
+        resp = asyncio.run(eng._generate_single_response("claim", fc, "GuardianAvatar", "en"))
+        assert resp.degraded is True
+        assert resp.degradation_reason == "llm_misconfigured"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

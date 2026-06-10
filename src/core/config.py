@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     news_api_key: Optional[str] = None
     claimbuster_api_key: Optional[str] = None
 
+    # LLM model selection — env-overridable ("model-agnostic", no hardcoding).
+    # IMPORTANT: verify the exact ids against your account before relying on the
+    # defaults — model ids change and old ones get retired:
+    #   curl -s https://api.openai.com/v1/models \
+    #     -H "Authorization: Bearer $OPENAI_API_KEY" \
+    #     | python -c "import json,sys;[print(m['id']) for m in json.load(sys.stdin)['data']]" | sort
+    # Override on the deployment (e.g. Render env) without a code change.
+    openai_model_generation: str = "gpt-5.1"          # persona / brand response generation
+    openai_model_classification: Optional[str] = "gpt-5.4-nano"  # claim analysis / extraction
+
     # Academic APIs
     core_api_key: Optional[str] = None  # CORE.ac.uk - free at https://core.ac.uk/services/api
     
@@ -75,7 +85,17 @@ class Settings(BaseSettings):
 
     # German Companies to Monitor
     default_companies: List[str] = ["vodafone", "bmw", "bayer", "deutsche_telekom"]
-    
+
+    @property
+    def classification_model(self) -> str:
+        """Model for classification/extraction subtasks.
+
+        Falls back to the generation model when the classification model is
+        unset, so a single OPENAI_MODEL_GENERATION env var is enough to switch
+        everything.
+        """
+        return self.openai_model_classification or self.openai_model_generation
+
     class Config:
         env_file = ".env"
         case_sensitive = False  # Erlaubt GOOGLE_API_KEY oder google_api_key
