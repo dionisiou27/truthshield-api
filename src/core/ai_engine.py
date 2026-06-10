@@ -30,6 +30,8 @@ from src.ml.guardian.source_ranker import (
 )
 from src.core.personas import COMPANY_PERSONAS
 from src.core.constraints import append_ai_disclosure
+from src.core.config import settings
+from src.core.llm_health import classify_llm_error
 from src.core.text_detection import (
     detect_political_astroturfing,
     detect_astroturfing_indicators,
@@ -748,7 +750,7 @@ The claim is part of a coordinated narrative campaign.
 
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
-                model="gpt-4-turbo-preview",  # Use GPT-4 for better analysis
+                model=settings.classification_model,  # claim analysis (env-configurable)
                 messages=[
                     {
                         "role": "system",
@@ -806,12 +808,14 @@ The claim is part of a coordinated narrative campaign.
 
         except Exception as e:
             # Full detail stays internal (ERROR log); never surfaced to the client.
-            logger.error(f"AI analysis failed: {e}")
+            reason = classify_llm_error(e)
+            logger.error(f"AI analysis failed [{reason}]: {e}")
             return {
                 "assessment": "error",
                 "reasoning": str(e),
                 "llm_ran": False,
                 "llm_error": True,
+                "degradation_reason": reason,
                 "red_flags": [],
                 "misinformation_indicators": []
             }
@@ -1369,7 +1373,9 @@ The claim is part of a coordinated narrative campaign.
             verdict.update({
                 "is_fake": True,
                 "category": "misinformation",
-                "confidence": max(verdict.get("confidence", 0.0), 0.95),
+                # Deterministic civic fact — confidence may be None in degraded
+                # mode; coalesce to 0.0 before max() to avoid a TypeError.
+                "confidence": max(verdict.get("confidence") or 0.0, 0.95),
                 "explanation": "Offizielles Ergebnis des Europäischen Parlaments vom 18. Juli 2024: Ursula von der Leyen wurde mit 401 Stimmen zur Kommissionspräsidentin gewählt."
             })
 
@@ -1429,7 +1435,8 @@ The claim is part of a coordinated narrative campaign.
             verdict.update({
                 "is_fake": True,
                 "category": "misinformation",
-                "confidence": max(verdict.get("confidence", 0.0), 0.97),
+                # Coalesce None (degraded mode) before max() to avoid a TypeError.
+                "confidence": max(verdict.get("confidence") or 0.0, 0.97),
                 "explanation": (
                     "The Bucha massacre is a documented war crime committed by Russian "
                     "armed forces during the occupation of Bucha in February–March 2022. "
@@ -1932,7 +1939,7 @@ The claim is part of a coordinated narrative campaign.
             
             response = await asyncio.to_thread(
                 self.openai_client.chat.completions.create,
-                model="gpt-4-turbo-preview",  # Use GPT-4 for better fact-based responses
+                model=settings.openai_model_generation,  # response generation (env-configurable)
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.4  # Lowered: fact-checking accuracy > creative diversity
             )
@@ -1958,9 +1965,10 @@ The claim is part of a coordinated narrative campaign.
             )
 
         except Exception as e:
-            # Full error stays internal (log + audit); client sees a generic reason.
-            reason = "llm_timeout" if "timeout" in str(e).lower() else "llm_error"
-            logger.error(f"Brand response generation failed: {e}")
+            # Full error stays internal (log + audit); client sees a generic
+            # category only (e.g. llm_misconfigured for a retired model id).
+            reason = classify_llm_error(e)
+            logger.error(f"Brand response generation failed [{reason}]: {e}")
             self._record_degradation(reason, company, str(e))
             return self._build_degraded_fallback(
                 fact_check, company, language, degradation_reason=reason

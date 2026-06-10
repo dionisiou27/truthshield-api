@@ -46,6 +46,16 @@ from src.core.constraints import verify_source_weights_integrity
 
 verify_source_weights_integrity()
 
+# Startup LLM-model validation: confirm the configured generation model is
+# actually available on the account. Does NOT abort startup (the API runs
+# degraded), but logs CRITICAL and surfaces `llm: misconfigured` on /health.
+from src.core.config import settings
+from src.core.llm_health import validate_llm_model
+
+LLM_MODEL_STATUS = validate_llm_model(
+    settings.openai_model_generation, os.getenv("OPENAI_API_KEY")
+)
+
 app = FastAPI(
     title="🛡️ TruthShield API",
     description="European AI Solution for Digital Information Integrity",
@@ -121,6 +131,8 @@ class HealthResponse(BaseModel):
     message: str
     version: str
     subsystems: dict
+    llm_model: str                 # configured generation model id
+    llm_model_status: str          # "ok" | "misconfigured" | "unknown"
 
 
 def _subsystem_status() -> dict:
@@ -139,8 +151,17 @@ def _subsystem_status() -> dict:
     def _configured(var: str) -> str:
         return "ok" if os.getenv(var) else "unconfigured"
 
+    # LLM: key missing -> unavailable; configured model not on account ->
+    # misconfigured (the dead-model case); otherwise ok.
+    if not os.getenv("OPENAI_API_KEY"):
+        llm = "unavailable"
+    elif LLM_MODEL_STATUS == "misconfigured":
+        llm = "misconfigured"
+    else:
+        llm = "ok"
+
     subsystems = {
-        "llm": "ok" if os.getenv("OPENAI_API_KEY") else "unavailable",
+        "llm": llm,
         "google_fact_check": _configured("GOOGLE_API_KEY"),
         "news_api": _configured("NEWS_API_KEY"),
         "claimbuster": _configured("CLAIMBUSTER_API_KEY"),
@@ -207,6 +228,8 @@ async def health_check():
         message=message,
         version="0.1.0",
         subsystems=subsystems,
+        llm_model=settings.openai_model_generation,
+        llm_model_status=LLM_MODEL_STATUS,
     )
 
 if os.getenv("ENVIRONMENT", "production").lower() == "development":
