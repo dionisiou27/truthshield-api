@@ -1,616 +1,562 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruthShield Technical Architecture</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            margin-top: 20px;
-            border-radius: 10px;
-        }
-        
-        .header {
-            text-align: center;
-            padding: 30px 0;
-            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
-        .section {
-            margin-bottom: 40px;
-            padding: 25px;
-            border-left: 5px solid #4ecdc4;
-            background: #f8f9fa;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .section:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .section h2 {
-            color: #2c3e50;
-            border-bottom: 2px solid #4ecdc4;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-        
-        .section h3 {
-            color: #34495e;
-            margin: 20px 0 10px 0;
-            font-size: 1.3em;
-        }
-        
-        .tech-stack {
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            margin: 15px 0;
-            overflow-x: auto;
-        }
-        
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-        
-        .metric-card {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        
-        .metric-card:hover {
-            transform: scale(1.05);
-        }
-        
-        .metric-card h4 {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-        
-        .metric-card .number {
-            font-size: 2em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .phase {
-            background: white;
-            border: 2px solid #4ecdc4;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 15px 0;
-            position: relative;
-        }
-        
-        .phase::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: 20px;
-            background: #4ecdc4;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        
-        .phase-1::before { content: 'PHASE 1: MVP'; }
-        .phase-2::before { content: 'PHASE 2: EU COMPLIANCE'; }
-        .phase-3::before { content: 'PHASE 3: SCALE'; }
-        
-        .partnership-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-        
-        .partnership-card {
-            background: white;
-            border: 2px solid #e74c3c;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .partnership-card h4 {
-            color: #e74c3c;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-        
-        .feature-list {
-            list-style: none;
-            padding: 0;
-        }
-        
-        .feature-list li {
-            background: #ecf0f1;
-            margin: 8px 0;
-            padding: 10px 15px;
-            border-radius: 5px;
-            border-left: 4px solid #4ecdc4;
-        }
-        
-        .feature-list li::before {
-            content: '✅ ';
-            color: #27ae60;
-            font-weight: bold;
-        }
-        
-        .contact-section {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: rgb(8, 8, 8);
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 40px;
-        }
-        
-        .contact-section h2 {
-            border-bottom: 2px solid #4ecdc4;
-            display: inline-block;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .demo-section {
-            background: linear-gradient(135deg, #ff6b6b, #ffa500);
-            color: white;
-            padding: 25px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        .demo-section h3 {
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-        
-        .vitaly-easter-egg {
-            background: #ffe5e5;
-            border: 2px solid #ff6b6b;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .vitaly-easter-egg h4 {
-            color: #c0392b;
-            margin-bottom: 10px;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 15px;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-            
-            .metric-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TruthShield · System Architecture</title>
+<meta name="description" content="How TruthShield detects coordinated disinformation and answers it — human-gated, machine-paced.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#298DFF; --blue2:#5CA9FF; --blue3:#8FCBFF;
+  --orange:#FF6C3D; --navy:#011829;
+  --g1:#222529; --g2:#343940; --g3:#4B515B; --g4:#67707E; --g5:#89919F; --g6:#A1A7B2; --g7:#C2C6CD;
+  --card-d:#15181D;
+  --line:#C2C6CD; --mut:#67707E; --card:#FFFFFF;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
+  --cubic:cubic-bezier(.51,0,.08,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scrollbar-width:none}
+body{background:#fff;color:#000;font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::-webkit-scrollbar,body ::-webkit-scrollbar{display:none}
+::selection{background:#000;color:#fff}
+.dark ::selection,.hero ::selection{background:#fff;color:#000}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit}
+img,svg{vertical-align:middle}
+.mono{font-family:var(--mono)}
+
+/* ---------- scheme scopes ---------- */
+.dark{background:#000;color:#fff;--line:#343940;--mut:#89919F;--card:var(--card-d)}
+
+/* ---------- layout ---------- */
+section{padding:96px 24px;scroll-margin-top:96px}
+.wrap{max-width:1240px;margin:0 auto}
+h2{font-size:clamp(34px,5vw,58px);font-weight:500;letter-spacing:-.02em;line-height:1.04;margin:0 0 6px}
+h3{font-size:clamp(18px,2.2vw,24px);font-weight:500;letter-spacing:-.01em;margin:46px 0 10px}
+.sec-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.numbox{font-family:var(--mono);font-size:12px;border:1px solid var(--line);padding:5px 9px}
+.cat{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.lead{display:flex;gap:10px;margin-top:14px;max-width:72ch}
+.lead p{font-size:16px;color:var(--mut);line-height:1.6}
+.lead .sq{margin-top:6px}
+.sq{width:12px;height:12px;background:var(--blue);flex:none;display:inline-block}
+
+/* dotted line, Sui 2/8 pattern */
+.dotline{height:2px;border:0;background-image:linear-gradient(90deg,var(--line) 0 2px,transparent 2px 10px);background-size:10px 2px;background-repeat:repeat-x}
+
+/* dotted frame (Sui data-dotted-frame) */
+.frame{position:relative;padding:24px;margin:18px 0;background:
+  linear-gradient(90deg,var(--line) 0 2px,transparent 2px 10px) left top/10px 2px repeat-x,
+  linear-gradient(90deg,var(--line) 0 2px,transparent 2px 10px) left bottom/10px 2px repeat-x,
+  linear-gradient(180deg,var(--line) 0 2px,transparent 2px 10px) left top/2px 10px repeat-y,
+  linear-gradient(180deg,var(--line) 0 2px,transparent 2px 10px) right top/2px 10px repeat-y}
+.frame::before,.frame::after{content:"";position:absolute;top:-3px;width:7px;height:7px;background:var(--blue)}
+.frame::before{left:-3px}.frame::after{right:-3px}
+.cap{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:12px;display:block}
+.gridnote{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:12px;line-height:1.6}
+
+/* ---------- buttons ---------- */
+.cta{display:inline-flex;align-items:center;gap:10px;background:var(--blue);color:#fff;border:0;cursor:pointer;
+ font-family:var(--mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;padding:14px 22px;
+ transition:background .4s cubic-bezier(.16,1,.3,1),color .4s cubic-bezier(.16,1,.3,1)}
+.cta:hover{background:#000;color:#fff}
+.dark .cta:hover,.hero .cta:hover,nav .cta:hover{background:#fff;color:#000}
+.cta.ghost{background:transparent;border:1px solid var(--g3);color:#fff}
+.cta.ghost:hover{background:#fff;color:#000;border-color:#fff}
+.cta.sm{padding:10px 16px;font-size:11px}
+.cta:disabled{opacity:.5;cursor:default}
+
+/* arrow with Sui slide-swap hover */
+.arrbox{display:inline-flex;overflow:hidden;width:13px;height:11px;flex:none}
+.arrbox svg{width:13px;height:11px}
+.arrbox path{transition:transform .375s var(--cubic)}
+.arrbox path:first-child{transform:translateX(-200%)}
+a:hover .arrbox path:first-child,button:hover .arrbox path:first-child{transform:translateX(0)}
+a:hover .arrbox path:nth-child(2),button:hover .arrbox path:nth-child(2){transform:translateX(200%)}
+
+/* ---------- banner + nav + progress ---------- */
+#progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--blue);z-index:99}
+.banner{background:var(--navy);color:#fff;display:flex;justify-content:center;align-items:center;gap:14px;padding:9px 16px;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em}
+.banner a{color:var(--blue3)}
+.banner a:hover{color:#fff}
+.banner button{background:none;border:0;cursor:pointer;font-size:12px;color:var(--g6)}
+.banner button:hover{color:#fff}
+nav{position:sticky;top:0;z-index:90;background:rgba(1,24,41,.93);backdrop-filter:blur(10px);color:#fff;
+ display:flex;align-items:center;gap:20px;padding:13px 24px;font-family:var(--mono);font-size:12px;flex-wrap:wrap;
+ border-bottom:1px solid rgba(52,57,64,.6)}
+nav .brand{font-weight:600;letter-spacing:.08em}
+nav a:not(.cta){color:var(--g6);letter-spacing:.06em;transition:color .3s}
+nav a:not(.cta):hover,nav a:not(.cta):focus-visible{color:#fff}
+nav .cta{margin-left:auto}
+
+/* ---------- hero ---------- */
+.hero{position:relative;background:var(--navy);color:#fff;min-height:92vh;display:flex;align-items:center;justify-content:center;
+ text-align:center;overflow:hidden;padding:90px 24px;--line:#1E3A57;--mut:var(--g6)}
+.ball{position:absolute;border-radius:50%;pointer-events:none;filter:blur(clamp(60px,12vw,160px))}
+.b1{width:55vw;height:55vw;min-width:420px;min-height:420px;background:var(--blue);opacity:.30;top:-18%;left:-12%}
+.b2{width:48vw;height:48vw;min-width:380px;min-height:380px;background:#03335C;opacity:.85;bottom:-28%;right:-10%}
+#meshcv{position:absolute;inset:0;width:100%;height:100%}
+.hero-inner{position:relative;z-index:2;max-width:1020px}
+.hero .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;color:var(--blue3);text-transform:uppercase}
+.hero h1{font-size:clamp(40px,7.4vw,86px);font-weight:500;letter-spacing:-.03em;line-height:1.02;margin:18px 0 16px}
+.sharp{--tx:50%;--ty:50%;
+ background-image:radial-gradient(circle at var(--tx) var(--ty),#fff 0%,#fff 42%,var(--blue) 82%,rgba(41,141,255,.15) 97%);
+ -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.hero .sub{color:var(--g6);font-size:clamp(15px,1.6vw,18px);max-width:60ch;margin:0 auto}
+.opmode{display:inline-flex;align-items:center;gap:10px;margin-top:24px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;border:1px solid var(--g3);padding:9px 16px}
+.opmode .sq{width:8px;height:8px}
+.hero-ctas{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+.counters{display:flex;gap:clamp(24px,5vw,64px);justify-content:center;flex-wrap:wrap;margin-top:46px;padding-top:26px;
+ background-image:linear-gradient(90deg,var(--g3) 0 2px,transparent 2px 10px);background-size:10px 2px;background-repeat:repeat-x;background-position:left top}
+.counters .n{font-size:clamp(28px,4vw,46px);font-weight:500;letter-spacing:-.02em}
+.counters .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--g5);text-transform:uppercase;margin-top:4px}
+
+/* ---------- marquee ---------- */
+.marq{background:#000;color:#fff;overflow:hidden;padding:17px 0;border-bottom:1px solid var(--g2)}
+.mtrack{display:flex;width:max-content;animation:marq 38s linear infinite}
+.mgroup{display:flex;align-items:center;gap:34px;padding-right:34px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;white-space:nowrap}
+.mgroup .sq{width:7px;height:7px}
+@keyframes marq{to{transform:translateX(-50%)}}
+
+/* ---------- reveal ---------- */
+.rev{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.rev.in{opacity:1;transform:none}
+
+/* ---------- svg text ---------- */
+svg{display:block;max-width:100%;height:auto}
+.arrbox svg,.elb{display:inline-block}
+svg text{font-family:var(--mono);fill:currentColor}
+.s11{font-size:11px}.s12{font-size:12px}.s13{font-size:13px}.bold{font-weight:700}
+.smut{fill:var(--mut)}.sblue{fill:var(--blue)}.sblue2{fill:var(--blue2)}.sorange{fill:var(--orange)}
+.flowline{stroke-dasharray:8 7;animation:dash 1.2s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-15}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+.pulse{animation:pulse 2.2s ease-in-out infinite}
+
+/* ---------- detection: radar + terminal ---------- */
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.radwrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.radar{position:relative;width:225px;height:225px;border-radius:50%;border:1px solid var(--g2);margin:0 auto;
+ background:radial-gradient(circle,rgba(41,141,255,.10) 0%,transparent 70%)}
+.radar::before{content:"";position:absolute;inset:0;border-radius:50%;
+ background:conic-gradient(from 0deg,rgba(41,141,255,.55) 0deg,transparent 70deg);animation:sweep 3.4s linear infinite}
+.radar .ring{position:absolute;border:1px dashed var(--g2);border-radius:50%}
+.radar .r1{inset:34px}.radar .r2{inset:72px}
+.radar .blip{position:absolute;width:9px;height:9px;background:var(--orange);box-shadow:0 0 12px var(--orange);animation:pulse 2s infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.term{background:var(--navy);border:1px solid var(--g2);font-family:var(--mono);font-size:12.5px;padding:16px;min-height:186px;color:var(--g7)}
+.term .ln{display:block;white-space:pre-wrap}
+.term .cur::after{content:"▋";animation:pulse 1s infinite}
+.term .red{color:var(--orange)}.term .blu{color:var(--blue2)}.term .gld{color:#fff}
+
+/* ---------- IO chips + gauge ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.chip{font-family:var(--mono);font-size:12px;border:1px solid var(--g2);background:var(--card-d);color:#fff;padding:9px 13px;cursor:pointer;transition:border-color .25s,background .25s}
+.chip small{color:var(--g5);margin-left:6px}
+.chip:hover{border-color:var(--blue)}
+.chip.on{border-color:var(--orange);background:rgba(255,108,61,.13)}
+.gauge{height:18px;background:var(--card-d);border:1px solid var(--g2);position:relative;margin-top:16px;overflow:hidden}
+.gauge .fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue2),var(--orange));transition:width .45s cubic-bezier(.2,.7,.2,1)}
+.gauge .th{position:absolute;top:-5px;bottom:-5px;left:45%;width:2px;background:#fff}
+.gauge-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--g5);margin-top:7px}
+#ioVerdict{font-family:var(--mono);font-size:13px;margin-top:12px}
+#ioVerdict b{color:var(--blue2)}
+#ioVerdict.armed b{color:var(--orange)}
+
+/* ---------- accordion ---------- */
+details{background-image:linear-gradient(90deg,var(--line) 0 2px,transparent 2px 10px);background-size:10px 2px;background-repeat:repeat-x;background-position:left bottom}
+summary{cursor:pointer;padding:16px 4px;font-family:var(--mono);font-size:13px;list-style:none;display:flex;gap:12px;align-items:center;letter-spacing:.02em}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:11px;height:11px;flex:none;transition:transform .25s;background:
+ linear-gradient(transparent 4.5px,var(--blue) 4.5px,var(--blue) 6.5px,transparent 6.5px),
+ linear-gradient(90deg,transparent 4.5px,var(--blue) 4.5px,var(--blue) 6.5px,transparent 6.5px)}
+details[open] summary::before{transform:rotate(45deg)}
+details .body{padding:0 4px 16px 23px;color:var(--mut);font-size:14px;max-width:78ch;line-height:1.6}
+
+/* ---------- personas ---------- */
+.claimline{font-family:var(--mono);font-size:12px;color:var(--mut)}
+.claimline .claim{color:inherit;font-weight:600}
+section:not(.dark) .claimline .claim{color:#000}
+.pselect{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.pbtn{font-family:var(--mono);font-size:12px;letter-spacing:.08em;border:1px solid var(--g7);background:#fff;color:#000;padding:11px 16px;cursor:pointer;transition:background .3s,color .3s,border-color .3s}
+.pbtn:hover{border-color:var(--blue);color:var(--blue)}
+.pbtn.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+.reply{border:1px solid var(--g7);border-left:4px solid var(--blue);background:#fff;padding:18px 20px;min-height:128px;transition:opacity .25s}
+.reply .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--g4);text-transform:uppercase;margin-bottom:8px}
+.reply .txt{font-size:15.5px;line-height:1.55}
+.reply .src{font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:10px}
+.reply.fade{opacity:0}
+
+/* ---------- mode router ---------- */
+.router{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:14px}
+.lbl{font-family:var(--mono);color:var(--g4);letter-spacing:.12em;font-size:10.5px;margin-bottom:8px;text-transform:uppercase}
+.opt{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--g7);color:#000;padding:11px 13px;margin-bottom:8px;cursor:pointer;font-family:var(--mono);font-size:12px;transition:border-color .25s,background .25s}
+.opt:hover{border-color:var(--blue)}
+.opt.sel{border-color:var(--blue);background:#EAF3FF}
+.mode-out{border:2px solid var(--blue);background:#F4F9FF;padding:18px;font-family:var(--mono)}
+.mode-out .m{font-size:15px;font-weight:600;color:var(--blue);letter-spacing:.06em}
+.mode-out .x{font-family:var(--sans);font-size:14px;color:var(--g3);margin-top:8px;line-height:1.5}
+
+/* ---------- source tiers ---------- */
+.tiers{display:grid;gap:9px;margin-top:14px}
+.tier{display:grid;grid-template-columns:200px 1fr 56px;gap:12px;align-items:center;font-family:var(--mono);font-size:12px}
+.tier .track{height:12px;background:#F2F3F5;border:1px solid var(--g7);overflow:hidden}
+.tier .fill{height:100%;width:0;background:var(--blue);transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+.tiers.in .fill{width:var(--w)}
+
+/* ---------- bandit ---------- */
+.bandit{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:14px}
+.arm{border:1px solid var(--g7);background:#fff;padding:14px;text-align:center;font-family:var(--mono)}
+.arm .t{font-size:12px;letter-spacing:.1em}
+.arm .bar{height:84px;display:flex;align-items:flex-end;justify-content:center;margin:10px 0 6px}
+.arm .col{width:34px;background:linear-gradient(180deg,var(--blue),rgba(41,141,255,.25));height:10%;transition:height 1.2s cubic-bezier(.2,.7,.2,1)}
+.arm .v{font-size:11px;color:var(--g4)}
+.rewardbox{font-family:var(--mono);font-size:12.5px;background:var(--navy);color:#C2D8EE;padding:15px 17px;margin-top:14px;overflow-x:auto;white-space:pre}
+.rewardbox .neg{color:#FF9C78}.rewardbox .pos{color:var(--blue3)}
+
+/* ---------- constitutional gate ---------- */
+.gate{display:flex;align-items:stretch;gap:0;margin:18px 0;flex-wrap:wrap}
+.gate .stage{flex:1 1 150px;background:#fff;border:1px solid var(--g7);padding:15px;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+.gate .stage small{display:block;color:var(--g4);font-size:10px;margin-top:6px;letter-spacing:0}
+.gate .conn{width:46px;flex:0 0 46px;align-self:center;height:2px;position:relative;
+ background-image:linear-gradient(90deg,var(--g7) 0 2px,transparent 2px 10px);background-size:10px 2px;background-repeat:repeat-x}
+.gate .conn::after{content:"";position:absolute;top:-3px;left:0;width:8px;height:8px;background:var(--blue);animation:travel 2.2s linear infinite}
+@keyframes travel{to{transform:translateX(40px)}}
+.gate .human{border:2px solid var(--orange)}
+.gate .human b{color:var(--orange)}
+
+/* ---------- tempo bars ---------- */
+.bars{display:grid;gap:12px;margin-top:14px}
+.bar{display:grid;grid-template-columns:220px 1fr 70px;align-items:center;gap:12px;font-family:var(--mono);font-size:12px}
+.bar .track{height:10px;background:#F2F3F5;border:1px solid var(--g7);overflow:hidden}
+.bar .fill{height:100%;width:0;transition:width 1.4s cubic-bezier(.2,.7,.2,1)}
+.bar.in .f1{width:2%;background:var(--blue)}
+.bar.in .f2{width:6%;background:var(--blue2)}
+.bar.in .f3{width:96%;background:var(--orange)}
+
+/* ---------- mesh sim ---------- */
+#waveLog{font-family:var(--mono);font-size:12px;color:var(--g5);margin-top:12px;min-height:54px}
+#waveLog .e{display:block;padding:2px 0}
+.node-c{fill:var(--card-d);stroke:var(--g3);stroke-width:2;transition:stroke .3s,fill .3s}
+.node-c.hit{stroke:var(--orange);stroke-width:3}
+.node-c.armed{stroke:var(--blue2);stroke-width:3}
+.node-c.def{fill:var(--blue);stroke:var(--blue)}
+.sigdot{opacity:0}
+.sigdot.run{animation:sig 2.2s linear forwards}
+@keyframes sig{0%{offset-distance:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+
+/* ---------- constraints split ---------- */
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:14px}
+.split .box{padding:20px;font-family:var(--mono);font-size:13px}
+.split .mu{background:#EAF3FF;border:2px solid var(--blue)}
+.split .im{background:#FFF0EA;border:2px solid var(--orange)}
+.split h4{font-size:12px;letter-spacing:.14em;margin-bottom:12px}
+.split ul{list-style:none}
+.split li{padding:4px 0;color:var(--g3);font-size:12.5px}
+.split li::before{content:"— ";color:#000}
+
+/* ---------- footer ---------- */
+footer{padding:72px 24px 40px}
+.f-tag{font-size:clamp(26px,4vw,44px);font-weight:500;letter-spacing:-.02em;line-height:1.12;max-width:16ch}
+.f-sub{color:var(--g5);font-size:14px;max-width:54ch;margin-top:16px;line-height:1.6}
+.f-grid{display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:40px}
+.f-h{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--g5);margin-bottom:14px}
+.f-link{display:flex;gap:10px;align-items:center;padding:5px 0;font-size:14px;color:var(--g6);transition:color .3s}
+.f-link:hover{color:#fff}
+.elb{width:18px;flex:none;color:var(--g4);transition:color .3s}
+.f-link:hover .elb{color:var(--blue)}
+.f-bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--g5);margin-top:54px;padding-top:22px;
+ background-image:linear-gradient(90deg,var(--g2) 0 2px,transparent 2px 10px);background-size:10px 2px;background-repeat:repeat-x;background-position:left top}
+
+/* ---------- responsive + motion ---------- */
+@media (max-width:880px){.f-grid{grid-template-columns:1fr;gap:28px}}
+@media (max-width:680px){
+ section{padding:72px 18px}
+ .bar,.tier{grid-template-columns:1fr;gap:4px}
+ .gate .conn{display:none}
+ nav{gap:12px;font-size:11px}
+ .router{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+ *,*::before,*::after{animation:none!important;transition:none!important}
+ html{scroll-behavior:auto}
+ .rev{opacity:1;transform:none}
+ .tier .fill{width:var(--w)}
+ .bar .f1{width:2%;background:var(--blue)}
+ .bar .f2{width:6%;background:var(--blue2)}
+ .bar .f3{width:96%;background:var(--orange)}
+ .mgroup[aria-hidden]{display:none}
+ .sharp{background-image:radial-gradient(circle at 50% 42%,#fff 0%,#fff 46%,var(--blue) 90%)}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🛡️ TruthShield</h1>
-            <p>The Digital Charlie Chaplin - Technical Architecture</p>
-            <p><em>"Making Democracy More Entertaining Than Authoritarianism"</em></p>
+<div id="progress"></div>
+
+<div class="banner" id="banner">
+  <span>PRE-REGISTERED ADVERSARIAL SIMULATION&nbsp;·&nbsp;<a href="https://osf.io/95jm2" target="_blank" rel="noopener">OSF.IO/95JM2</a></span>
+  <button id="bannerX" aria-label="Dismiss banner">✕</button>
+</div>
+
+<nav>
+  <span class="brand">TRUTHSHIELD/ARCHITECTURE</span>
+  <a href="#gap">THE GAP</a>
+  <a href="#detection">01 DETECTION</a>
+  <a href="#intervention">02 INTERVENTION</a>
+  <a href="#mesh">03 MESH</a>
+  <a href="#constraints">04 CONSTRAINTS</a>
+  <a class="cta sm" href="mailto:contact@truthshield.eu">CONTACT
+    <span class="arrbox" aria-hidden="true"><svg viewBox="0 0 13 11" fill="none"><path d="M0 4.63h10.92L7.21 1.87V0l5.53 4.12v2.56L7.21 10.75V8.89l3.75-2.76H0z" fill="currentColor"/><path d="M0 4.63h10.92L7.21 1.87V0l5.53 4.12v2.56L7.21 10.75V8.89l3.75-2.76H0z" fill="currentColor"/></svg></span>
+  </a>
+</nav>
+
+<header class="hero">
+  <div class="ball b1" aria-hidden="true"></div>
+  <div class="ball b2" aria-hidden="true"></div>
+  <canvas id="meshcv" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <div class="kicker">System Architecture · TRL 4 · Mesh Edition</div>
+    <h1 class="sharp" id="heroH">They fabricate consensus.<br>We restore it.</h1>
+    <p class="sub">How a node detects a coordinated disinformation wave in seconds — and answers it with a declared, sourced, recognisable voice.</p>
+    <div><span class="opmode"><span class="sq" aria-hidden="true"></span>HUMAN-GATED · MACHINE-PACED</span></div>
+    <div class="hero-ctas">
+      <a class="cta" href="#gap">EXPLORE THE SYSTEM
+        <span class="arrbox" aria-hidden="true"><svg viewBox="0 0 13 11" fill="none"><path d="M0 4.63h10.92L7.21 1.87V0l5.53 4.12v2.56L7.21 10.75V8.89l3.75-2.76H0z" fill="currentColor"/><path d="M0 4.63h10.92L7.21 1.87V0l5.53 4.12v2.56L7.21 10.75V8.89l3.75-2.76H0z" fill="currentColor"/></svg></span>
+      </a>
+      <a class="cta ghost" href="mailto:contact@truthshield.eu">CONTACT@TRUTHSHIELD.EU</a>
+    </div>
+    <div class="counters" id="counters">
+      <div class="c"><div class="n" data-n="5" data-suf=" s">0</div><div class="l">candidate generation</div></div>
+      <div class="c"><div class="n" data-n="87" data-suf=" s">0</div><div class="l">human review</div></div>
+      <div class="c"><div class="n" data-n="1247" data-suf="">0</div><div class="l">pre-registered claims</div></div>
+      <div class="c"><div class="n" data-n="75" data-suf="+">0</div><div class="l">whitelisted domains</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="marq dark" aria-label="System facts">
+  <div class="mtrack">
+    <div class="mgroup"><span>HUMAN-GATED</span><span class="sq"></span><span>MACHINE-PACED</span><span class="sq"></span><span>5 S CANDIDATE GENERATION</span><span class="sq"></span><span>87 S HUMAN REVIEW</span><span class="sq"></span><span>1247 PRE-REGISTERED CLAIMS</span><span class="sq"></span><span>75+ WHITELISTED DOMAINS</span><span class="sq"></span><span>5 PERSONAS</span><span class="sq"></span><span>4 RESPONSE MODES</span><span class="sq"></span><span>IO THRESHOLD 0.45</span><span class="sq"></span><span>TRL 4</span><span class="sq"></span></div>
+    <div class="mgroup" aria-hidden="true"><span>HUMAN-GATED</span><span class="sq"></span><span>MACHINE-PACED</span><span class="sq"></span><span>5 S CANDIDATE GENERATION</span><span class="sq"></span><span>87 S HUMAN REVIEW</span><span class="sq"></span><span>1247 PRE-REGISTERED CLAIMS</span><span class="sq"></span><span>75+ WHITELISTED DOMAINS</span><span class="sq"></span><span>5 PERSONAS</span><span class="sq"></span><span>4 RESPONSE MODES</span><span class="sq"></span><span>IO THRESHOLD 0.45</span><span class="sq"></span><span>TRL 4</span><span class="sq"></span></div>
+  </div>
+</div>
+
+<!-- ===== 00 THE GAP ===== -->
+<section id="gap">
+  <div class="wrap">
+    <div class="sec-head rev"><span class="numbox">00</span><span class="cat">Why this exists/</span></div>
+    <h2 class="rev">The Visibility Gap</h2>
+    <div class="lead rev"><span class="sq" aria-hidden="true"></span><p>Verification capacity and algorithmic reach are decoupled. Defenders verify rigorously and reach no one; attackers verify nothing and reach everyone. The high-verification / high-reach quadrant is empty — TruthShield is built to occupy it without becoming the thing it counters.</p></div>
+    <figure class="frame rev">
+      <svg viewBox="0 0 940 360" role="img" aria-label="Visibility gap quadrants">
+        <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#000"/></marker></defs>
+        <line x1="110" y1="40" x2="110" y2="310" stroke="#000" stroke-width="2"/>
+        <line x1="110" y1="310" x2="900" y2="310" stroke="#000" stroke-width="2"/>
+        <text x="64" y="175" class="s11 bold" transform="rotate(-90 64 175)" text-anchor="middle">VERIFICATION →</text>
+        <text x="505" y="345" class="s11 bold" text-anchor="middle">ALGORITHMIC REACH →</text>
+        <rect x="125" y="52" width="370" height="115" fill="#EEF0F2"/>
+        <text x="143" y="80" class="s12 bold">Q II · institutions + fact-checkers</text>
+        <text x="143" y="100" class="s11 smut">rigorous · slow · socially inert</text>
+        <text x="143" y="124" class="s11 sorange">Community Notes: 6% published · 26 h median</text>
+        <rect x="515" y="52" width="370" height="115" fill="none" stroke="#298DFF" stroke-width="2.5"/>
+        <text x="533" y="80" class="s12 bold sblue">Q I · target configuration</text>
+        <text x="533" y="100" class="s11 smut">verified + visible · in-thread · at narrative speed</text>
+        <text x="533" y="124" class="s12 bold sblue">→ TRUTHSHIELD</text>
+        <rect x="515" y="180" width="370" height="115" fill="#FFE9E0"/>
+        <text x="533" y="208" class="s12 bold sorange">Q III · offensive architecture</text>
+        <text x="533" y="228" class="s11 smut">five-persona clusters · 85k users in 7 days</text>
+        <text x="533" y="248" class="s11 smut">fast · viral · epistemically empty</text>
+        <path d="M 310 175 Q 505 235 690 175" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="3 4" marker-end="url(#ah)"/>
+        <text x="505" y="196" class="s11 bold" text-anchor="middle">the deception lives in that gap</text>
+      </svg>
+    </figure>
+  </div>
+</section>
+
+<!-- ===== 01 DETECTION ===== -->
+<section id="detection" class="dark">
+  <div class="wrap">
+    <div class="sec-head rev"><span class="numbox">01</span><span class="cat">Layer one + two of the node/</span></div>
+    <h2 class="rev">How Detection Works</h2>
+    <div class="lead rev"><span class="sq" aria-hidden="true"></span><p>Multi-channel ingest, claim routing, temporal assessment, probabilistic IO scoring — then the Lighthouse decision: of everything false, what is actually <b>visible</b>?</p></div>
+
+    <div class="duo rev" style="margin-top:26px">
+      <figure class="frame radwrap">
+        <div class="radar" role="img" aria-label="Continuous scan with coordinated-pattern blips">
+          <div class="ring r1"></div><div class="ring r2"></div>
+          <div class="blip" style="top:38px;left:126px"></div>
+          <div class="blip" style="top:118px;left:58px;animation-delay:.7s"></div>
+          <div class="blip" style="top:156px;left:148px;animation-delay:1.3s"></div>
         </div>
-
-        <div class="section">
-            <h2>🎯 Executive Summary</h2>
-            <p>TruthShield combines AI humor generation with institutional fact-checking to create viral truth distribution networks. Our approach: make democracy more entertaining than authoritarianism through superior memes and institutional partnerships.</p>
-            
-            <div class="demo-section">
-                <h3>🚀 Key Innovation</h3>
-                <p>First AI fact-checking influencer system with academic backing and EU compliance roadmap</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>🏗️ System Architecture</h2>
-            <div class="tech-stack">
-🎭 TruthShield Core Engine
-├── 🤖 AI Humor Engine (LLM + Brand Personalities)
-├── 🔍 Misinformation Detection (Hybrid: Local DB + Expert Network)
-├── 🌐 Source Verification (Academic + Real-time)
-├── 🎯 Company Persona Manager (Multi-brand voice training)
-├── 📱 TikTok Deployment Engine (Viral content optimization)
-└── 📊 Analytics & Viral Growth Tracking
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>🤖 AI Humor Engine</h2>
-            
-            <div class="phase phase-1">
-                <h3>Phase 1: Speed to Market (MVP)</h3>
-                <ul class="feature-list">
-                    <li>Primary LLM: OpenAI GPT-3.5-turbo</li>
-                    <li>Backup: Anthropic Claude</li>
-                    <li>Deployment: API-based for rapid iteration</li>
-                    <li>Timeline: Ready for August 2024 EU AI Act deadline</li>
-                </ul>
-            </div>
-
-            <div class="phase phase-2">
-                <h3>Phase 2: EU Sovereignty (Post-MVP)</h3>
-                <ul class="feature-list">
-                    <li>Target LLM: Fine-tuned Mixtral 8x7B</li>
-                    <li>Infrastructure: Forschungszentrum Jülich supercomputing</li>
-                    <li>Deployment: German cloud (Hetzner/OVH)</li>
-                    <li>Compliance: Full EU AI Act compliance</li>
-                </ul>
-            </div>
-
-            <h3>Brand Personality Examples</h3>
-            <div class="metric-grid">
-                <div class="metric-card">
-                    <h4>🚗 BMW</h4>
-                    <p>"Engineering precision meets approachable humor"</p>
-                </div>
-                <div class="metric-card">
-                    <h4>📡 Vodafone</h4>
-                    <p>"Tech-savvy, forward-thinking, educational"</p>
-                </div>
-                <div class="metric-card">
-                    <h4>💊 Bayer</h4>
-                    <p>"Scientific authority with caring communication"</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>🔍 Misinformation Detection Pipeline</h2>
-            
-            <div class="tech-stack">
-Detection Sources:
-├── Local Wikipedia Database (static facts, fast lookup)
-├── Academic Validation (Stanford University collaboration)
-├── Real-time Monitoring (viral content prioritization)
-└── Human Oversight (final approval in MVP phase)
-            </div>
-
-            <h3>🏛️ Institutional Partnerships(Dream-Team)</h3>
-            <div class="partnership-grid">
-                <div class="partnership-card">                    
-                    <ul class="feature-list">
-                        <li>TikTok institutional access</li>
-                        <li>Expert consultation network</li>
-                        <li>AI ethics guidance</li>
-                    </ul>
-                </div>
-                <div class="partnership-card">
-                    <h4>🎓 Stanford University</h4>
-                    <ul class="feature-list">
-                        <li>Fact database validation</li>
-                        <li>International credibility</li>
-                        <li>Research opportunities</li>
-                    </ul>
-                </div>
-                <div class="partnership-card">
-                    <h4>🎓 Forschungszentrum Jülich</h4>
-                    <ul class="feature-list">
-                        <li>EU-compliant supercomputing</li>
-                        <li>German digital sovereignty</li>
-                        <li>Advanced AI infrastructure</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>📱 Platform Deployment Strategy</h2>
-            
-            <div class="phase phase-1">
-                <h3>MVP Focus: TikTok Mastery</h3>
-                <div class="tech-stack">
-Platform Strategy:
-├── TikTok ONLY (learn before expanding)
-├── 2 Brand Accounts Maximum
-├── Policy Compliance Research
-└── Viral Growth Optimization
-                </div>
-            </div>
-
-            <h3>📊 Content Strategy</h3>
-            <ul class="feature-list">
-                <li>Quick Responses: Viral misinformation counter-attacks</li>
-                <li>Educational Content: Own stories and FAQ format</li>
-                <li>Brand Battles: Cross-brand engagement for virality</li>
-                <li>Format Flexibility: Video length adapts to urgency</li>
-            </ul>
-
-            <div class="vitaly-easter-egg">
-                <h4>🎭 The Vitaly Strategy</h4>
-                <p><strong>Special responses for our St. Petersburg colleagues:</strong></p>
-                <p><em>"Hey Vitaly, nice try bot! Now show me a receipt about your delicious Borscht soup! 🍲"</em></p>
-                <p><strong>Goal:</strong> Make Russian trolls question their career choices.</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>📊 Analytics & Success Metrics</h2>
-            
-            <h3>Primary Success Indicators</h3>
-            <div class="metric-grid">
-                <div class="metric-card">
-                    <h4>👥 Follower Growth</h4>
-                    <div class="number">100K+</div>
-                    <p>Target within 6 months</p>
-                </div>
-                <div class="metric-card">
-                    <h4>💗 Engagement Rate</h4>
-                    <div class="number">10%+</div>
-                    <p>Shares, saves, comments</p>
-                </div>
-                <div class="metric-card">
-                    <h4>🎯 Viral Content</h4>
-                    <div class="number">1M+</div>
-                    <p>Reach per fact-check</p>
-                </div>
-                <div class="metric-card">
-                    <h4>💰 ROI Value</h4>
-                    <div class="number">€3M</div>
-                    <p>Crisis prevention value</p>
-                </div>
-            </div>
-
-            <h3>The Win-Win-Win Strategy</h3>
-            <ul class="feature-list">
-                <li>TikTok: Educational viral content (algorithm boost)</li>
-                <li>Brands: Crisis prevention + marketing value</li>
-                <li>Democracy: Truth becomes more entertaining than lies</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h2>🚀 Implementation Roadmap</h2>
-            
-            <div class="phase phase-1">
-                <h3>Phase 1: MVP Launch (3-6 months)</h3>
-                <div class="tech-stack">
-Technical Milestones:
-├── Week 1-2: TikTok policy research 
-├── Week 3-4: BMW + Vodafone personality training
-├── Week 5-6: Wikipedia database integration
-├── Week 7-8: Expert consultation workflow
-├── Week 9-10: TikTok deployment testing
-├── Week 11-12: Viral growth optimization
-└── Month 3-6: Scale to 100K followers
-                </div>
-            </div>
-
-            <div class="phase phase-2">
-                <h3>Phase 2: EU Compliance (6-12 months)</h3>
-                <ul class="feature-list">
-                    <li>Jülich partnership establishment</li>
-                    <li>EU model training and deployment</li>
-                    <li>German cloud infrastructure setup</li>
-                    <li>GDPR compliance implementation</li>
-                    <li>AI Act transparency features</li>
-                </ul>
-            </div>
-
-            <div class="phase phase-3">
-                <h3>Phase 3: Platform Expansion (12-18 months)</h3>
-                <ul class="feature-list">
-                    <li>Twitter/X integration</li>
-                    <li>LinkedIn B2B expansion</li>
-                    <li>Cross-platform coordination</li>
-                    <li>International market entry</li>
-                    <li>Government partnership opportunities</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>💰 Resource Requirements</h2>
-            
-            <h3>MVP Infrastructure Costs</h3>
-            <div class="metric-grid">
-                <div class="metric-card">
-                    <h4>🤖 OpenAI API</h4>
-                    <div class="number">€500-2K</div>
-                    <p>Per month (usage-based)</p>
-                </div>
-                <div class="metric-card">
-                    <h4>☁️ Cloud Infrastructure</h4>
-                    <div class="number">€200-500</div>
-                    <p>Per month (basic deployment)</p>
-                </div>
-                <div class="metric-card">
-                    <h4>📱 TikTok Access</h4>
-                    <div class="number">€0</div>
-                    <p>Institutional partnership</p>
-                </div>
-                <div class="metric-card">
-                    <h4>📊 Total MVP</h4>
-                    <div class="number">€900-3K</div>
-                    <p>Per month operational</p>
-                </div>
-            </div>
-
-            <h3>Phase 2 Investment</h3>
-            <ul class="feature-list">
-                <li>Jülich Computing Time: €5K-20K/month</li>
-                <li>German Cloud Infrastructure: €1K-5K/month</li>
-                <li>Model Training: €10K-50K (one-time)</li>
-                <li>Total Setup: €50K-200K</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h2>🛡️ Security & Compliance</h2>
-            
-            <div class="metric-grid">
-                <div class="metric-card">
-                    <h4>🔒 Data Protection</h4>
-                    <p>GDPR compliance, encrypted storage, role-based access</p>
-                </div>
-                <div class="metric-card">
-                    <h4>🤖 AI Ethics</h4>
-                    <p>Transparent disclosure, bias prevention, human oversight</p>
-                </div>
-                <div class="metric-card">
-                    <h4>📱 Platform Risk</h4>
-                    <p>Ban recovery strategy, content backup, policy monitoring</p>
-                </div>
-                <div class="metric-card">
-                    <h4>⚖️ Legal Framework</h4>
-                    <p>Academic protection, audit trails, compliance automation</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>🎯 Competitive Advantages</h2>
-            
-            <h3>Technical Differentiation</h3>
-            <ul class="feature-list">
-                <li>First AI Fact-checking Influencer (no direct competition)</li>
-                <li>Academic Backing (institutional credibility)</li>
-                <li>Multi-brand Personality System (scalable voice management)</li>
-                <li>EU Compliance by Design (regulatory advantage)</li>
-                <li>Viral-first Architecture (entertainment over education)</li>
-            </ul>
-
-            <h3>Strategic Moats</h3>
-            <ul class="feature-list">
-                <li>Institutional Partnerships (hard to replicate)</li>
-                <li>Brand Voice Training (proprietary methodology)</li>
-                <li>EU Infrastructure (digital sovereignty positioning)</li>
-                <li>Viral Growth Engine (network effects)</li>
-            </ul>
-        </div>
-
-        <div class="contact-section">
-            <h2>📞 Next Steps</h2>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
-                <div>
-                    <h3>Immediate Actions</h3>
-                    <ul class="feature-list">
-                        <li>Technical Demo</li>
-                        <li>Partnership Proposals</li>
-                        <li>Policy Research</li>
-                        <li>Metrics Dashboard</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Partnership Opportunities</h3>
-                    <ul class="feature-list">
-                        <li>EU Horizon Funding</li>
-                        <li>Research Collaboration</li>
-                        <li>Industry Partnerships</li>
-                        <li>Government Relations</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div style="margin-top: 30px;">
-                <h3>Contact: Dionysios Andres</h3>
-                <p><strong>Email:</strong> contact@truthshield.eu</p>
-                <p><strong>Vision:</strong> "Making democracy more entertaining than authoritarianism"</p>
-            </div>
-
-            <div style="margin-top: 30px; font-style: italic; font-size: 1.1em;">
-                <p>"While Russian troll farms spread fear, TruthShield spreads laughter and truth."</p>
-            </div>
-        </div>
+        <figcaption class="cap">continuous multi-channel scan · coordination blips</figcaption>
+      </figure>
+      <figure class="frame">
+        <div class="term" id="term" aria-label="Simulated live detection feed"></div>
+        <figcaption class="cap">detection feed (simulated)</figcaption>
+      </figure>
     </div>
 
-    <script>
-        // Add some interactive elements
-        document.querySelectorAll('.metric-card').forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'scale(1.05) rotate(1deg)';
-            });
-            
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'scale(1) rotate(0deg)';
-            });
-        });
+    <h3 class="rev">Pipeline — ingest to priority</h3>
+    <figure class="frame rev">
+      <svg viewBox="0 0 980 200" role="img" aria-label="Animated detection pipeline">
+        <defs><marker id="m1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#298DFF"/></marker></defs>
+        <rect x="16" y="58" width="150" height="80" fill="#15181D" stroke="#343940"/>
+        <text x="91" y="86" class="s12 bold" text-anchor="middle">INGEST</text>
+        <text x="91" y="104" class="s11 smut" text-anchor="middle">APIs · RSS · OCR</text>
+        <text x="91" y="120" class="s11 smut" text-anchor="middle">partners · scraping</text>
+        <rect x="226" y="58" width="150" height="80" fill="#15181D" stroke="#343940"/>
+        <text x="301" y="86" class="s12 bold" text-anchor="middle">ROUTE</text>
+        <text x="301" y="104" class="s11 smut" text-anchor="middle">type · risk · evidence</text>
+        <text x="301" y="120" class="s11 smut" text-anchor="middle">&lt; 500 ms</text>
+        <rect x="436" y="58" width="150" height="80" fill="#15181D" stroke="#343940"/>
+        <text x="511" y="86" class="s12 bold" text-anchor="middle">TEMPORAL</text>
+        <text x="511" y="104" class="s11 smut" text-anchor="middle">STABLE · LIVE · AMBIG.</text>
+        <text x="511" y="120" class="s11 smut" text-anchor="middle">Kairos, operationalised</text>
+        <rect x="646" y="58" width="150" height="80" fill="#15181D" stroke="#343940"/>
+        <text x="721" y="86" class="s12 bold" text-anchor="middle">IO SCORE</text>
+        <text x="721" y="104" class="s11 smut" text-anchor="middle">weighted signals</text>
+        <text x="721" y="120" class="s11 smut" text-anchor="middle">threshold 0.45</text>
+        <rect x="836" y="48" width="130" height="100" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+        <text x="901" y="84" class="s12 bold" text-anchor="middle" fill="#FFFFFF">LIGHTHOUSE</text>
+        <text x="901" y="104" class="s11 smut" text-anchor="middle">risk × reach ×</text>
+        <text x="901" y="120" class="s11 smut" text-anchor="middle">coordination</text>
+        <g stroke="#298DFF" stroke-width="2" fill="none">
+          <line class="flowline" x1="166" y1="98" x2="220" y2="98" marker-end="url(#m1)"/>
+          <line class="flowline" x1="376" y1="98" x2="430" y2="98" marker-end="url(#m1)"/>
+          <line class="flowline" x1="586" y1="98" x2="640" y2="98" marker-end="url(#m1)"/>
+          <line class="flowline" x1="796" y1="98" x2="830" y2="98" marker-end="url(#m1)"/>
+        </g>
+        <text x="490" y="178" class="s11 smut" text-anchor="middle">redundancy is method: documented API gaps make any single channel a research risk</text>
+      </svg>
+    </figure>
 
-        // Easter egg for Vitaly
-        document.querySelector('.vitaly-easter-egg').addEventListener('click', function() {
-            alert('🍲 Hey Vitaly! Hope you\'re enjoying some delicious Borscht while reading this! 😄');
-        });
+    <h3 class="rev">Build an IO score — tap the signals</h3>
+    <div class="lead rev"><span class="sq" aria-hidden="true"></span><p>Information-operation detection is probabilistic, not binary. Each pattern carries a weight; the IO_CONTEXT response mode arms at <b>0.45</b>. Try it:</p></div>
+    <div class="frame rev">
+      <div class="chips" id="ioChips" style="margin-top:0">
+        <button class="chip" data-w="0.45">bloc_framing <small>0.45 · “the West admits…”</small></button>
+        <button class="chip" data-w="0.40">peace_pressure <small>0.40 · “negotiate before it's too late”</small></button>
+        <button class="chip" data-w="0.40">known_source <small>0.40 · IO-outlet lineage</small></button>
+        <button class="chip" data-w="0.25">victory_frame <small>0.25</small></button>
+        <button class="chip" data-w="0.25">frontline_collapse <small>0.25</small></button>
+        <button class="chip" data-w="0.20">map_claims <small>0.20 · “look at the map”</small></button>
+        <button class="chip" data-w="0.15">multi_location <small>0.15</small></button>
+        <button class="chip" data-w="0.10">absolutist <small>0.10 · “completely destroyed”</small></button>
+      </div>
+      <div class="gauge" aria-hidden="true"><div class="fill" id="ioFill"></div><div class="th"></div></div>
+      <div class="gauge-row"><span>0.00</span><span>threshold 0.45</span><span>1.00</span></div>
+      <div id="ioVerdict">score <b id="ioScore">0.00</b> — <span id="ioLabel">below threshold · standard routing</span></div>
+    </div>
 
-        // Smooth scrolling for any internal links
-        document.addEventListener('DOMContentLoaded', function() {
-            const sections = document.querySelectorAll('.section');
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, { threshold: 0.1 });
+    <h3 class="rev">Why concentrate — the Lighthouse evidence</h3>
+    <div class="rev">
+      <details open><summary>0.1 % of users → 80 % of fake-news exposures (Grinberg 2019)</summary>
+        <div class="body">Concentration means blanket response is waste. The system ranks claims by visibility and amplification, not by volume of falsehood, and intervenes where one answer shifts an entire thread.</div></details>
+      <details><summary>~100 accounts → ~70 % of conspiracy content (MEO 2026)</summary>
+        <div class="body">National-scale confirmation. A lighthouse does not light the whole ocean — it stands where the hazard is.</div></details>
+      <details><summary>Temporal assessment is Kairos, made technical</summary>
+        <div class="body">STABLE claims (settled science) allow direct correction. LIVE_REQUIRED claims (war, elections) demand Tier-A fresh sourcing and hedged, timestamped language before any candidate is generated. AMBIGUOUS + weak evidence routes to CAUTIOUS mode.</div></details>
+    </div>
+  </div>
+</section>
 
-            sections.forEach(section => {
-                section.style.opacity = '0';
-                section.style.transform = 'translateY(20px)';
-                section.style.transition = 'all 0.6s ease';
-                observer.observe(section);
-            });
-        });
-    </script>
-</body>
-</html>
+<!-- ===== 02 INTERVENTION ===== -->
+<section id="intervention">
+  <div class="wrap">
+    <div class="sec-head rev"><span class="numbox">02</span><span class="cat">Layer two + three of the node/</span></div>
+    <h2 class="rev">How Intervention Works</h2>
+    <div class="lead rev"><span class="sq" aria-hidden="true"></span><p>Five roles, four response modes, one constitutional gate — and a learning loop allowed to touch the <i>how</i> but never the <i>what</i>.</p></div>
+
+    <h3 class="rev">One claim, five voices — tap a persona</h3>
+    <div class="frame rev">
+      <p class="claimline">CLAIM (detected, STABLE, IO 0.15): <span class="claim">“The EU is banning cash in 2027.”</span></p>
+      <div class="pselect" id="pselect">
+        <button class="pbtn sel" data-p="guardian">GUARDIAN</button>
+        <button class="pbtn" data-p="science">SCIENCE</button>
+        <button class="pbtn" data-p="policy">POLICY</button>
+        <button class="pbtn" data-p="meme">MEME</button>
+        <button class="pbtn" data-p="euro">EUROSHIELD</button>
+      </div>
+      <div class="reply" id="reply">
+        <div class="meta" id="rMeta"></div>
+        <div class="txt" id="rTxt"></div>
+        <div class="src" id="rSrc"></div>
+      </div>
+      <span class="gridnote">every candidate: ≤ 450 chars · 3 citations · declared AI-assisted · human-approved before publication</span>
+    </div>
+
+    <h3 class="rev">Response-mode router — choose the conditions</h3>
+    <div class="frame rev">
+      <div class="router" style="margin-top:0">
+        <div>
+          <div class="lbl">Temporal assessment</div>
+          <button class="opt sel" data-t="stable">STABLE — settled facts</button>
+          <button class="opt" data-t="live">LIVE_REQUIRED — evolving event</button>
+          <button class="opt" data-t="ambig">AMBIGUOUS + weak evidence</button>
+        </div>
+        <div>
+          <div class="lbl">IO score</div>
+          <button class="opt sel" data-i="low">below 0.45</button>
+          <button class="opt" data-i="high">≥ 0.45 — campaign pattern</button>
+        </div>
+        <div>
+          <div class="lbl">Resulting mode</div>
+          <div class="mode-out"><div class="m" id="modeName">DEBUNK</div><div class="x" id="modeText"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="rev">Source authority — the immutable floor</h3>
+    <div class="frame rev">
+      <div class="tiers" id="tiers" style="margin-top:0">
+        <div class="tier"><span>PRIMARY_INSTITUTION</span><div class="track"><div class="fill" style="--w:100%"></div></div><span>1.00</span></div>
+        <div class="tier"><span>MULTILATERAL</span><div class="track"><div class="fill" style="--w:95%"></div></div><span>0.95</span></div>
+        <div class="tier"><span>REPUTABLE_NGO</span><div class="track"><div class="fill" style="--w:90%"></div></div><span>0.90</span></div>
+        <div class="tier"><span>PEER_REVIEWED</span><div class="track"><div class="fill" style="--w:88%"></div></div><span>0.88</span></div>
+        <div class="tier"><span>IFCN_FACTCHECK</span><div class="track"><div class="fill" style="--w:85%"></div></div><span>0.85</span></div>
+        <div class="tier"><span>REPUTABLE_MEDIA</span><div class="track"><div class="fill" style="--w:70%"></div></div><span>0.70</span></div>
+        <div class="tier"><span>META_WIKI</span><div class="track"><div class="fill" style="--w:40%"></div></div><span>0.40</span></div>
+      </div>
+      <span class="gridnote">75+ domains · pure ranking above threshold · max 1 source/domain · min 2 source classes · weights immutable — the bandit cannot learn to prefer weaker sources</span>
+    </div>
+
+    <h3 class="rev">Adaptive delivery — Thompson Sampling over four tones</h3>
+    <div class="frame rev">
+      <div class="bandit" id="bandit" style="margin-top:0">
+        <div class="arm"><div class="t">EMPATHIC</div><div class="bar"><div class="col" data-h="62"></div></div><div class="v">health/science nudge</div></div>
+        <div class="arm"><div class="t">WITTY</div><div class="bar"><div class="col" data-h="48"></div></div><div class="v">conspiracy nudge</div></div>
+        <div class="arm"><div class="t">FIRM</div><div class="bar"><div class="col" data-h="74"></div></div><div class="v">forced at HIGH risk</div></div>
+        <div class="arm"><div class="t">SPICY</div><div class="bar"><div class="col" data-h="31"></div></div><div class="v">exploration share</div></div>
+      </div>
+      <div class="rewardbox" aria-label="Anti-gaming reward function">reward = <span class="pos">0.35·top_comment + 0.20·reply_quality + 0.15·like_reply + 0.10·shares</span>
+       <span class="neg">− 0.30·reports − 0.15·toxicity − 0.50·platform_flag − 0.40·bot_engagement</span></div>
+      <span class="gridnote">learnable: tone · source-mix · length · timing — immutable: facts · evidence · weights · boundaries · IO thresholds. Simulation confirms: no convergence on adversarial optima under reward poisoning (pre-registered, osf.io/95jm2).</span>
+    </div>
+
+    <h3 class="rev">The constitutional gate</h3>
+    <div class="gate rev" role="img" aria-label="Detection to publication with human gate">
+      <div class="stage">DETECT<small>pattern + claim</small></div>
+      <div class="conn"></div>
+      <div class="stage">GENERATE<small>5 s · sourced candidate</small></div>
+      <div class="conn"></div>
+      <div class="stage human"><b>HUMAN REVIEW</b><small>87 s · nothing publishes without it</small></div>
+      <div class="conn"></div>
+      <div class="stage">PUBLISH<small>declared · audited · in-thread</small></div>
+    </div>
+
+    <h3 class="rev">Tempo, compared</h3>
+    <div class="bars rev" id="bars">
+      <div class="bar"><span>TruthShield candidate</span><div class="track"><div class="fill f1"></div></div><span>5 s</span></div>
+      <div class="bar"><span>TruthShield published</span><div class="track"><div class="fill f2"></div></div><span>~92 s</span></div>
+      <div class="bar"><span>Community Notes median</span><div class="track"><div class="fill f3"></div></div><span>26 h</span></div>
+    </div>
+
+    <h3 class="rev">Education is built in</h3>
+    <div class="lead rev"><span class="sq" aria-hidden="true"></span><p>Every reply discloses the manipulation technique it answers — emotional framing, false causality, missing sourcing, temporal inconsistency. A correction cures one case; technique transparency inoculates against the next. Delivered in-thread, at the moment of exposure — the inverse of the ad-based delivery that reached 7.5 % and changed nothing.</p></div>
+  </div>
+</section>
