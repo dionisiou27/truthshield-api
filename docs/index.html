@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TruthShield - Cognitive Security for Democratic Information Spaces</title>
     <meta name="description" content="Visible, source-backed counter-speech under human oversight. TruthShield detects disinformation and makes the human voice visible again.">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!--
+      Tailwind Play CDN, vendored under docs/vendor/ so the page also renders
+      without internet access (local/offline demos). The CDN stays as a fallback
+      in case the local copy is missing. MIT licensed - see docs/vendor/README.md.
+    -->
+    <script src="vendor/tailwind.min.js"></script>
+    <script>
+        if (typeof tailwind === 'undefined') {
+            document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+        }
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -751,7 +761,7 @@
                         <div class="flex gap-2">
                             <select id="api-server" class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all text-sm">
                                 <option value="https://truthshield-api.onrender.com">☁️ Render (Cloud)</option>
-                                <option value="http://localhost:8000">🖥️ Localhost:8000</option>
+                                <option id="api-server-local" value="http://localhost:8000">🖥️ Localhost:8000</option>
                             </select>
                             <button onclick="testConnection()" class="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm font-medium text-primary transition-all">
                                 Test
@@ -1101,6 +1111,35 @@
             const select = document.getElementById('api-server');
             return select?.value || 'https://truthshield-api.onrender.com';
         }
+
+        // Origin-aware default: when this page is served by a locally running
+        // API (http://localhost:8000/demo), preselect that same origin instead
+        // of the cloud deployment. This keeps every request same-origin, which
+        // avoids both the CORS pre-flight and the mixed-content block that
+        // Safari applies to http://localhost requests from an https page.
+        // Opened via file://, the page falls back to the conventional
+        // http://localhost:8000 and preselects it, since a file:// page has no
+        // usable origin of its own.
+        function initApiServer() {
+            const select = document.getElementById('api-server');
+            const localOption = document.getElementById('api-server-local');
+            if (!select || !localOption) return;
+
+            const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+            const isFile = location.protocol === 'file:';
+
+            if (isLocalHost) {
+                // Honour the actual port the API was started on (PORT=8080 etc.).
+                localOption.value = location.origin;
+                localOption.textContent = `🖥️ ${location.origin} (this server)`;
+            }
+            if (isLocalHost || isFile) {
+                select.value = localOption.value;
+                testConnection();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApiServer);
 
         // Helper functions
         function escapeHtml(s) {

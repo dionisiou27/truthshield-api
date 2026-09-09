@@ -110,6 +110,19 @@ async def serve_image(filename: str):
         return FileResponse(image_file, media_type=media_types.get(image_file.suffix.lower(), 'image/png'))
     return Response(status_code=404, content=f"Image not found: {filename}")
 
+# Vendored front-end assets (e.g. Tailwind), served so that /demo renders
+# without internet access. Same-origin by design: the demo page references
+# them relatively, which also keeps the GitHub Pages build working.
+@app.get("/vendor/{filename}")
+async def serve_vendor(filename: str):
+    """Serve vendored JS/CSS assets from docs/vendor."""
+    asset = DOCS_PATH / "vendor" / filename
+    media_types = {".js": "application/javascript", ".css": "text/css"}
+    suffix = asset.suffix.lower()
+    if asset.is_file() and suffix in media_types:
+        return FileResponse(asset, media_type=media_types[suffix])
+    return Response(status_code=404, content=f"Asset not found: {filename}")
+
 # Debug endpoints — only available in development
 if os.getenv("ENVIRONMENT", "production").lower() == "development":
     @app.get("/debug/paths")
