@@ -1,0 +1,44 @@
+# Minimal dependency set for a LOCAL DEMO of the TruthShield API.
+#
+# Rationale: requirements.txt pulls easyocr -> torch (~2 GB), which is neither
+# needed for the Guardian Avatar demo path (/api/v1/detect/universal, /demo)
+# nor installable on a slow or absent connection. Install this file instead
+# when the goal is to present the API locally; use requirements.txt for the
+# full feature set (OCR / image detection).
+#
+#   pip install -r requirements-demo.txt
+#
+# Verified: the app boots and serves /health, /demo and
+# /api/v1/detect/universal with exactly these packages.
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# AI (also speaks to any OpenAI-compatible local server via OPENAI_BASE_URL)
+openai>=1.12.0
+
+# Data & HTTP
+numpy>=1.24.0
+httpx>=0.25.0
+
+# Database
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0
+
+# Models & Config
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-multipart>=0.0.6
+PyYAML>=6.0.1
+
+# Social Media APIs (imported at module load by src/api/monitoring.py)
+tweepy>=4.14.0
+
+# Web Scraping & RSS
+beautifulsoup4==4.12.3
+feedparser>=6.0.0
+
+# SSL / Environment
+certifi>=2023.0.0
+python-dotenv>=1.0.0

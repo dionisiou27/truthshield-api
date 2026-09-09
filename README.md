@@ -52,8 +52,21 @@ These principles are non-negotiable:
 | Document | Access |
 |----------|--------|
 | Strategic overview | `docs/STRATEGIC_WHITEPAPER.md` (public) |
+| Local / offline demo run-book | `docs/LOCAL_DEMO.md` (public) |
 | Technical annex | Available to consortium partners under NDA |
 | Academic publications | Available upon request |
+
+## Running it locally
+
+```bash
+./scripts/start_local_demo.sh          # PowerShell: ./scripts/start_local_demo.ps1
+```
+
+The API then serves the demo page at <http://localhost:8000/demo> from its own
+origin, which avoids the CORS and mixed-content constraints of calling a local
+API from the hosted page. `docs/LOCAL_DEMO.md` covers presenting without an
+internet connection, including running the pipeline against a local
+OpenAI-compatible model.
 
 ## Repository notice
 
